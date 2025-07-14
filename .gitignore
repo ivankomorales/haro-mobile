@@ -1,0 +1,30 @@
+# Node modules
+node_modules/
+
+# Entorno
+.env
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+*.log
+
+# Archivos de sistema
+.DS_Store
+Thumbs.db
+
+# VSCode
+.vscode/
+
+# Compilaciones y cobertura (si usas tests o bundlers)
+dist/
+build/
+coverage/
+
+# Archivos temporales
+*.tmp
+*.swp
+
+# Otros
+*.local
