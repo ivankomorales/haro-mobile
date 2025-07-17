@@ -1,8 +1,10 @@
-# Node modules
+# Node dependencies
 node_modules/
 
-# Entorno
+# Environment variables
 .env
+*.env.*
+.env.*
 
 # Logs
 npm-debug.log*
@@ -10,21 +12,38 @@ yarn-debug.log*
 yarn-error.log*
 *.log
 
-# Archivos de sistema
+# System files
 .DS_Store
 Thumbs.db
 
-# VSCode
+# VSCode settings
 .vscode/
 
-# Compilaciones y cobertura (si usas tests o bundlers)
+# Build output
 dist/
 build/
 coverage/
+jest-coverage/
 
-# Archivos temporales
+# Temporary files
 *.tmp
 *.swp
+*.swo
 
-# Otros
+# Temporary scripts
+scriptsTemp/
+
+# SQLite database (if ever used)
+*.sqlite
+*.sqlite3
+
+# PM2 process IDs (if used in production)
+pids/
+
+# Backup & patch files
+*.bak
+*.orig
+*.rej
+
+# Miscellaneous local config
 *.local
