@@ -1,219 +1,233 @@
-# **Haro Mobile – API RESTful**
+# **Haro Mobile – RESTful API**
 
-Sistema de gestión de pedidos personalizados de cerámica, desarrollado como parte del curso Backend III y basado en una necesidad real de negocio.  
-Esta API permite crear, consultar, actualizar y eliminar pedidos con productos, adornos, fotos e información detallada del cliente.
+A custom ceramic order management system, developed for a real business need and as part of the Backend III course.
+This API allows for creating, retrieving, updating, and deleting customer orders, including detailed information such as products, glazes, decorations, customer data, and shipping options.
 
-### **Tecnologías utilizadas**
+### **Tech Stack**
 
-Node.js + Express.js – Framework backend y servidor API
+- Node.js + Express – Backend framework and API server
 
-MongoDB + Mongoose – Base de datos NoSQL flexible y escalable
+- MongoDB + Mongoose – Flexible, scalable NoSQL database
 
-dotenv – Manejo de variables de entorno
+- dotenv – Environment variable management
 
-helmet, cors, morgan – Seguridad y logging
+- helmet, cors, morgan – Security and logging middlewares
 
-Postman – Pruebas de API
+- Postman – API testing
 
-### **Instrucciones para correr el proyecto**
+### **Setup Instructions**
 
-Clonar el repositorio o abrir la carpeta haro-mobile
+1.  Clone the repository or open the haro-mobile project folder
 
-Instalar dependencias:
+2.  Install dependencies:
 
-npm install
+```
+    npm install
+```
 
-Crear archivo .env en la raíz:
+3.  Create a .env file in the root directory:
 
-PORT=5000
-MONGO_URI=mongodb://127.0.0.1:27017/haroPedidos
-JWT_SECRET=supersecreto123
+```
+    PORT=5000 <br />
+    MONGO_URI=mongodb://127.0.0.1:27017/haroPedidos <br />
+    JWT_SECRET=supercalifragilisticoexpialidoso123 <br />
+```
 
-Iniciar el servidor:
+4.  Start the development server:
 
-npm run dev
+```
+    npm run dev
+```
 
-Deberías ver en consola:
+5.  You should see:
 
-Servidor corriendo en puerto 5000
-MongoDB conectado
+```
+    Server running on port 5000
+    MongoDB connected
+```
 
-## **Estructura de carpetas**
+---
+
+### **Project Structure**
 
 ```
 haro-mobile/
-|-- config/ # Conexión a DB
-|-- controllers/ # Lógica de negocio
-|-- middleware/ # (futuro uso: auth, roles)
-|-- models/ # Esquemas Mongoose
-|-- routes/ # Endpoints de la API
-|-- .env # Variables de entorno
-|-- app.js # Archivo principal
-|-- package.json
+│
+├── config/         # DB connection setup
+├── controllers/    # Business logic
+├── middleware/     # JWT auth, role protection
+├── models/         # Mongoose schemas
+├── routes/         # API endpoints
+├── .env            # Env vars (excluded by .gitignore)
+├── app.js          # Main server entry point
+├── package.json
 ```
 
-## **Modelo de datos**
+---
 
-### **Pedido**
+### **Authentication & Security**
 
-```
-{
-orderID: String, // Generado automáticamente como ORD-0001
-nombre: String,
-telefono: String,
-correo: String,
-instagram: String,
-fechaEntrega: Date,
-estado: "Pendiente" | "En Proceso" | "Completado" | "Cancelado",
-anticipo: Number,
-envio: {
-requerido: Boolean,
-direccion: String,
-ciudad: String,
-cp: String,
-telefono: String
-},
-notas: String,
-productos: [
-{
-tipo: String,
-figuras: Number,
-precio: Number,
-descripcion: String,
-esmaltes: {
-interior: String,
-exterior: String
-},
-adornos: {
-llevaOro: Boolean,
-llevaNombre: Boolean,
-descripcionAdorno: String
-},
-imagenes: [String]
-}]}
-```
+- JWT-based authentication
 
-### **Counter**
+- All protected routes require a valid token
+
+- Role-based access control (admin required for user and glaze management)
+
+- Security via helmet, CORS enabled
+
+- Sensitive data hidden via .env
+
+---
+
+### **Data Models**
+
+#### **Order**
 
 ```
 {
-_id: "pedido",
-seq: 1
+  orderID: "ORD-0001",
+  customer: ObjectId, // References Customer model
+  status: "Pending" | "In Progress" | "Completed" | "Cancelled",
+  deposit: Number,
+  shipping: {
+    isRequired: Boolean,
+    addresses: [
+      {
+        address: String,
+        city: String,
+        zip: String,
+        phone: String
+      }
+    ]
+  },
+  notes: String,
+  products: [
+    {
+      type: String,
+      quantity: Number,
+      price: Number,
+      description: String,
+      glazes: {
+        interior: ObjectId, // References Glaze
+        exterior: ObjectId  // References Glaze
+      },
+      decorations: {
+        hasGold: Boolean,
+        hasName: Boolean,
+        decorationDescription: String
+      },
+      images: [String],
+      workflowStage: "exported" | "sculptedPainted" | "urgent" | "painting" | "delivered",
+      assignedShippingIndex: Number
+    }
+  ]
 }
 ```
 
-Usado para generar orderID secuencial tipo ORD-0001, ORD-0002, etc.
+#### **Customer**
 
-## **Endpoints disponibles**
+Created automatically when a new order is placed.
 
-Base: http://localhost:5000/api/pedidos
+```
+{
+  name: String,
+  email: String,
+  phone: String,
+  instagram: String
+}
+```
 
-| Método | Ruta   | Descripción                 |
-| ------ | ------ | --------------------------- |
-| GET    | `/`    | Obtener todos los pedidos   |
-| GET    | `/:id` | Obtener un pedido por ID    |
-| POST   | `/`    | Crear nuevo pedido          |
-| PUT    | `/:id` | Actualizar pedido existente |
-| DELETE | `/:id` | Eliminar pedido             |
+#### **Glaze**
 
-## **Seguridad y buenas prácticas**
+```
+{
+  name: String,        // Unique name
+  hex: String,         // HEX color code
+  image: String        // Optional image URL or filename
+}
+```
 
-- Uso de .env para ocultar datos sensibles
+#### **Counter**
 
-- Uso de middlewares como Helmet y CORS para proteger la API
+Used to generate sequential order IDs.
 
-- Validaciones a nivel de modelo (required, enum)
+```
+{
+  _id: "order",
+  seq: 4
+}
+```
 
-- orderID se genera de forma atómica para evitar duplicados
+### **Available Endpoints**
 
-## **Pruebas realizadas**
+### Authentication
 
-Con Postman se realizaron las siguientes pruebas exitosas:
+| Method | Route           | Description          |
+| ------ | --------------- | -------------------- |
+| POST   | /api/auth/login | Login and obtain JWT |
 
-- Crear 2 pedidos con diferentes datos y productos
+### Orders
 
-- Consultar todos los pedidos (GET)
+All routes require JWT.
 
-- Consultar uno por ID (GET /:id)
+| Method | Route           | Description        |
+| ------ | --------------- | ------------------ |
+| GET    | /api/orders     | List all orders    |
+| GET    | /api/orders/:id | Get order by ID    |
+| POST   | /api/orders     | Create a new order |
+| PUT    | /api/orders/:id | Update an order    |
+| DELETE | /api/orders/:id | Delete an order    |
 
-- Actualizar estado de un pedido (PUT)
+### Users (admin only)
 
-- Eliminar un pedido (DELETE)
+| Method | Route      | Description     |
+| ------ | ---------- | --------------- |
+| POST   | /api/users | Create new user |
 
-Todos los resultados fueron correctos, con status esperados (201, 200, 404).
+### Glazes
 
-## **Estado actual**
+| Method | Route           | Description      | Access        |
+| ------ | --------------- | ---------------- | ------------- |
+| GET    | /api/glazes     | List all glazes  | Auth required |
+| GET    | /api/glazes/:id | Get glaze by ID  | Auth required |
+| POST   | /api/glazes     | Create new glaze | Admin only    |
+| PUT    | /api/glazes/:id | Update glaze     | Admin only    |
+| DELETE | /api/glazes/:id | Delete glaze     | Admin only    |
 
-La API está lista para ser integrada con un frontend (React PWA) que permita crear y administrar pedidos de forma móvil.  
-El backend está preparado para futuras mejoras como:
+### Business Logic Notes
 
-- Autenticación con JWT
+- When placing an order:
 
-- Roles (pintor, escultor, administrador)
+  - The API looks up the customer by email
 
-- Exportación a PDF/Excel
+  - If not found, creates the customer
 
-- Subida de imágenes reales
+  - Generates a unique sequential orderID
 
-## **Notes**
+  - Associates customer ID with the order
 
-- Customer is created automatically when order is created.
-- Shipping address is per order, not part of customer profile.
-- OrderID is auto-incremented using Counter collection.
-- Only verified users (via JWT) can access protected routes.
+- Each product can be assigned to a specific shipping address (by index)
 
-# Haro Orders API
+- Each product has a workflowStage for visual status tracking
 
-## Project Overview
+- Glazes are separate documents, referenced by product
 
-API RESTful for managing personalized ceramic orders.
+### Order Workflow Colors
 
-## Auth & Security
+| Stage           | Color  | Description                                       |
+| --------------- | ------ | ------------------------------------------------- |
+| exported        | Blue   | Order exported, ready for sculptor                |
+| sculptedPainted | Yellow | Sculpted and painted                              |
+| urgent          | Red    | Marked as urgent or with a specific delivery date |
+| painting        | Pink   | In painting process                               |
+| delivered       | Green  | Completed and delivered                           |
 
-- Uses JWT for authentication.
-- Routes are protected with middleware.
-- `admin` role required to delete orders.
+## Next Steps
 
-## Order Flow
+- Implement frontend with React (PWA)
 
-- When creating an order, the system:
-  - Accepts a customer object
-  - Looks for existing customer by email
-  - Creates new customer if not found
-  - Associates customer ID to order
-  - Generates `orderID` using a Counter
+- Add export to PDF or Excel
 
-## Data Models
+- Enable file upload for images
 
-- Orders reference `Customer` via ObjectId.
-- Orders include an array of `products` with glazes, decorations, etc.
-- Shipping data is stored per order, not in customer.
-- Field `status` uses enum: "Pending", "In Progress", "Completed", "Cancelled".
-
-## Security
-
-- All routes require a valid JWT.
-- Certain actions (e.g. delete) are admin-only.
-
-## Security & Access Control
-
-- All protected routes require a valid JWT token.
-- Middleware `verifyToken` validates the token and attaches the user to the request.
-- Middleware `requireAdmin` checks if the authenticated user has role `admin`.
-- Example: DELETE /orders/:id is restricted to admin users only.
-
-## Glazes
-
-Each glaze has:
-
-- `name`: Unique string identifier
-- `hex`: HEX color code (e.g., "#4CAF50")
-- `image`: Optional URL or filename of glaze image
-
-API Endpoints:
-
-- `GET /api/glazes` – List all glazes (auth required)
-- `GET /api/glazes/:id` – Get one glaze by ID (auth required)
-- `POST /api/glazes` – Create glaze (admin only)
-- `PUT /api/glazes/:id` – Update glaze (admin only)
-- `DELETE /api/glazes/:id` – Delete glaze (admin only)
+- Assign orders to roles (e.g., sculptor, painter)
