@@ -44,11 +44,11 @@ MongoDB conectado
 haro-mobile/
 |-- config/ # Conexión a DB
 |-- controllers/ # Lógica de negocio
+|-- middleware/ # (futuro uso: auth, roles)
 |-- models/ # Esquemas Mongoose
 |-- routes/ # Endpoints de la API
-|-- middleware/ # (futuro uso: auth, roles)
-|-- app.js # Archivo principal
 |-- .env # Variables de entorno
+|-- app.js # Archivo principal
 |-- package.json
 ```
 
@@ -155,11 +155,65 @@ El backend está preparado para futuras mejoras como:
 
 - Subida de imágenes reales
 
-## **Conclusiones**
+## **Notes**
 
-Este proyecto me permitió conectar eficazmente una API con una base de datos MongoDB, implementando las operaciones CRUD completas con seguridad básica.  
-Las pruebas en Postman confirmaron que la estructura es funcional, escalable y lista para usarse en un entorno real.  
-Además de cumplir con los requerimientos académicos, sirve como base para una aplicación real de negocio artesanal.
+- Customer is created automatically when order is created.
+- Shipping address is per order, not part of customer profile.
+- OrderID is auto-incremented using Counter collection.
+- Only verified users (via JWT) can access protected routes.
 
-Autor: Eduardo Iván Morales Flores  
-Materia: Backend III
+# Haro Orders API
+
+## Project Overview
+
+API RESTful for managing personalized ceramic orders.
+
+## Auth & Security
+
+- Uses JWT for authentication.
+- Routes are protected with middleware.
+- `admin` role required to delete orders.
+
+## Order Flow
+
+- When creating an order, the system:
+  - Accepts a customer object
+  - Looks for existing customer by email
+  - Creates new customer if not found
+  - Associates customer ID to order
+  - Generates `orderID` using a Counter
+
+## Data Models
+
+- Orders reference `Customer` via ObjectId.
+- Orders include an array of `products` with glazes, decorations, etc.
+- Shipping data is stored per order, not in customer.
+- Field `status` uses enum: "Pending", "In Progress", "Completed", "Cancelled".
+
+## Security
+
+- All routes require a valid JWT.
+- Certain actions (e.g. delete) are admin-only.
+
+## Security & Access Control
+
+- All protected routes require a valid JWT token.
+- Middleware `verifyToken` validates the token and attaches the user to the request.
+- Middleware `requireAdmin` checks if the authenticated user has role `admin`.
+- Example: DELETE /orders/:id is restricted to admin users only.
+
+## Glazes
+
+Each glaze has:
+
+- `name`: Unique string identifier
+- `hex`: HEX color code (e.g., "#4CAF50")
+- `image`: Optional URL or filename of glaze image
+
+API Endpoints:
+
+- `GET /api/glazes` – List all glazes (auth required)
+- `GET /api/glazes/:id` – Get one glaze by ID (auth required)
+- `POST /api/glazes` – Create glaze (admin only)
+- `PUT /api/glazes/:id` – Update glaze (admin only)
+- `DELETE /api/glazes/:id` – Delete glaze (admin only)

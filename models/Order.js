@@ -6,8 +6,8 @@ const ProductItemSchema = new mongoose.Schema({
   price: Number,
   description: String,
   glazes: {
-    interior: String,
-    exterior: String,
+    interior: { type: mongoose.Schema.Types.ObjectId, ref: "Glaze" },
+    exterior: { type: mongoose.Schema.Types.ObjectId, ref: "Glaze" },
   },
   decorations: {
     hasGold: Boolean,
@@ -15,6 +15,18 @@ const ProductItemSchema = new mongoose.Schema({
     decorationDescription: String,
   },
   images: [String], // URLs or file names
+  workflowStage: {
+    type: String,
+    enum: [
+      "exported", // blue
+      "sculptedPainted", // yellow
+      "urgent", // red
+      "painting", // pink
+      "delivered", // green
+    ],
+    default: null,
+  },
+  assignedShippingIndex: { type: Number, default: null }, // Array index shipping.addresses
 });
 
 const OrderSchema = new mongoose.Schema(
@@ -33,10 +45,14 @@ const OrderSchema = new mongoose.Schema(
     deposit: { type: Number, default: 0 },
     shipping: {
       isRequired: { type: Boolean, default: false },
-      address: String,
-      city: String,
-      zip: String,
-      phone: String,
+      addresses: [
+        {
+          address: String,
+          city: String,
+          zip: String,
+          phone: String,
+        },
+      ],
     },
     notes: String,
     products: {
