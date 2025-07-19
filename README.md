@@ -1,233 +1,73 @@
-# **Haro Mobile – RESTful API**
+# Haro Mobile – Frontend (React + TailwindCSS)
 
-A custom ceramic order management system, developed for a real business need and as part of the Backend III course.
-This API allows for creating, retrieving, updating, and deleting customer orders, including detailed information such as products, glazes, decorations, customer data, and shipping options.
+This is the frontend interface for **Haro Mobile**, a responsive PWA for managing custom ceramic orders. It's designed to integrate with the Haro Mobile API and provides a clean, user-friendly experience with support for light/dark mode, authentication, and dynamic form interactions.
 
-### **Tech Stack**
+## Tech Stack
 
-- Node.js + Express – Backend framework and API server
+- **React** – UI framework (Vite + JSX)
+- **Tailwind CSS** – Utility-first styling
+- **Dark Mode** – Follows OS preference with optional manual toggle
+- **Context API** – Auth and global state
+- **Responsive Design** – Mobile-first layout
 
-- MongoDB + Mongoose – Flexible, scalable NoSQL database
-
-- dotenv – Environment variable management
-
-- helmet, cors, morgan – Security and logging middlewares
-
-- Postman – API testing
-
-### **Setup Instructions**
-
-1.  Clone the repository or open the haro-mobile project folder
-
-2.  Install dependencies:
-
+## Project Structure
 ```
-    npm install
-```
-
-3.  Create a .env file in the root directory:
-
-```
-    PORT=5000 <br />
-    MONGO_URI=mongodb://127.0.0.1:27017/haroPedidos <br />
-    JWT_SECRET=supercalifragilisticoexpialidoso123 <br />
-```
-
-4.  Start the development server:
-
-```
-    npm run dev
-```
-
-5.  You should see:
-
-```
-    Server running on port 5000
-    MongoDB connected
-```
-
----
-
-### **Project Structure**
-
-```
-haro-mobile/
+frontend/
 │
-├── config/         # DB connection setup
-├── controllers/    # Business logic
-├── middleware/     # JWT auth, role protection
-├── models/         # Mongoose schemas
-├── routes/         # API endpoints
-├── .env            # Env vars (excluded by .gitignore)
-├── app.js          # Main server entry point
-├── package.json
+├── components/ # Reusable UI components
+├── context/ # Auth and app-level context
+├── pages/ # Page-level views (Login, Dashboard, etc.)
+├── styles/ # Global Tailwind + CSS customization
+├── App.jsx # Main app with routes and layout
+├── main.jsx # Entry point
+├── tailwind.config.js # Tailwind configuration
+└── index.css # Global CSS + dark mode autofill fixes
 ```
 
----
+## Auth Integration
 
-### **Authentication & Security**
+- The login form uses Context to call the `login(email, password)` method.
+- After login, the JWT token is stored securely and passed in requests.
+- Protected routes require a valid token to access.
 
-- JWT-based authentication
+## Features Implemented
 
-- All protected routes require a valid token
+- Light/dark mode via `class="dark"` on `<html>` and OS preference detection
+- Autofill fixes for inputs with custom background and label animations
+- Floating label inputs using Tailwind and `peer` selectors
+- Dark mode compatible styling with full theme switch support
+- Mobile-first layout with accessibility-friendly forms
 
-- Role-based access control (admin required for user and glaze management)
+## Development Setup
 
-- Security via helmet, CORS enabled
+1. Clone the repository and navigate into the `frontend/` folder
 
-- Sensitive data hidden via .env
-
----
-
-### **Data Models**
-
-#### **Order**
-
-```
-{
-  orderID: "ORD-0001",
-  customer: ObjectId, // References Customer model
-  status: "Pending" | "In Progress" | "Completed" | "Cancelled",
-  deposit: Number,
-  shipping: {
-    isRequired: Boolean,
-    addresses: [
-      {
-        address: String,
-        city: String,
-        zip: String,
-        phone: String
-      }
-    ]
-  },
-  notes: String,
-  products: [
-    {
-      type: String,
-      quantity: Number,
-      price: Number,
-      description: String,
-      glazes: {
-        interior: ObjectId, // References Glaze
-        exterior: ObjectId  // References Glaze
-      },
-      decorations: {
-        hasGold: Boolean,
-        hasName: Boolean,
-        decorationDescription: String
-      },
-      images: [String],
-      workflowStage: "exported" | "sculptedPainted" | "urgent" | "painting" | "delivered",
-      assignedShippingIndex: Number
-    }
-  ]
-}
-```
-
-#### **Customer**
-
-Created automatically when a new order is placed.
+2. Install dependencies:
 
 ```
-{
-  name: String,
-  email: String,
-  phone: String,
-  instagram: String
-}
+npm install
+Start the dev server:
+
+npm run dev
 ```
+Make sure the backend API is running on the expected port (e.g., http://localhost:5000)
 
-#### **Glaze**
+### .gitignore (sensitive files)
 
-```
-{
-  name: String,        // Unique name
-  hex: String,         // HEX color code
-  image: String        // Optional image URL or filename
-}
-```
-
-#### **Counter**
-
-Used to generate sequential order IDs.
+Make sure the following are excluded:
 
 ```
-{
-  _id: "order",
-  seq: 4
-}
+node_modules/
+.env
+dist/
+.vscode/
+.DS_Store
 ```
+### Next Steps
+Hook up the login to actual API JWT flow
 
-### **Available Endpoints**
+Implement protected routes and dashboard layout
 
-### Authentication
+Build order listing and new order forms
 
-| Method | Route           | Description          |
-| ------ | --------------- | -------------------- |
-| POST   | /api/auth/login | Login and obtain JWT |
-
-### Orders
-
-All routes require JWT.
-
-| Method | Route           | Description        |
-| ------ | --------------- | ------------------ |
-| GET    | /api/orders     | List all orders    |
-| GET    | /api/orders/:id | Get order by ID    |
-| POST   | /api/orders     | Create a new order |
-| PUT    | /api/orders/:id | Update an order    |
-| DELETE | /api/orders/:id | Delete an order    |
-
-### Users (admin only)
-
-| Method | Route      | Description     |
-| ------ | ---------- | --------------- |
-| POST   | /api/users | Create new user |
-
-### Glazes
-
-| Method | Route           | Description      | Access        |
-| ------ | --------------- | ---------------- | ------------- |
-| GET    | /api/glazes     | List all glazes  | Auth required |
-| GET    | /api/glazes/:id | Get glaze by ID  | Auth required |
-| POST   | /api/glazes     | Create new glaze | Admin only    |
-| PUT    | /api/glazes/:id | Update glaze     | Admin only    |
-| DELETE | /api/glazes/:id | Delete glaze     | Admin only    |
-
-### Business Logic Notes
-
-- When placing an order:
-
-  - The API looks up the customer by email
-
-  - If not found, creates the customer
-
-  - Generates a unique sequential orderID
-
-  - Associates customer ID with the order
-
-- Each product can be assigned to a specific shipping address (by index)
-
-- Each product has a workflowStage for visual status tracking
-
-- Glazes are separate documents, referenced by product
-
-### Order Workflow Colors
-
-| Stage           | Color  | Description                                       |
-| --------------- | ------ | ------------------------------------------------- |
-| exported        | Blue   | Order exported, ready for sculptor                |
-| sculptedPainted | Yellow | Sculpted and painted                              |
-| urgent          | Red    | Marked as urgent or with a specific delivery date |
-| painting        | Pink   | In painting process                               |
-| delivered       | Green  | Completed and delivered                           |
-
-## Next Steps
-
-- Implement frontend with React (PWA)
-
-- Add export to PDF or Excel
-
-- Enable file upload for images
-
-- Assign orders to roles (e.g., sculptor, painter)
+Add error handling and toast messages

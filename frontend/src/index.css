@@ -1,0 +1,52 @@
+@import "tailwindcss";
+
+/* 1. Reset and neutral base */
+:root {
+  font-family: 'Roboto', system-ui, sans-serif;
+  font-weight: 400;
+  line-height: 1.5;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* 2. Base light colors */
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  background-color: #ffffff;
+  color: #222222;
+}
+
+/* 3. Base dark colors (applied via .dark class on <html>) */
+.dark body {
+  background-color: #121212;
+  color: #f1f1f1;
+}
+
+/* 4. Neutral styles for anchor and button elements */
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+button {
+  font-family: inherit;
+  font-size: inherit;
+  border: none;
+  cursor: pointer;
+}
+
+/* 5. Remove background override – Tailwind handles it */
+/* Browser autofill overwrite bg-color */
+/* Apply autofill styles ONLY in dark mode */
+.dark input:-webkit-autofill,
+.dark input:-webkit-autofill:hover,
+.dark input:-webkit-autofill:focus,
+.dark input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 30px #1f2937 inset !important; /* bg-neutral-800 */
+  -webkit-text-fill-color: #f9fafb !important;              /* text-gray-100 */
+  transition: background-color 5000s ease-in-out 0s;
+}
