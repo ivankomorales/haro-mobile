@@ -1,10 +1,13 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowLeftIcon, ChevronLeftIcon } from '@heroicons/react/24/outline'
+import { ChevronLeftIcon } from '@heroicons/react/24/outline'
 import FloatingInput from '../components/FloatingInput'
+import { useCreateUser } from '../hooks/useCreateUser'
 
 export default function AddUser() {
   const navigate = useNavigate()
+  const { create } = useCreateUser(navigate)
+
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -12,12 +15,15 @@ export default function AddUser() {
     confirmPassword: '',
     role: 'employee',
   })
+
   const [error, setError] = useState(null)
   const [success, setSuccess] = useState(null)
   const [loading, setLoading] = useState(false)
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value })
+    setError(null)
+    setSuccess(null)
   }
 
   const handleSubmit = async (e) => {
@@ -26,37 +32,10 @@ export default function AddUser() {
     setError(null)
     setSuccess(null)
 
-    if (formData.password !== formData.confirmPassword) {
-      setError('Las contraseñas no coinciden')
-      setLoading(false)
-      return
-    }
-
     try {
-      const token = localStorage.getItem('token')
-      const res = await fetch('/api/users', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          name: formData.name,
-          email: formData.email,
-          password: formData.password,
-          role: formData.role,
-        }),
-      })
+      await create(formData) // ✅ this handles validation and logout
 
-      const data = await res.json()
-
-      if (!res.ok) {
-        const errorText =
-          data.message || JSON.stringify(data) || 'Error al crear usuario'
-        throw new Error(errorText)
-      }
-
-      setSuccess('¡Usuario creado exitosamente!')
+      setSuccess('User created successfully!')
       setFormData({
         name: '',
         email: '',
@@ -86,7 +65,6 @@ export default function AddUser() {
       </h1>
 
       <form onSubmit={handleSubmit} className="max-w-md mx-auto space-y-6">
-        {/* Nombre */}
         <FloatingInput
           label="Nombre"
           name="name"
@@ -125,7 +103,6 @@ export default function AddUser() {
           showToggle
         />
 
-        {/* Rol */}
         <div>
           <label className="block text-sm mb-1">Rol</label>
           <select

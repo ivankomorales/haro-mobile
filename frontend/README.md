@@ -3,17 +3,36 @@
 ## Folder structure
 ```
 frontend/
-├── src/
-│   ├── assets/
-
-│   ├── components/       ← Elementos reutilizables (ej. Navbar, TextField)
-│   ├── context/          ← AuthContext para guardar token y usuario
-│   ├── pages/            ← Pantallas principales (Login, Orders, NewOrder, etc.)
-│   ├── routes/           ← Definición de rutas protegidas y públicas
-│   ├── services/         ← Funciones para llamar al backend (auth, orders, etc.)
-
-│   ├── App.css
-│   ├── App.jsx
-│   ├── index.css
-│   └── main.jsx
+src/
+├── api/              # SDK-like wrappers around backend API endpoints
+│   ├── auth.js
+│   ├── glazes.js
+│   └── users.js
+├── components/       # Reusable UI components
+│   ├── BottomNav.jsx
+│   └── FloatingInput.jsx
+├── context/          # React context for global state (AuthContext)
+│   └── AuthContext.jsx
+├── hooks/            # Custom logic hooks
+│   ├── useCreateUser.js
+│   └── useDarkMode.js (not implemented yet)
+├── pages/            # Full-screen views or routes
+│   ├── AddProduct.jsx
+│   ├── AddUser.jsx
+│   ├── EditOrder.jsx
+│   ├── Home.jsx
+│   ├── Login.jsx
+│   ├── NewOrder.jsx
+│   ├── OrderConfirmation.jsx
+│   ├── OrderDetails.jsx
+│   └── Orders.jsx
+├── routes/           # Route guards and wrappers
+│   └── PrivateRoute.jsx
+├── services/         # Reserved for potential logic abstraction (currently unused)
+├── utils/            # Low-level utilities
+│   └── fetchWithAuth.js
+├── App.css           # Empty (can be deleted)
+├── App.jsx           # Main app layout and routes
+├── index.css         # Tailwind/global styles
+├── main.jsx          # React root and context setup
 ```
