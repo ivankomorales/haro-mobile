@@ -1,9 +1,55 @@
-# Developer Notes for Haro Mobile Frontend
+# Developer Notes for Haro Mobile
 
 This document is a technical reference for developers working on the Haro Mobile frontend. It explains the architecture, purpose of each directory, and the reasoning behind design decisions to ensure clarity, maintainability, and scalability.
 
 ### Project Structure Overview
+
 ```
+haro-mobile/backend
+│
+├── config/
+│   └── db.js                    # MongoDB connection setup
+│
+├── controllers/
+│   ├── auditController.js       # Handles fetching audit logs (admin-only)
+│   ├── authController.js        # Login, logout, password update
+│   ├── glazeController.js       # CRUD for glazes with audit logging
+│   ├── orderController.js       # Create, update, cancel orders
+│   └── userController.js        # User CRUD, soft delete, role updates
+│
+├── middleware/
+│   ├── auth.js                  # JWT verification, attaches user to req
+│   ├── checkRole.js             # Restricts access by role (admin/employee)
+│   └── verifyOwnershipOrAdmin.js # Protects resources by ownership or admin
+│
+├── models/
+│   ├── AuditLog.js              # Logs critical system events (with TTL index)
+│   ├── Counter.js               # For auto-increment order IDs (ORD-000X)
+│   ├── Customer.js              # Customer schema (linked to orders)
+│   ├── Glaze.js                 # Glaze data, soft deletable
+│   ├── Order.js                 # Main order schema with nested products
+│   └── User.js                  # User schema with hashed password + roles
+│
+├── routes/
+│   ├── auditRoutes.js           # /api/logs → Audit logs (admin only)
+│   ├── authRoutes.js            # /api/auth → Login, logout, password
+│   ├── glazeRoutes.js           # /api/glazes → CRUD for glazes
+│   ├── orderRoutes.js           # /api/orders → Order endpoints
+│   └── userRoutes.js            # /api/users → User management
+│
+├── utils/
+│   └── audit.js                 # logEvent helper for consistent logging
+│
+├── .env                         # Environment variables (gitignored)
+├── .gitignore                   # Ignore node_modules, env files, etc.
+├── app.js                       # Main Express app config and routes
+├── package.json                 # Project metadata and dependencies
+└── README.md                    # Project overview and setup instructions
+
+```
+
+```
+haro-mobile/backend
 src/
 ├── api/              # SDK-like wrappers around backend API endpoints
 │   ├── auth.js
@@ -43,7 +89,7 @@ src/
 
 ### File & Module Responsibilities
 
-**/api/*.js**
+**/api/\*.js**
 
 These are API abstraction files. Think of them as a mini SDK for your backend.
 
@@ -51,7 +97,7 @@ Keep logic clean: no navigation, no UI.
 
 Example: createUser(data) → returns promise from backend.
 
-**/components/*.jsx**
+**/components/\*.jsx**
 
 Pure UI components. No data fetching. Reusable across views.
 
@@ -67,7 +113,7 @@ Exposes: token, user, setToken(), etc.
 
 Used by PrivateRoute and auth-sensitive areas.
 
-**/hooks/*.js**
+**/hooks/\*.js**
 
 Encapsulate logic separate from UI.
 
@@ -75,7 +121,7 @@ Example: useCreateUser() abstracts form submission, validation and error handlin
 
 Future: one hook per logical action (useLogin, useDeleteUser, etc).
 
-**/pages/*.jsx**
+**/pages/\*.jsx**
 
 Screens for user interaction.
 
@@ -88,19 +134,23 @@ Examples: AddUser.jsx, Orders.jsx, Login.jsx.
 **/routes/PrivateRoute.jsx**
 
 Protects routes from unauthenticated access.
+
 ```
 if (token) return children;
 else return <Navigate to="/" />;
 ```
+
 **/routes/PublicRoutes.jsx and /routes/PrivateRoutes.jsx**
 
 We split route declarations into two arrays: publicRoutes and privateRoutes.
 This helps us map them separately and wrap private ones with PrivateRoute.
 
 Example of mapped route:
+
 ```
 <Route key={path} path={path} element={<PrivateRoute>{element}</PrivateRoute>} />
 ```
+
 Why both key={path} and path={path}?
 
 - key={path} is for React, to uniquely identify each Route in the list.
@@ -121,11 +171,12 @@ Wrapper over fetch() to:
 
 - Parse JSON and throw consistent errors.
 
-- Used across all api/*.js files.
+- Used across all api/\*.js files.
 
 **main.jsx explained**
 
 Responsible for setting up the app root, router and context provider.
+
 ```
 <StrictMode>
   <BrowserRouter>
@@ -135,6 +186,7 @@ Responsible for setting up the app root, router and context provider.
   </BrowserRouter>
 </StrictMode>
 ```
+
 This allows the entire app to:
 
 - Use useNavigate() from React Router
@@ -142,7 +194,6 @@ This allows the entire app to:
 - Access useAuth() from context
 
 - Be wrapped in development warnings from React
-
 
 **Best Practices Summary**
 
@@ -167,3 +218,83 @@ Consider deleting /services/ if unused
 This file should remain as README_DEV.md and be excluded from production builds via .gitignore or similar.
 
 Stay sane. Comment with intention. Name things clearly. You're building a professional system.
+
+### 2025-07-19
+
+- Added verifyOwnershipOrAdmin middleware to protect order access.
+- Modified Order model: added `userId` field (ObjectId ref to User).
+- Updated createOrder controller to include req.user.id as userId.
+- Updated orderRoutes to use verifyOwnershipOrAdmin on GET/PUT routes.
+
+### 2025-07-27
+
+🔒 Security and validation
+
+- JWT middleware (verifyToken) now checks if the user still exists before authorizing.
+
+- Soft delete logic (isActive: false) implemented in User and Glaze models.
+
+- Password updates are now done through a single secure endpoint (updatePassword), with contextual logic: regular users can only change their own password, while admins can reset anyone’s.
+
+- express-validator integrated in createUser for robust field validation.
+
+🧾 Audit system (AuditLog)
+
+- New AuditLog model tracks critical actions in the system:
+  - Successful and failed logins.
+
+  - Password updates and resets.
+
+  - Logouts.
+
+  - Creation, update, and soft deletion of Users, Orders, and Glazes.
+
+- Each log includes:
+  - event, objectId, performedBy, ipAddress, description, and timestamp.
+
+🛡️ Controller Updates
+
+- authController
+  - login: logs both success and failure.
+
+  - logout: logs event.
+
+  - updatePassword: added secure logic and full logging.
+
+- userController
+  - createUser: restricted to admins, hashes password, logs event.
+
+  - deleteUser: soft delete with audit trail.
+
+  - updateUser: tracks and logs changes to name, email, and role.
+
+  - getUsers / getUserById: basic reads.
+
+- orderController
+  - getOrders: supports filtering by status.
+
+  - createOrder, updateOrder, cancelOrder: updated and audited.
+
+- glazeController
+  - Added deactivateGlaze (soft delete).
+
+  - Audited createGlaze, updateGlaze.
+
+📌 Next Steps
+
+- ✅ Implement centralized error handler (errorHandler.js)
+
+- 🔜 Create UI pages to:
+  - Create and edit Orders, Glazes, Users
+
+  - Reactivate or view inactive records
+
+- 🔜 Improve MongoDB auth and role-based protections (basic done)
+
+- 🔜 Improve express-validator usage across forms
+
+- 🔜 Encrypt other sensitive data (email/phone if needed)
+
+- 🔜 Prepare deployment: backend (Render/Railway), frontend (Vercel)
+
+- 🧾 Document system and finalize school delivery

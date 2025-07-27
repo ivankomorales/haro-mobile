@@ -5,7 +5,10 @@ const Customer = require("../models/Customer");
 // CREATE
 const createOrder = async (req, res) => {
   try {
-    // Step 1: Get customer info
+    // Step 1: Get userId, who is creating the order
+    const userId = req.user.id;
+
+    // Step 2: Get customer info
     const customerData = req.body.customer;
     if (!customerData || !customerData.email) {
       return res
@@ -13,7 +16,7 @@ const createOrder = async (req, res) => {
         .json({ error: "Customer data with valid email is required." });
     }
 
-    // Step 2: Search if customer already exists
+    // Step 3: Search if customer already exists
     let customer = await Customer.findOne({
       email: customerData.email,
     });
@@ -24,7 +27,7 @@ const createOrder = async (req, res) => {
       await customer.save();
     }
 
-    // Step 3: Generate Folio (ORD-000X)
+    // Step 4: Generate Folio (ORD-000X)
     const counter = await Counter.findByIdAndUpdate(
       { _id: "order" },
       { $inc: { seq: 1 } },
@@ -32,16 +35,26 @@ const createOrder = async (req, res) => {
     );
     const orderID = `ORD-${String(counter.seq).padStart(4, "0")}`;
 
-    // Step 4: Create order with customer reference
+    // Step 5: Create order with customer reference
     const { customer: _, ...orderData } = req.body;
 
     const newOrder = new Order({
       ...orderData,
+      userId,
       customer: customer._id,
       orderID,
     });
 
     const saved = await newOrder.save();
+
+    // Log Event
+    await logEvent({
+      event: "order_created",
+      objectId,
+      description: `Order ${orderID} created`,
+      req,
+    });
+
     res.status(201).json(saved);
   } catch (err) {
     res.status(500).json({
@@ -49,17 +62,22 @@ const createOrder = async (req, res) => {
       details: err.message,
     });
   }
-};
+}; // end createOrder
 
-// READ all
+// READ all (w/ filters)
 const getOrders = async (req, res) => {
   try {
-    const orders = await Order.find().sort({ createdAt: -1 });
+    const filter = {};
+    if (req.query.status) {
+      filter.status = req.query.status;
+    }
+
+    const orders = await Order.find(filter).sort({ createdAt: -1 });
     res.json(orders);
   } catch (err) {
     res.status(500).json({ error: "Error retrieving orders" });
   }
-};
+}; // end getOrders
 
 // READ one
 const getOrderById = async (req, res) => {
@@ -70,36 +88,64 @@ const getOrderById = async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: "Error finding order" });
   }
-};
+}; // end getOrderById
 
 // UPDATE
 const updateOrder = async (req, res) => {
   try {
-    const updated = await Order.findByIdAndUpdate(req.params.id, req.body, {
-      new: true,
-    });
-    if (!updated) return res.status(404).json({ error: "Order not found" });
-    res.json(updated);
+    const order = await Order.findById(req.params.id);
+    if (!order) return res.status(404).json({ error: "Order not found" });
+
+    const originalStatus = order.status;
+    Object.assign(order, req.body);
+    await order.save();
+
+    const changes = [];
+    if (req.body.status && req.body.status !== originalStatus) {
+      changes.push(`status: ${originalStatus} → ${req.body.status}`);
+    }
+
+    if (changes.length > 0) {
+      await logEvent({
+        event: "order_updated",
+        objectId: order._id,
+        description: `Order ${order.orderID} updated (${changes.join(", ")})`,
+        req,
+      });
+    }
+
+    res.json(order);
   } catch (err) {
     res.status(500).json({ error: "Error updating order" });
   }
-};
+}; // end updateOrder
 
-// DELETE
-const deleteOrder = async (req, res) => {
+// CANCEL (Soft Delete)
+const cancelOrder = async (req, res) => {
   try {
-    const deleted = await Order.findByIdAndDelete(req.params.id);
-    if (!deleted) return res.status(404).json({ error: "Order not found" });
-    res.json({ message: "Order deleted" });
+    const order = await Order.findById(req.params.id);
+    if (!order) return res.status(404).json({ error: "Order not found" });
+
+    order.status = "Cancelled";
+    await order.save();
+
+    await logEvent({
+      event: "order_cancelled",
+      objectId: order._id,
+      description: `Order ${order.orderID} cancelled`,
+      req,
+    });
+
+    res.json({ message: "Order cancelled" });
   } catch (err) {
-    res.status(500).json({ error: "Error deleting order" });
+    res.status(500).json({ error: "Error cancelling order" });
   }
-};
+}; // end cancelOrder
 
 module.exports = {
   createOrder,
   getOrders,
   getOrderById,
   updateOrder,
-  deleteOrder,
+  cancelOrder,
 };

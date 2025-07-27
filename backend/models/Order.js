@@ -32,11 +32,19 @@ const ProductItemSchema = new mongoose.Schema({
 const OrderSchema = new mongoose.Schema(
   {
     orderID: { type: String, unique: true, required: true },
+
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
+
     customer: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Customer",
       required: true,
     },
+
     status: {
       type: String,
       enum: ["Pending", "In Progress", "Completed", "Cancelled"],

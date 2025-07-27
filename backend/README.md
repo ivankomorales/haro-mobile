@@ -53,14 +53,45 @@ This API allows for creating, retrieving, updating, and deleting customer orders
 ```
 haro-mobile/
 │
-├── config/         # DB connection setup
-├── controllers/    # Business logic
-├── middleware/     # JWT auth, role protection
-├── models/         # Mongoose schemas
-├── routes/         # API endpoints
-├── .env            # Env vars (excluded by .gitignore)
-├── app.js          # Main server entry point
-├── package.json
+├── config/
+│   └── db.js                    # MongoDB connection setup
+│
+├── controllers/
+│   ├── auditController.js       # Handles fetching audit logs (admin-only)
+│   ├── authController.js        # Login, logout, password update
+│   ├── glazeController.js       # CRUD for glazes with audit logging
+│   ├── orderController.js       # Create, update, cancel orders
+│   └── userController.js        # User CRUD, soft delete, role updates
+│
+├── middleware/
+│   ├── auth.js                  # JWT verification, attaches user to req
+│   ├── checkRole.js             # Restricts access by role (admin/employee)
+│   └── verifyOwnershipOrAdmin.js # Protects resources by ownership or admin
+│
+├── models/
+│   ├── AuditLog.js              # Logs critical system events (with TTL index)
+│   ├── Counter.js               # For auto-increment order IDs (ORD-000X)
+│   ├── Customer.js              # Customer schema (linked to orders)
+│   ├── Glaze.js                 # Glaze data, soft deletable
+│   ├── Order.js                 # Main order schema with nested products
+│   └── User.js                  # User schema with hashed password + roles
+│
+├── routes/
+│   ├── auditRoutes.js           # /api/logs → Audit logs (admin only)
+│   ├── authRoutes.js            # /api/auth → Login, logout, password
+│   ├── glazeRoutes.js           # /api/glazes → CRUD for glazes
+│   ├── orderRoutes.js           # /api/orders → Order endpoints
+│   └── userRoutes.js            # /api/users → User management
+│
+├── utils/
+│   └── audit.js                 # logEvent helper for consistent logging
+│
+├── .env                         # Environment variables (gitignored)
+├── .gitignore                   # Ignore node_modules, env files, etc.
+├── app.js                       # Main Express app config and routes
+├── package.json                 # Project metadata and dependencies
+└── README.md                    # Project overview and setup instructions
+
 ```
 
 ---

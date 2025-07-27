@@ -48,11 +48,11 @@ export const createGlaze = (glazeData, navigate) => {
  * @param {function|null} navigate
  * @returns {Promise<any>}
  */
-export const deleteGlaze = (id, navigate) => {
+export const deactivateGlaze = (id, navigate) => {
   return fetchWithAuth(
-    `/api/glazes/${id}`,
+    `/api/glazes/${id}/deactivate`,
     {
-      method: 'DELETE',
+      method: 'PATCH',
     },
     navigate
   )

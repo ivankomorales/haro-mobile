@@ -37,6 +37,7 @@ export default function FloatingInput({
       {type === 'password' && (
         <button
           type="button"
+          tabIndex={-1}
           onClick={() => setShowPassword((prev) => !prev)}
           className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-300"
         >
