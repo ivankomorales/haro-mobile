@@ -1,14 +1,23 @@
-// src/routes/PrivateRoutesWrapper.jsx
 import { Route } from 'react-router-dom'
-import PrivateRoute from './PrivateRoute'
 import { privateRoutes } from './privateRoutes'
+import PrivateRoute from './PrivateRoute'
+import ResponsiveLayout from '../layouts/ResponsiveLayout'
+import DashboardLayout from '../layouts/DashboardLayout'
+import { Outlet } from 'react-router-dom'
 
 export default function PrivateRoutes() {
-  return privateRoutes.map(({ path, element }) => (
+  return [
     <Route
-      key={path}
-      path={path}
-      element={<PrivateRoute>{element}</PrivateRoute>}
-    />
-  ))
+      key="layout"
+      element={
+        <PrivateRoute>
+          <DashboardLayout />
+        </PrivateRoute>
+      }
+    >
+      {privateRoutes.map(({ path, element }) => (
+        <Route key={path} path={path} element={element} />
+      ))}
+    </Route>,
+  ]
 }

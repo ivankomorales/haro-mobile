@@ -25,6 +25,7 @@ export const useCreateUser = (navigate) => {
     try {
       await createUser({
         name: formData.name,
+        lastName: formData.lastName,
         email: formData.email,
         password: formData.password,
         role: formData.role,

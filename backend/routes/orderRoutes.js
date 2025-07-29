@@ -11,13 +11,23 @@ const {
 
 const { verifyToken, requireAdmin } = require("../middleware/auth");
 const verifyOwnershipOrAdmin = require("../middleware/verifyOwnershipOrAdmin");
+const {
+  validateOrder,
+  handleValidationErrors,
+} = require("../utils/validators");
 
 router.use(verifyToken); // Protect all routes below
 
-router.get("/", getOrders); // anyone logged in can fetch list (optional: filter by user in controller)
+router.get("/", getOrders);
 router.get("/:id", verifyOwnershipOrAdmin, getOrderById);
-router.post("/", createOrder); // will use req.user.id as owner inside controller
-router.put("/:id", verifyOwnershipOrAdmin, updateOrder);
-router.delete("/:id", requireAdmin, cancelOrder); //Admin only
+router.post("/", validateOrder, handleValidationErrors, createOrder);
+router.put(
+  "/:id",
+  verifyOwnershipOrAdmin,
+  validateOrder,
+  handleValidationErrors,
+  updateOrder
+);
+router.delete("/:id", requireAdmin, cancelOrder);
 
 module.exports = router;

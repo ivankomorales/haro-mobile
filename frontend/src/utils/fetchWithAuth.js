@@ -24,13 +24,21 @@ export default async function fetchWithAuth(url, options = {}) {
       headers,
     })
 
-    const data = await res.json()
+    console.log('🔎 Status:', res.status, url)
 
-    // Handle response
+    let data
+    try {
+      data = await res.json()
+    } catch (err) {
+      console.warn('⚠️ Could not parse JSON for', url)
+      data = null
+    }
+
     if (!res.ok) {
-      const errorMsg = data?.message || JSON.stringify(data) || 'Request failed'
+      const errorMsg = data?.message || res.statusText || 'Request failed'
       throw new Error(errorMsg)
     }
+
     return data
   } catch (err) {
     console.error('fetchWithAuth error:', err)

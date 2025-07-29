@@ -1,6 +1,6 @@
 const AuditLog = require("../models/AuditLog");
 
-const getAuditLogs = async (req, res) => {
+const getAuditLogs = async (req, res, next) => {
   try {
     const logs = await AuditLog.find()
       .sort({ timestamp: -1 })
@@ -10,7 +10,8 @@ const getAuditLogs = async (req, res) => {
 
     res.json(logs);
   } catch (err) {
-    res.status(500).json({ error: "Error retrieving audit logs" });
+    err.message = `Error retrieving audit logs: ${err.message}`;
+    next(err);
   }
 };
 

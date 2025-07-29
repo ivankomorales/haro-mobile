@@ -25,11 +25,32 @@ export default function FloatingInput({
         value={value}
         onChange={onChange}
         placeholder=" "
-        className="peer w-full p-3 pt-5 text-sm bg-white dark:bg-neutral-700 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+        className="
+          peer 
+          w-full 
+          p-2 pt-3.5 
+          text-sm text-gray-900 dark:text-white 
+          bg-white dark:bg-neutral-700 
+          border border-gray-300 dark:border-gray-600 
+          rounded-lg 
+          focus:outline-none focus:ring-2 focus:ring-blue-500
+        "
       />
       <label
         htmlFor={name}
-        className="absolute text-sm text-gray-500 dark:text-gray-400 duration-200 transform -translate-y-2.5 scale-75 top-2 left-3 z-0 origin-[0] peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-2.5 peer-focus:scale-75 peer-focus:-translate-y-2.5 peer-focus:text-blue-600 dark:peer-focus:text-blue-400"
+        className="
+          absolute 
+          top-1 left-3 z-0 
+          text-sm text-gray-500 dark:text-gray-400 
+          transform origin-[0] scale-75 -translate-y-1.5 
+          duration-200 
+          peer-placeholder-shown:scale-100 
+          peer-placeholder-shown:translate-y-2 
+          peer-focus:scale-75 
+          peer-focus:-translate-y-1.5 
+          peer-focus:text-blue-600 
+          dark:peer-focus:text-blue-400
+        "
       >
         {label}
       </label>
@@ -39,7 +60,13 @@ export default function FloatingInput({
           type="button"
           tabIndex={-1}
           onClick={() => setShowPassword((prev) => !prev)}
-          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-300"
+          className="
+            absolute 
+            top-1/2 right-5 
+            text-gray-500 
+            dark:text-gray-300
+            -translate-y-1/2
+          "
         >
           {showPassword ? (
             <EyeSlashIcon className="h-5 w-5" />

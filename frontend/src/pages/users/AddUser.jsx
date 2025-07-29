@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ChevronLeftIcon } from '@heroicons/react/24/outline'
-import FloatingInput from '../components/FloatingInput'
-import { useCreateUser } from '../hooks/useCreateUser'
+import FloatingInput from '../../components/FloatingInput'
+import { useCreateUser } from '../../hooks/useCreateUser'
 
 export default function AddUser() {
   const navigate = useNavigate()
@@ -10,6 +10,7 @@ export default function AddUser() {
 
   const [formData, setFormData] = useState({
     name: '',
+    lastName: '',
     email: '',
     password: '',
     confirmPassword: '',
@@ -38,6 +39,7 @@ export default function AddUser() {
       setSuccess('User created successfully!')
       setFormData({
         name: '',
+        lastName: '',
         email: '',
         password: '',
         confirmPassword: '',
@@ -54,7 +56,7 @@ export default function AddUser() {
     <div className="pt-10 px-4 pb-20 min-h-screen bg-white dark:bg-neutral-900 text-gray-800 dark:text-gray-100 font-sans">
       <button
         onClick={() => navigate(-1)}
-        className="mb-4 flex items-center text-sm text-blue-600 hover:underline"
+        className="mb-4 flex items-center text-sm text-blue-600 dark:text-blue-400 hover:underline "
       >
         <ChevronLeftIcon className="h-5 w-5 mr-1" />
         Volver
@@ -69,6 +71,14 @@ export default function AddUser() {
           label="Nombre"
           name="name"
           value={formData.name}
+          onChange={handleChange}
+          required
+        />
+
+        <FloatingInput
+          label="Apellido"
+          name="lastName"
+          value={formData.lastName}
           onChange={handleChange}
           required
         />

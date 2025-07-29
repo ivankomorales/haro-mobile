@@ -49,7 +49,7 @@ haro-mobile/backend
 ```
 
 ```
-haro-mobile/backend
+haro-mobile/frontend
 src/
 ├── api/              # SDK-like wrappers around backend API endpoints
 │   ├── auth.js
@@ -298,3 +298,59 @@ Stay sane. Comment with intention. Name things clearly. You're building a profes
 - 🔜 Prepare deployment: backend (Render/Railway), frontend (Vercel)
 
 - 🧾 Document system and finalize school delivery
+
+### 28/7/2025
+
+Progress Summary (Last 2 Days)
+🧾 Order Creation Flow Finalized
+
+- Completed the multi-step process:
+  - NewOrder.jsx → AddProduct.jsx → OrderConfirmation.jsx
+
+- Products can now be added dynamically with support for:
+  - Glazes (interior/exterior, pulled from DB)
+
+  - Decorations (gold, names, drawings)
+
+  - Image upload with previews
+
+- Final confirmation sends the full order to the backend with validations.
+
+📊 Home Dashboard Setup
+
+- Created Home.jsx screen to display:
+  - Total count of pending orders (including New, Pending, In Progress)
+
+  - List of 10 most recent orders
+
+  - Responsive layout with floating “New Order” button for desktop only
+
+🔗 Connected to Backend API
+
+- Integrated getRecentOrders() and getPendingCount() from api/orders.js
+
+- Verified proper usage of fetchWithAuth with JWT headers
+
+- Debugged broken responses due to double .json() parsing — fixed
+
+🧠 Logical Enhancements
+
+- Defined pending = ["New", "Pending", "In Progress"] as backend logic
+
+- Added support for countOnly=true param in GET /orders for fast DB counting
+
+- Implemented sorting + limit in /orders endpoint for recent fetch
+
+🎨 Tailwind Code Refactor
+
+- Cleaned up repeated classNames for better readability
+
+- Improved layout consistency across dark/light mode
+
+- Adjusted structure to support responsive rendering and grid alignment
+
+📱 UI/UX Enhancements
+
+- Fixed route-based hiding of AppBar/BottomNav with useHideBars()
+
+- Added placeholder logic for dynamic “last updated” timestamp on Home

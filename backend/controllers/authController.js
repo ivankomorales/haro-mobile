@@ -1,9 +1,11 @@
 const User = require("../models/User");
 const { logEvent } = require("../utils/audit");
+const ApiError = require("../utils/ApiError");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 
-const login = async (req, res) => {
+// Login
+const login = async (req, res, next) => {
   const { email, password } = req.body;
 
   try {
@@ -14,7 +16,7 @@ const login = async (req, res) => {
         description: `Login failed for email: ${email} (user not found)`,
         req,
       });
-      return res.status(400).json({ error: "User does not exist" });
+      return next(new ApiError("User does not exist", 400));
     }
 
     const isValid = await bcrypt.compare(password, user.password);
@@ -25,7 +27,7 @@ const login = async (req, res) => {
         description: `Incorrect password attempt for ${email}`,
         req,
       });
-      return res.status(401).json({ error: "Incorrect password" });
+      return next(new ApiError("Incorrect password", 401));
     }
     const token = jwt.sign(
       { id: user._id, role: user.role },
@@ -42,12 +44,12 @@ const login = async (req, res) => {
 
     res.json({ token, user: { name: user.name, role: user.role } });
   } catch (err) {
-    res.status(500).json({ error: "Login error" });
+    next(err);
   }
 }; //end login
 
 // Logout
-const logout = async (req, res) => {
+const logout = async (req, res, next) => {
   try {
     await logEvent({
       event: "logout",
@@ -58,31 +60,28 @@ const logout = async (req, res) => {
 
     res.json({ message: "User logged out" });
   } catch (err) {
-    res.status(500).json({ error: "Logout error" });
+    next(err);
   }
 }; // end logout
 
 // Update Password
-const updatePassword = async (req, res) => {
+const updatePassword = async (req, res, next) => {
   try {
     const targetUserId = req.params.id;
     const { newPassword, currentPassword } = req.body;
 
     if (!newPassword || newPassword.length < 6) {
-      return res
-        .status(400)
-        .json({ error: "New password too short (min 6 chars)" });
+      return next(new ApiError("New password too short (min 6 chars)", 400));
     }
 
     if (!currentPassword) {
-      return res
-        .status(400)
-        .json({ error: "Current password required for verification" });
+      return next(
+        new ApiError("Current password required for verification", 400)
+      );
     }
 
     const targetUser = await User.findById(targetUserId);
-    if (!targetUser)
-      return res.status(404).json({ error: "Target user not found" });
+    if (!targetUser) return next(new ApiError("Target user not found", 404));
 
     const actingUser = req.user; // comes from verifyToken
 
@@ -91,9 +90,7 @@ const updatePassword = async (req, res) => {
     const isAdmin = actingUser.role === "admin";
 
     if (!isSelf && !isAdmin) {
-      return res
-        .status(403)
-        .json({ error: "Not authorized to change this password" });
+      return next(new ApiError("Not authorized to change this password", 403));
     }
 
     // Validate password wether admin or user is performing action
@@ -102,7 +99,7 @@ const updatePassword = async (req, res) => {
       actingUser.password
     );
     if (!validPassword) {
-      return res.status(401).json({ error: "Incorrect password" });
+      return next(new ApiError("Incorrect password", 401));
     }
 
     // Change password
@@ -122,8 +119,7 @@ const updatePassword = async (req, res) => {
 
     res.json({ message: "Password updated successfully" });
   } catch (err) {
-    console.error("updatePassword error:", err.message);
-    res.status(500).json({ error: "Server error" });
+    next(err);
   }
 }; // end updatePassword
 

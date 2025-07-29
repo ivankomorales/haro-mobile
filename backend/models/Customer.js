@@ -3,12 +3,18 @@ const mongoose = require("mongoose");
 const CustomerSchema = new mongoose.Schema(
   {
     name: { type: String, required: true },
+    lastName: { type: String },
     phone: String,
     email: String,
-    instagram: String,
+    socialMedia: {
+      instagram: String,
+      facebook: String, // opcional, en blanco
+      tiktok: String, // opcional
+    },
     address: String,
     city: String,
     zip: String,
+    notes: { type: String },
   },
   { timestamps: true }
 );

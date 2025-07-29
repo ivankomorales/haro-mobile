@@ -4,6 +4,7 @@ if (!process.env.JWT_SECRET) {
   process.exit(1);
 }
 
+const errorHandler = require("./middleware/errorHandler");
 const express = require("express");
 const cors = require("cors");
 const helmet = require("helmet");
@@ -38,8 +39,23 @@ app.use("/api/auth", authRoutes);
 const glazeRoutes = require("./routes/glazeRoutes");
 app.use("/api/glazes", glazeRoutes);
 
+const customerRoutes = require("./routes/customerRoutes");
+app.use("/api/customers", customerRoutes);
+
+// 🛑 Catch all unknown routes
+app.use((req, res, next) => {
+  const error = new Error(`Not Found - ${req.originalUrl}`);
+  error.statusCode = 404;
+  next(error);
+});
+
+// 🧯 Global Error Handler
+app.use(errorHandler);
+
 // Server
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
+
+module.exports = app;

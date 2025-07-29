@@ -1,33 +1,19 @@
 const Order = require("../models/Order");
 const Counter = require("../models/Counter");
-const Customer = require("../models/Customer");
+const { findOrCreateCustomer } = require("./customerController");
+const ApiError = require("../utils/ApiError");
+const { logEvent } = require("../utils/audit");
 
 // CREATE
-const createOrder = async (req, res) => {
+const createOrder = async (req, res, next) => {
   try {
     // Step 1: Get userId, who is creating the order
     const userId = req.user.id;
 
-    // Step 2: Get customer info
-    const customerData = req.body.customer;
-    if (!customerData || !customerData.email) {
-      return res
-        .status(400)
-        .json({ error: "Customer data with valid email is required." });
-    }
+    // Step 2: Get or create customer
+    const customer = await findOrCreateCustomer(req.body.customer, req);
 
-    // Step 3: Search if customer already exists
-    let customer = await Customer.findOne({
-      email: customerData.email,
-    });
-
-    if (!customer) {
-      // Create new customer
-      customer = new Customer(customerData);
-      await customer.save();
-    }
-
-    // Step 4: Generate Folio (ORD-000X)
+    // Step 3: Generate Folio (ORD-000X)
     const counter = await Counter.findByIdAndUpdate(
       { _id: "order" },
       { $inc: { seq: 1 } },
@@ -35,8 +21,21 @@ const createOrder = async (req, res) => {
     );
     const orderID = `ORD-${String(counter.seq).padStart(4, "0")}`;
 
-    // Step 5: Create order with customer reference
-    const { customer: _, ...orderData } = req.body;
+    // Step 4: Create order with customer reference
+    const allowedFields = [
+      "status",
+      "deposit",
+      "notes",
+      "products",
+      "shipping",
+    ];
+    const orderData = {};
+
+    for (const field of allowedFields) {
+      if (req.body[field] !== undefined) {
+        orderData[field] = req.body[field];
+      }
+    }
 
     const newOrder = new Order({
       ...orderData,
@@ -44,60 +43,117 @@ const createOrder = async (req, res) => {
       customer: customer._id,
       orderID,
     });
-
     const saved = await newOrder.save();
 
     // Log Event
     await logEvent({
       event: "order_created",
-      objectId,
+      objectId: saved._id,
       description: `Order ${orderID} created`,
       req,
     });
 
     res.status(201).json(saved);
   } catch (err) {
-    res.status(500).json({
-      error: "Error creating order",
-      details: err.message,
-    });
+    console.error("❌ Error creating order:");
+    console.error(err); // Esto muestra el objeto completo
+
+    if (err.name === "ValidationError") {
+      console.error("🧩 Mongoose ValidationError details:");
+      for (const field in err.errors) {
+        console.error(`→ ${field}: ${err.errors[field].message}`);
+      }
+    }
+
+    const message = err.message || "Unknown error";
+    next(new ApiError(message, 500));
   }
 }; // end createOrder
 
-// READ all (w/ filters)
-const getOrders = async (req, res) => {
+// READ all (with optional status filter)
+const getOrders = async (req, res, next) => {
   try {
-    const filter = {};
-    if (req.query.status) {
-      filter.status = req.query.status;
+    const status = req.query.status?.toLowerCase();
+    let filter = {};
+
+    // Filter by Status (Pending = all New. Pending and In Progress)
+    // i.e. all Orders that are not completed or cancelled
+    if (status === "pending") {
+      filter.status = { $in: ["New", "Pending", "In Progress"] };
+    } else if (status) {
+      // Capitalize first letter to match DB (if saved like "New")
+      const normalized = status.charAt(0).toUpperCase() + status.slice(1);
+      filter.status = normalized;
     }
 
-    const orders = await Order.find(filter).sort({ createdAt: -1 });
+    //Filter by Date
+    const createdAtFilter = {};
+    if (req.query.from) {
+      createdAtFilter.$gte = new Date(req.query.from);
+    }
+    if (req.query.to) {
+      const toDate = new Date(req.query.to);
+      toDate.setDate(toDate.getDate() + 1);
+      createdAtFilter.$lt = toDate;
+    }
+    if (Object.keys(createdAtFilter).length > 0) {
+      filter.createdAt = createdAtFilter;
+    }
+
+    // Return count only if requested
+    if (req.query.countOnly === "true") {
+      const count = await Order.countDocuments(filter);
+      return res.json({ count });
+    }
+
+    const sortOrder = req.query.sort === "asc" ? 1 : -1;
+    const limit = parseInt(req.query.limit) || 0;
+
+    const orders = await Order.find(filter)
+      .populate("customer")
+      .sort({ createdAt: sortOrder })
+      .limit(limit);
     res.json(orders);
   } catch (err) {
-    res.status(500).json({ error: "Error retrieving orders" });
+    next(new ApiError("Error retrieving orders", 500));
   }
 }; // end getOrders
 
 // READ one
 const getOrderById = async (req, res) => {
   try {
-    const order = await Order.findById(req.params.id);
-    if (!order) return res.status(404).json({ error: "Order not found" });
+    const order = await Order.findById(req.params.id).populate("customer");
+    if (!order) {
+      return next(new ApiError("Order not found", 404));
+    }
+
     res.json(order);
   } catch (err) {
-    res.status(500).json({ error: "Error finding order" });
+    next(new ApiError("Error retrieving order", 500));
   }
 }; // end getOrderById
 
 // UPDATE
-const updateOrder = async (req, res) => {
+const updateOrder = async (req, res, next) => {
   try {
     const order = await Order.findById(req.params.id);
-    if (!order) return res.status(404).json({ error: "Order not found" });
+    if (!order) {
+      return next(new ApiError("Order not found", 404));
+    }
 
     const originalStatus = order.status;
-    Object.assign(order, req.body);
+    const allowedFields = [
+      "status",
+      "deposit",
+      "notes",
+      "products",
+      "shipping",
+    ];
+    for (const key of allowedFields) {
+      if (req.body[key] !== undefined) {
+        order[key] = req.body[key];
+      }
+    }
     await order.save();
 
     const changes = [];
@@ -105,6 +161,7 @@ const updateOrder = async (req, res) => {
       changes.push(`status: ${originalStatus} → ${req.body.status}`);
     }
 
+    // Log Event
     if (changes.length > 0) {
       await logEvent({
         event: "order_updated",
@@ -116,19 +173,22 @@ const updateOrder = async (req, res) => {
 
     res.json(order);
   } catch (err) {
-    res.status(500).json({ error: "Error updating order" });
+    next(new ApiError("Error updating order", 500));
   }
 }; // end updateOrder
 
 // CANCEL (Soft Delete)
-const cancelOrder = async (req, res) => {
+const cancelOrder = async (req, res, next) => {
   try {
     const order = await Order.findById(req.params.id);
-    if (!order) return res.status(404).json({ error: "Order not found" });
+    if (!order) {
+      return next(new ApiError("Order not found", 404));
+    }
 
     order.status = "Cancelled";
     await order.save();
 
+    // Log Event
     await logEvent({
       event: "order_cancelled",
       objectId: order._id,
@@ -138,7 +198,7 @@ const cancelOrder = async (req, res) => {
 
     res.json({ message: "Order cancelled" });
   } catch (err) {
-    res.status(500).json({ error: "Error cancelling order" });
+    next(new ApiError("Error cancelling order", 500));
   }
 }; // end cancelOrder
 

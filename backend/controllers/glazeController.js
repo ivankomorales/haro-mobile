@@ -1,28 +1,25 @@
 const Glaze = require("../models/Glaze");
+const ApiError = require("../utils/ApiError");
 const { logEvent } = require("../utils/audit");
-const { validationResult } = require("express-validator");
 
 // Create
-const createGlaze = async (req, res) => {
+const createGlaze = async (req, res, next) => {
   const { name, colorHex, image } = req.body;
 
   if (!name || !colorHex) {
-    return res
-      .status(400)
-      .json({ error: "Name and colorHex are required fields" });
+    return next(new ApiError("Name and colorHex are required fields", 400));
   }
 
   try {
     const existing = await Glaze.findOne({ name });
     if (existing) {
-      return res
-        .status(400)
-        .json({ error: "Glaze with that name already exists" });
+      return next(new ApiError("Glaze with that name already exists", 400));
     }
 
     const glaze = new Glaze({ name, colorHex, image });
     const saved = await glaze.save();
 
+    // Log Event
     await logEvent({
       event: "glaze_created",
       objectId: saved._id,
@@ -32,42 +29,42 @@ const createGlaze = async (req, res) => {
 
     res.status(201).json(saved);
   } catch (err) {
-    res
-      .status(500)
-      .json({ error: "Error creating glaze", details: err.message });
+    next(new ApiError("Failed to create glaze", 500));
   }
 }; // end createGlaze
 
 // Read one
-const getGlazeById = async (req, res) => {
+const getGlazeById = async (req, res, next) => {
   try {
     const glaze = await Glaze.findById(req.params.id);
-    if (!glaze) return res.status(404).json({ error: "Glaze not found" });
+    if (!glaze) {
+      return next(new ApiError("Glaze not found", 404));
+    }
     res.json(glaze);
   } catch (err) {
-    res.status(500).json({ error: "Error retrieving glaze" });
+    next(new ApiError("Failed to retrieve glaze", 500));
   }
 }; // end getGlazeById
 
 // Read all (Including inactive filter)
-const getGlazes = async (req, res) => {
+const getGlazes = async (req, res, next) => {
   try {
     const includeInactive = req.query.includeInactive === "true";
     const filter = includeInactive ? {} : { isActive: true };
-
     const glazes = await Glaze.find(filter).sort("name");
     res.json(glazes);
   } catch (err) {
-    res.status(500).json({ error: "Error fetching glazes" });
+    next(new ApiError("Failed to fetch glazes", 500));
   }
 }; // end getGlazes
 
 // Update
-const updateGlaze = async (req, res) => {
+const updateGlaze = async (req, res, next) => {
   try {
     const glaze = await Glaze.findById(req.params.id);
-    if (!glaze) return res.status(404).json({ error: "Glaze not found" });
-
+    if (!glaze) {
+      return next(new ApiError("Glaze not found", 404));
+    }
     const changes = [];
 
     if (req.body.name && req.body.name !== glaze.name) {
@@ -87,6 +84,7 @@ const updateGlaze = async (req, res) => {
 
     const updated = await glaze.save();
 
+    // Log Event
     if (changes.length > 0) {
       await logEvent({
         event: "glaze_updated",
@@ -98,22 +96,25 @@ const updateGlaze = async (req, res) => {
 
     res.json(updated);
   } catch (err) {
-    res.status(500).json({ error: "Error updating glaze" });
+    next(new ApiError("Failed to update glaze", 500));
   }
 }; // end updateGlaze
 
 // Soft Delete
-const deactivateGlaze = async (req, res) => {
+const deactivateGlaze = async (req, res, next) => {
   try {
     const glaze = await Glaze.findById(req.params.id);
-    if (!glaze) return res.status(404).json({ error: "Glaze not found" });
+    if (!glaze) {
+      return next(new ApiError("Glaze not found", 404));
+    }
     if (!glaze.isActive) {
-      return res.status(400).json({ error: "Glaze is already inactive" });
+      return next(new ApiError("Glaze is already inactive", 400));
     }
 
     glaze.isActive = false;
     await glaze.save();
 
+    // Log Event
     await logEvent({
       event: "glaze_deactivated",
       objectId: glaze._id,
@@ -123,7 +124,7 @@ const deactivateGlaze = async (req, res) => {
 
     res.json({ message: "Glaze deactivated" });
   } catch (err) {
-    res.status(500).json({ error: "Error deactivating glaze" });
+    next(new ApiError("Failed to deactivate glaze", 500));
   }
 }; // end deactivateGlaze
 
