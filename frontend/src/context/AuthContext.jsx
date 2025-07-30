@@ -1,5 +1,6 @@
 import { createContext, useState, useContext, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { getUserFromToken } from '../utils/jwt'
 
 const AuthContext = createContext()
 
@@ -10,7 +11,8 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     if (token) {
-      setUser({}) // We can decode token here
+      const decoded = getUserFromToken(token)
+      setUser(decoded)
     }
   }, [token])
 
@@ -41,7 +43,15 @@ export function AuthProvider({ children }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, token, login, logout }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        token,
+        login,
+        logout,
+        isAdmin: user?.role === 'admin',
+      }}
+    >
       {children}
     </AuthContext.Provider>
   )

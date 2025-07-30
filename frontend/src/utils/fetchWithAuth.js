@@ -13,7 +13,9 @@ export default async function fetchWithAuth(url, options = {}) {
   const token = localStorage.getItem('token')
 
   const headers = {
-    'Content-Type': 'application/json',
+    ...(options.body instanceof FormData
+      ? {} // Don't set Content-Type; let browser do it
+      : { 'Content-Type': 'application/json' }),
     ...(options.headers || {}),
     ...(token && { Authorization: `Bearer ${token}` }),
   }
@@ -24,18 +26,10 @@ export default async function fetchWithAuth(url, options = {}) {
       headers,
     })
 
-    console.log('🔎 Status:', res.status, url)
-
-    let data
-    try {
-      data = await res.json()
-    } catch (err) {
-      console.warn('⚠️ Could not parse JSON for', url)
-      data = null
-    }
+    const data = await res.json()
 
     if (!res.ok) {
-      const errorMsg = data?.message || res.statusText || 'Request failed'
+      const errorMsg = data?.message || JSON.stringify(data) || 'Request failed'
       throw new Error(errorMsg)
     }
 

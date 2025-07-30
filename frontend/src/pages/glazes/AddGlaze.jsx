@@ -1,17 +1,20 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ChevronLeftIcon } from '@heroicons/react/24/outline'
 import FloatingInput from '../../components/FloatingInput'
 import { useCreateGlaze } from '../../hooks/useCreateGlaze'
+import { uploadToCloudinary } from '../../utils/uploadToCloudinary'
+import ImageUploader from '../../components/ImageUploader'
 
 export default function AddGlaze() {
   const navigate = useNavigate()
   const { create } = useCreateGlaze(navigate)
-
+  const imageInputRef = useRef(null)
   const [formData, setFormData] = useState({
     name: '',
-    hex: '',
-    image: [],
+    hex: '#000000',
+    code: '',
+    images: [],
   })
 
   const [error, setError] = useState(null)
@@ -39,16 +42,31 @@ export default function AddGlaze() {
     setSuccess(null)
 
     try {
-      await create(formData) // We need create from Hook or api
+      // Upload all images to Cloudinary
+      const urls = await Promise.all(
+        formData.images.map((img) =>
+          uploadToCloudinary(img, 'haromobile/glazes')
+        )
+      )
 
-      setSuccess('Glaze created successfully!')
-      setFormData({
-        name: '',
-        hex: '',
-        image: '',
-      })
+      // Build glaze payload
+      const glazeData = {
+        name: formData.name,
+        colorHex: formData.hex,
+        code: formData.code,
+        image: urls[0] || '', // Only first image for now
+      }
+
+      await create(glazeData)
+
+      setSuccess(`Esmalte ${formData.name} creado!`)
+      setFormData({ name: '', hex: '#ffffff', code: '', images: [] })
+      if (imageInputRef.current) {
+        imageInputRef.current.value = ''
+      }
     } catch (err) {
-      setError(err.message)
+      console.error(err)
+      setError(err.message || 'Error creating glaze')
     } finally {
       setLoading(false)
     }
@@ -63,46 +81,51 @@ export default function AddGlaze() {
         <ChevronLeftIcon className="h-5 w-5 mr-1" />
         Volver
       </button>
-
-      <h1 className="text-xl font-semibold mb-6 text-center">
-        Crear nuevo esmalte
-      </h1>
+      <h1 className="text-center mb-8 text-xl font-semibold">Nuevo Esmalte</h1>
 
       <form onSubmit={handleSubmit} className="max-w-md mx-auto space-y-6">
-        <FloatingInput
-          label="Nombre"
-          name="name"
-          value={formData.name}
-          onChange={handleChange}
-          required
-        />
-        /*Aqui un input que permita elegir un color (?) */
-        {/* Imagen */}
-        <div>
-          <label className="block mb-1 text-sm font-medium">
-            Agregar imagen
-          </label>
-          <input
-            type="file"
-            multiple
-            accept="image/*"
-            onChange={handleAddImage}
-            className="w-full h-30 border border-dashed p-2 rounded dark:bg-neutral-800 dark:border-gray-700"
+        {/* Nombre + color */}
+        <div className="flex items-center gap-4">
+          <FloatingInput
+            label="Nombre"
+            name="name"
+            value={formData.name}
+            onChange={handleChange}
+            required
           />
-          <div className="flex flex-wrap gap-2 mt-2">
-            {formData.images.map((img, idx) => (
-              <div key={idx} className="w-16 h-16 rounded overflow-hidden">
-                <img
-                  src={URL.createObjectURL(img)}
-                  alt={`preview-${idx}`}
-                  className="w-full h-full object-cover"
-                />
-              </div>
-            ))}
+
+          <div className="flex items-center gap-2">
+            <input
+              type="color"
+              name="hex"
+              value={formData.hex}
+              onChange={handleChange}
+              className="w-10 h-10 border border-gray-300 dark:border-gray-600 rounded cursor-pointer"
+            />
+            <span className="text-sm text-gray-700 dark:text-gray-300 w-16">
+              {formData.hex}
+            </span>
           </div>
         </div>
+
+        {/* Código opcional */}
+        <FloatingInput
+          label="Código (opcional)"
+          name="code"
+          value={formData.code}
+          onChange={handleChange}
+        />
+
+        {/* Imagen */}
+        <ImageUploader
+          multiple={false}
+          value={formData.images}
+          onChange={(imgs) => setFormData({ ...formData, images: imgs})}
+        />
+
         {error && <div className="text-red-500 text-sm">{error}</div>}
         {success && <div className="text-green-600 text-sm">{success}</div>}
+
         <button
           type="submit"
           disabled={loading}

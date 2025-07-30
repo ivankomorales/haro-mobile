@@ -4,7 +4,7 @@ const { logEvent } = require("../utils/audit");
 
 // Create
 const createGlaze = async (req, res, next) => {
-  const { name, colorHex, image } = req.body;
+  const { name, colorHex, code, image } = req.body;
 
   if (!name || !colorHex) {
     return next(new ApiError("Name and colorHex are required fields", 400));
@@ -16,7 +16,7 @@ const createGlaze = async (req, res, next) => {
       return next(new ApiError("Glaze with that name already exists", 400));
     }
 
-    const glaze = new Glaze({ name, colorHex, image });
+    const glaze = new Glaze({ name, hex: colorHex, code, image });
     const saved = await glaze.save();
 
     // Log Event
@@ -29,6 +29,7 @@ const createGlaze = async (req, res, next) => {
 
     res.status(201).json(saved);
   } catch (err) {
+    console.error("❌ Error in createGlaze:", err);
     next(new ApiError("Failed to create glaze", 500));
   }
 }; // end createGlaze
@@ -72,8 +73,8 @@ const updateGlaze = async (req, res, next) => {
       glaze.name = req.body.name;
     }
 
-    if (req.body.colorHex && req.body.colorHex !== glaze.colorHex) {
-      changes.push(`colorHex: ${glaze.colorHex} → ${req.body.colorHex}`);
+    if (req.body.colorHex && req.body.colorHex !== glaze.hex) {
+      changes.push(`colorHex: ${glaze.hex} → ${req.body.colorHex}`);
       glaze.colorHex = req.body.colorHex;
     }
 

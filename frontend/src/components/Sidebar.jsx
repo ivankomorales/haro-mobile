@@ -1,15 +1,22 @@
 // components/Sidebar.jsx
 
 import React from 'react'
-import {
-  HomeIcon,
-  ClipboardDocumentListIcon,
-  UserIcon,
-} from '@heroicons/react/24/outline'
-import { useNavigate } from 'react-router-dom'
+import { House, ClipboardList, UserRound } from 'lucide-react'
+import { useNavigate, useLocation } from 'react-router-dom'
 
 export default function Sidebar() {
   const navigate = useNavigate()
+  const { pathname } = useLocation()
+
+  const isActive = (route) => pathname.startsWith(route)
+
+  const linkClass = (route) =>
+    `flex items-center gap-2 px-2 py-3 rounded-md transition-colors ${
+      isActive(route)
+        ? 'text-black dark:text-white bg-blue-100 dark:bg-gray-500 shadow-md'
+        : 'text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-neutral-800'
+    }
+    }`
 
   return (
     <div
@@ -21,43 +28,30 @@ export default function Sidebar() {
         border-r dark:border-neutral-800 
       "
     >
-      <div
-        className="
-          mb-6
-          text-lg font-bold  
-          text-gray-800 dark:text-gray-100
-        "
-      >
+      <div className="mb-6 text-lg font-bold text-gray-800 dark:text-gray-100">
         Haro Mobile
       </div>
 
-      <nav
-        className="
-          flex flex-col 
-          space-y-4 
-          text-sm 
-          text-gray-700 dark:text-gray-200
-        "
-      >
+      <nav className="flex flex-col space-y-4 text-sm">
         <button
           onClick={() => navigate('/home')}
-          className="flex items-center gap-2 hover:text-blue-600"
+          className={linkClass('/home')}
         >
-          <HomeIcon className="w-5 h-5" />
+          <House className="w-5 h-5" />
           Inicio
         </button>
         <button
           onClick={() => navigate('/orders')}
-          className="flex items-center gap-2 hover:text-blue-600"
+          className={linkClass('/orders')}
         >
-          <ClipboardDocumentListIcon className="w-5 h-5" />
+          <ClipboardList className="w-5 h-5" />
           Pedidos
         </button>
         <button
-          onClick={() => navigate('/users')}
-          className="flex items-center gap-2 hover:text-blue-600"
+          onClick={() => navigate('/profile')}
+          className={linkClass('/profile')}
         >
-          <UserIcon className="w-5 h-5" />
+          <UserRound className="w-5 h-5" />
           Usuarios
         </button>
       </nav>

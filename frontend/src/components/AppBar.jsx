@@ -2,7 +2,7 @@
 
 import React from 'react'
 
-export default function AppBar({ left, right, progress }) {
+export default function AppBar({ left, right, extra, progress }) {
   return (
     <div
       className="
@@ -18,6 +18,9 @@ export default function AppBar({ left, right, progress }) {
 
         {/* Spacer to keep layout consistent */}
         <div className="flex-1" />
+
+        {/* Extra actions (e.g., split button) */}
+        {extra && <div className="mr-19">{extra}</div>}
 
         {/* Right icon (e.g. avatar, settings) */}
         <div className="flex w-10 justify-end">{right}</div>

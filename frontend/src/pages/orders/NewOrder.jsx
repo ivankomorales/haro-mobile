@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import FloatingInput from '../../components/FloatingInput'
-import AppBar from '../../components/AppBar'
 import { Switch } from '@headlessui/react'
 
 export default function NewOrder() {
@@ -67,16 +66,18 @@ export default function NewOrder() {
         dark:text-gray-100 
       "
     >
-      <AppBar
+      {/*
+            <AppBar
         left={<button onClick={() => navigate(-1)}>←</button>}
         progress={0.33}
       />
+      */}
 
       <form
         onSubmit={handleSubmit}
         className="max-w-2xl mx-auto px-4 pt-6 space-y-6"
       >
-        <h1 className="mb-2 text-xl font-semibold">Nuevo Pedido</h1>
+        <h1 className="text-center mb-8 text-xl font-semibold">Nuevo Pedido</h1>
 
         {/* Name + Last Name */}
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -111,7 +112,7 @@ export default function NewOrder() {
               <option value="+52">+52</option>
               <option value="+1">+1</option>
               <option value="+54">+54</option>
-              {/* Add more as needed */}
+              {/* Add more as needed TODO REFACTOR */}
             </select>
             <FloatingInput
               label="Teléfono"
@@ -143,7 +144,7 @@ export default function NewOrder() {
                 text-gray-800 dark:text-gray-200 
               "
             >
-              Fecha
+              Fecha:
             </label>
             <input
               type="date"
@@ -168,7 +169,7 @@ export default function NewOrder() {
                 text-gray-800 dark:text-gray-200 
               "
             >
-              Estado
+              Estado:
             </label>
             <select
               name="status"

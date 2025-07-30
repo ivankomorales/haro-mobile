@@ -38,24 +38,6 @@ export default function Home() {
     >
       <h1 className="text-xl font-semibold mb-4">Inicio</h1>
 
-      {isDesktop && (
-        <div className="flex justify-end mb-4">
-          <button
-            onClick={() => navigate('/orders/new')}
-            className="
-              flex items-center 
-              gap-2 
-              px-4 py-2 
-              bg-black text-white hover:bg-neutral-800
-              rounded
-            "
-          >
-            <PlusIcon className="w-5 h-5" />
-            Nuevo pedido
-          </button>
-        </div>
-      )}
-
       <div
         className="
           text-center

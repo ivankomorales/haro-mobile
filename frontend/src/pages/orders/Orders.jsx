@@ -1,4 +1,4 @@
-// Login.jsx
-export default function Login() {
-  return <h1>Login Page</h1>
+// Orders.jsx
+export default function Orders() {
+  return <h1>Orders Page</h1>
 }

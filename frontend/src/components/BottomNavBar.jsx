@@ -1,12 +1,17 @@
-import { HomeIcon } from '@heroicons/react/24/outline'
-import { ClipboardIcon } from '@heroicons/react/24/outline'
-import { PlusIcon } from '@heroicons/react/24/solid'
-import { ChartBarIcon } from '@heroicons/react/24/outline'
-import { UserIcon } from '@heroicons/react/24/outline'
-import { useNavigate } from 'react-router-dom'
+import {
+  House,
+  Clipboard,
+  Plus,
+  ChartBar, // o ChartNoAxesCombined si prefieres
+  UserRound,
+} from 'lucide-react'
+import { useNavigate, useLocation } from 'react-router-dom'
 
 export default function BottomNavBar() {
   const navigate = useNavigate()
+  const { pathname } = useLocation()
+
+  const isActive = (route) => pathname.startsWith(route)
 
   return (
     <div
@@ -15,60 +20,60 @@ export default function BottomNavBar() {
         w-full max-w-lg h-16
         bg-white border dark:bg-gray-700
         border-gray-200 dark:border-gray-600
-        rounded-full   
+        rounded-full
       "
     >
-      <div
-        className="
-          grid grid-cols-5
-          h-full max-w-lg mx-auto
-        "
-      >
+      <div className="grid grid-cols-5 h-full max-w-lg mx-auto">
         {/* Home */}
         <button
-          type="button"
-          className="
-            inline-flex flex-col items-center justify-center 
-            px-5 
-            rounded-s-full 
-            hover:bg-gray-100 dark:hover:bg-gray-800 
-            group
-          "
+          onClick={() => navigate('/home')}
+          className="inline-flex flex-col items-center justify-center px-5 rounded-s-full group"
         >
-          <HomeIcon
-            className="
-              w-5 h-5 
-              text-gray-500 dark:text-gray-400
-              group-hover:text-blue-600  dark:group-hover:text-blue-400
-            "
+          <House
+            className={`
+              w-5 h-5 transition-transform duration-200
+              ${
+                isActive('/home')
+                  ? 'text-blue-600 dark:text-blue-400 scale-120'
+                  : 'text-gray-500 dark:text-gray-400 group-hover:text-blue-600 dark:group-hover:text-blue-400'
+              }`}
           />
           <span className="sr-only">Home</span>
+          {/* Indicador animado */}
+          <span
+            className={`absolute -top-0.5 w-7 h-1.5 rounded-full transition-all duration-200 
+              ${isActive('/home') ? 'bg-blue-600 opacity-100 scale-100' : 'opacity-0 scale-0'}
+            `}
+          ></span>
         </button>
 
         {/* Orders */}
         <button
-          type="button"
-          className="
-            inline-flex flex-col items-center justify-center 
-            px-5 
-            hover:bg-gray-100 dark:hover:bg-gray-800 
-            group
-          "
+          onClick={() => navigate('/orders')}
+          className="relative flex flex-col items-center justify-center px-5 group"
         >
-          <ClipboardIcon
-            className="
-              w-5 h-5 
-              text-gray-500 dark:text-gray-400 
-              group-hover:text-blue-600 dark:group-hover:text-blue-400
-            "
+          <Clipboard
+            className={`
+              w-5 h-5 transition-transform duration-200
+              ${
+                isActive('/orders')
+                  ? 'text-blue-600 dark:text-blue-400 scale-120'
+                  : 'text-gray-500 dark:text-gray-400 group-hover:text-blue-600 dark:group-hover:text-blue-400'
+              }`}
           />
           <span className="sr-only">Orders</span>
+          {/* Indicador animado */}
+          <span
+            className={`absolute -top-0.5 w-7 h-1.5 rounded-full transition-all duration-200 
+              ${isActive('/orders') ? 'bg-blue-600 opacity-100 scale-100' : 'opacity-0 scale-0'}
+            `}
+          ></span>
         </button>
 
-        {/* Central Button */}
+        {/* Central Plus Button */}
         <div className="flex items-center justify-center">
           <button
-            type="button"
+            onClick={() => navigate('/orders/new')}
             className="
               inline-flex items-center justify-center 
               w-10 h-10 
@@ -78,53 +83,56 @@ export default function BottomNavBar() {
               focus:outline-none
               group
             "
-            onClick={() => navigate('/orders/new')}
           >
-            <PlusIcon className="w-4 h-4" />
-
-            <span className="sr-only">New</span>
+            <Plus className="w-4 h-4" />
+            <span className="sr-only">New Order</span>
           </button>
         </div>
 
         {/* Dashboard */}
         <button
-          type="button"
-          className="
-            inline-flex flex-col items-center justify-center 
-            px-5 
-            hover:bg-gray-100 dark:hover:bg-gray-800 
-            group
-          "
+          onClick={() => navigate('/dashboard')}
+          className="inline-flex flex-col items-center justify-center px-5 group"
         >
-          <ChartBarIcon
-            className="
-              w-5 h-5 
-              text-gray-500 dark:text-gray-400 
-              group-hover:text-blue-600 dark:group-hover:text-blue-400
-            "
+          <ChartBar
+            className={`
+              w-5 h-5 transition-transform duration-200
+              ${
+                isActive('/dashboard')
+                  ? 'text-blue-600 dark:text-blue-400 scale-120'
+                  : 'text-gray-500 dark:text-gray-400 group-hover:text-blue-600 dark:group-hover:text-blue-400'
+              }`}
           />
           <span className="sr-only">Dashboard</span>
+          {/* Indicador animado */}
+          <span
+            className={`absolute -top-0.5 w-7 h-1.5 rounded-full transition-all duration-200 
+              ${isActive('/dashboard') ? 'bg-blue-600 opacity-100 scale-100' : 'opacity-0 scale-0'}
+            `}
+          ></span>
         </button>
 
         {/* Profile */}
         <button
-          type="button"
-          className="
-            inline-flex flex-col items-center justify-center 
-            px-5 
-            hover:bg-gray-100 dark:hover:bg-gray-800
-            rounded-e-full  
-            group
-          "
+          onClick={() => navigate('/profile')}
+          className="inline-flex flex-col items-center justify-center px-5 rounded-e-full group"
         >
-          <UserIcon
-            className="
-              w-5 h-5 
-              text-gray-500 dark:text-gray-400
-              group-hover:text-blue-600 dark:group-hover:text-blue-400
-            "
+          <UserRound
+            className={`
+              w-5 h-5 transition-transform duration-200
+              ${
+                isActive('/profile')
+                  ? 'text-blue-600 dark:text-blue-400 scale-120'
+                  : 'text-gray-500 dark:text-gray-400 group-hover:text-blue-600 dark:group-hover:text-blue-400'
+              }`}
           />
           <span className="sr-only">Profile</span>
+          {/* Indicador animado */}
+          <span
+            className={`absolute -top-0.5 w-7 h-1.5 rounded-full transition-all duration-200 
+              ${isActive('/profile') ? 'bg-blue-600 opacity-100 scale-100' : 'opacity-0 scale-0'}
+            `}
+          ></span>
         </button>
       </div>
     </div>

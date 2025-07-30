@@ -1,7 +1,7 @@
 // utils/constants.js
 export const HIDE_BARS_ROUTES = [
-  '/orders/new',
-  '/orders/add-product',
+  //'/orders/new',
+  //'/orders/new/products',
   '/orders/confirmation',
   '/orders/edit',
   '/orders/details',

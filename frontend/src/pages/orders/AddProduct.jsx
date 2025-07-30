@@ -1,9 +1,11 @@
 // src/pages/orders/AddProduct.jsx
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import AppBar from '../../components/AppBar'
 import { getAllGlazes } from '../../api/glazes'
 import FloatingInput from '../../components/FloatingInput'
+import GlazeSelect from '../../components/GlazeSelect'
+import { uploadToCloudinary } from '../../utils/uploadToCloudinary'
+import ImageUploader from '../../components/ImageUploader'
 
 export default function AddProduct() {
   const navigate = useNavigate()
@@ -12,6 +14,10 @@ export default function AddProduct() {
 
   const [glazes, setGlazes] = useState([])
   const [products, setProducts] = useState([])
+  const objectUrls = useRef([]) // for previews cleanup
+  const fileInputRef = useRef(null)
+
+  const [errors, setErrors] = useState({})
 
   const [formData, setFormData] = useState({
     type: '',
@@ -22,6 +28,10 @@ export default function AddProduct() {
     description: '',
     images: [],
   })
+
+  const isFormValid = () => {
+    return formData.type.trim() !== '' && Number(formData.price) > 0
+  }
 
   useEffect(() => {
     if (!baseOrder.name) {
@@ -47,38 +57,110 @@ export default function AddProduct() {
     setFormData((prev) => ({ ...prev, [name]: value }))
   }
 
-  const handleAddImage = (e) => {
-    const files = Array.from(e.target.files)
-    setFormData((prev) => ({
-      ...prev,
-      images: [...prev.images, ...files],
-    }))
-  }
+  // Image Cleanup for component dismount
+  useEffect(() => {
+    return () => {
+      objectUrls.current.forEach((url) => URL.revokeObjectURL(url))
+    }
+  }, [])
 
-  const handleAddProduct = () => {
-    setProducts((prev) => [...prev, formData])
-    setFormData({
-      type: '',
-      quantity: 1,
-      price: '',
-      glazeInterior: '',
-      glazeExterior: '',
-      description: '',
-      images: [],
-    })
+  // Add product
+  const handleAddProduct = async () => {
+    const newErrors = {}
+    const interior = glazes.find((g) => g._id === formData.glazeInterior)
+    const exterior = glazes.find((g) => g._id === formData.glazeExterior)
 
-    setTimeout(() => {
-      window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' })
-    }, 50)
-  }
+    if (!formData.type.trim()) newErrors.type = 'Tipo requerido'
+    if (!formData.price || Number(formData.price) <= 0)
+      newErrors.price = 'Precio inválido'
 
-  const handleSubmitAll = () => {
-    const fullOrder = {
-      ...baseOrder,
-      products,
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors)
+      return
     }
 
-    navigate(`/orders/confirmation`, { state: fullOrder })
+    try {
+      const newProduct = {
+        ...formData,
+        glazes: {
+          interior: interior || null,
+          exterior: exterior || null,
+        },
+      }
+
+      setProducts((prev) => [...prev, newProduct])
+      setFormData({
+        type: '',
+        quantity: 1,
+        price: '',
+        glazeInterior: '',
+        glazeExterior: '',
+        description: '',
+        images: [],
+      })
+      setPreviewUrls([]) // cleanup previews after product is added
+      fileInputRef.current.value = null
+      setErrors({}) // clean up
+
+      setTimeout(() => {
+        window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' })
+      }, 50)
+    } catch (err) {
+      console.error('Error uploading product:', err)
+      setErrors({ ...newErrors, images: 'Error al cargar producto' })
+    }
+  } // end handleAddProduct
+
+  // Remove product
+  const handleRemoveProduct = (i) => {
+    // Free memory in previews
+    const imgs = products[i]?.images || []
+
+    imgs.forEach((file) => {
+      if (file instanceof File) {
+        const url = objectUrls.current.find((u) => u.includes(file.name))
+        if (url) {
+          URL.revokeObjectURL(url)
+          objectUrls.current = objectUrls.current.filter((u) => u !== url)
+        }
+      }
+    })
+
+    setProducts((prev) => prev.filter((_, idx) => idx !== i))
+  }
+
+  // Confirm and submit all products added
+  const handleSubmitAll = async () => {
+    try {
+      // Upload allimages before navigating to OrderConfirmation
+      const updatedProducts = await Promise.all(
+        products.map(async (product) => {
+          const urls = await Promise.all(
+            product.images.map((file) =>
+              uploadToCloudinary(file, 'haromobile/products')
+            )
+          )
+
+          return {
+            ...product,
+            images: urls,
+          }
+        })
+      )
+
+      const fullOrder = {
+        ...baseOrder,
+        products: updatedProducts,
+      }
+      if (products.length === 0) {
+        alert('Debes agregar al menos un producto antes de continuar.')
+        return
+      }
+      navigate(`/orders/confirmation`, { state: fullOrder })
+    } catch (err) {
+      console.error('Error uploading images before submit:', err)
+      alert('Hubo un error al subir imágenes. Intenta de nuevo.')
+    }
   }
 
   return (
@@ -89,15 +171,21 @@ export default function AddProduct() {
         bg-white dark:bg-neutral-900 
         dark:text-gray-100"
     >
+      {/*
       <AppBar
         title="Agregar Producto"
         left={<button onClick={() => navigate(-1)}>←</button>}
         progress={0.66}
-      />
+      />        
+       
+       */}
 
       <div className="max-w-xl mx-auto px-4 py-4 space-y-6">
+        <h1 className="text-center mb-8 text-xl font-semibold">
+          Agregar Producto
+        </h1>
         <div className="space-y-4">
-          <label className="block text-sm font-medium">Tipo:</label>
+          <label className="block text-sm font-medium mb-2">Tipo:</label>
           <select
             name="type"
             value={formData.type}
@@ -106,16 +194,20 @@ export default function AddProduct() {
             required
           >
             <option value="">Selecciona un tipo</option>
+            <option value="Taza">Taza</option>
             <option value="Taza a mano">Taza a mano</option>
             <option value="Plato">Plato</option>
             <option value="Figura">Figura</option>
             {/* TODO obtenerlo de la base de datos*/}
           </select>
+          {errors.type && (
+            <p className="text-red-500 text-xs mt-1">{errors.type}</p>
+          )}
 
-          <div className="flex items-center gap-4">
+          <div className="flex justify-between items-center">
             <div>
               <label className="text-sm">Figuras:</label>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-4">
                 <button
                   type="button"
                   onClick={() =>
@@ -144,7 +236,7 @@ export default function AddProduct() {
               </div>
             </div>
 
-            <div className="flex-1">
+            <div className="ml-auto">
               <FloatingInput
                 label="Precio"
                 name="price"
@@ -154,74 +246,48 @@ export default function AddProduct() {
                 onChange={handleChange}
                 placeholder="$"
               />
+              {errors.price && (
+                <p className="text-red-500 text-xs mt-1">{errors.price}</p>
+              )}
             </div>
           </div>
 
           {/* Esmaltes */}
-          <details className="bg-neutral-100 dark:bg-neutral-800 rounded p-4">
-            <summary className="cursor-pointer font-medium text-sm dark:text-white">
-              Esmalte
-            </summary>
-            <div className="mt-4 space-y-2">
-              <div>
-                <label className="text-sm">Interior:</label>
-                <select
-                  name="glazeInterior"
-                  value={formData.glazeInterior}
-                  onChange={handleChange}
-                  className="w-full p-2 border rounded dark:bg-neutral-900 dark:border-gray-700 dark:text-white"
-                >
-                  <option value="">Sin esmalte</option>
-                  {glazes.map((g) => (
-                    <option key={g._id} value={g._id}>
-                      {g.name}
-                    </option>
-                  ))}
-                </select>
+          {formData.type !== 'Figura' && (
+            <details className="bg-neutral-100 dark:bg-neutral-800 rounded p-4">
+              <summary className="cursor-pointer font-medium text-sm dark:text-white">
+                Esmalte
+              </summary>
+              <div className="mt-4 space-y-2">
+                {formData.type !== 'Plato' && (
+                  <GlazeSelect
+                    label="Interior:"
+                    glazes={glazes}
+                    selected={formData.glazeInterior}
+                    onChange={(value) =>
+                      setFormData((prev) => ({ ...prev, glazeInterior: value }))
+                    }
+                  />
+                )}
+                <GlazeSelect
+                  label="Exterior:"
+                  glazes={glazes}
+                  selected={formData.glazeExterior}
+                  onChange={(value) =>
+                    setFormData((prev) => ({ ...prev, glazeExterior: value }))
+                  }
+                />
               </div>
-              <div>
-                <label className="text-sm">Exterior:</label>
-                <select
-                  name="glazeExterior"
-                  value={formData.glazeExterior}
-                  onChange={handleChange}
-                  className="w-full p-2 border rounded dark:bg-neutral-900 dark:border-gray-700 dark:text-white"
-                >
-                  <option value="">Sin esmalte</option>
-                  {glazes.map((g) => (
-                    <option key={g._id} value={g._id}>
-                      {g.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-          </details>
+            </details>
+          )}
 
           {/* Imágenes */}
-          <div>
-            <label className="block mb-1 text-sm font-medium">
-              Agregar imágenes
-            </label>
-            <input
-              type="file"
-              multiple
-              accept="image/*"
-              onChange={handleAddImage}
-              className="w-full h-30 border border-dashed p-2 rounded dark:bg-neutral-800 dark:border-gray-700"
-            />
-            <div className="flex flex-wrap gap-2 mt-2">
-              {formData.images.map((img, idx) => (
-                <div key={idx} className="w-16 h-16 rounded overflow-hidden">
-                  <img
-                    src={URL.createObjectURL(img)}
-                    alt={`preview-${idx}`}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-              ))}
-            </div>
-          </div>
+          <ImageUploader
+            multiple={true}
+            label="Agregar imagenes"
+            value={formData.images}
+            onChange={(imgs) => setFormData({ ...formData, images: imgs })}
+          />
 
           <FloatingInput
             label="Descripción"
@@ -234,7 +300,12 @@ export default function AddProduct() {
         <button
           type="button"
           onClick={handleAddProduct}
-          className="w-full py-2 bg-black text-white rounded hover:bg-neutral-800"
+          disabled={!isFormValid()}
+          className={`w-full py-2 rounded font-semibold transition-colors duration-200 ${
+            isFormValid()
+              ? 'bg-black text-white hover:bg-neutral-800'
+              : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+          }`}
         >
           + Agregar
         </button>
@@ -248,9 +319,17 @@ export default function AddProduct() {
               {products.map((p, i) => (
                 <li
                   key={i}
-                  className="p-2 border rounded bg-neutral-100 dark:bg-neutral-800"
+                  className="p-2 border rounded bg-neutral-100 dark:bg-neutral-800 flex items-center justify-between"
                 >
-                  {p.type} — {p.quantity} piezas — ${p.price}
+                  <div className="flex-1 truncate">
+                    {p.type} — {p.quantity} piezas — ${p.price}
+                  </div>
+                  <button
+                    onClick={() => handleRemoveProduct(i)}
+                    className="ml-4 text-red-500 hover:text-red-700"
+                  >
+                    ✕
+                  </button>
                 </li>
               ))}
             </ul>

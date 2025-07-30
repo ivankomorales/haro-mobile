@@ -59,7 +59,7 @@ src/
 │   ├── BottomNav.jsx
 │   └── FloatingInput.jsx
 ├── context/          # React context for global state (AuthContext)
-│   └── AuthContext.jsx
+│   └── AuthContext.jsx 
 ├── hooks/            # Custom logic hooks
 │   ├── useCreateUser.js
 │   └── useDarkMode.js (not implemented yet)
@@ -354,3 +354,13 @@ Progress Summary (Last 2 Days)
 - Fixed route-based hiding of AppBar/BottomNav with useHideBars()
 
 - Added placeholder logic for dynamic “last updated” timestamp on Home
+
+## Roles & permissions
+- Everyone can place new Orders
+- Only admin can add new users and glazes
+- We get the role from JWT using getUserFromToken() on utils
+
+## Component SplitActionButton
+- Shows button +Nuevo
+- If admin → despliega Pedido, Usuario, Esmalte
+- If not admin → only Pedido

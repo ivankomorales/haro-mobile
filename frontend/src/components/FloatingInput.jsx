@@ -13,6 +13,7 @@ export default function FloatingInput({
 }) {
   const [showPassword, setShowPassword] = useState(false)
   const inputType = type === 'password' && showPassword ? 'text' : type
+  const isColor = type === 'color'
 
   return (
     <div className="relative w-full">
