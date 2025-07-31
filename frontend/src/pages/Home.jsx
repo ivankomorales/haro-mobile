@@ -1,14 +1,12 @@
 import { useEffect, useState } from 'react'
 import { getRecentOrders, getPendingCount } from '../api/orders'
 import { useNavigate } from 'react-router-dom'
-import { PlusIcon } from '@heroicons/react/24/solid'
 import { useMediaQuery } from 'react-responsive'
 
 export default function Home() {
   const [lastUpdated, setLastUpdated] = useState(null)
   const [recentOrders, setRecentOrders] = useState([])
   const [pendingCount, setPendingCount] = useState(0)
-  const isDesktop = useMediaQuery({ minWidth: 1024 })
   const navigate = useNavigate()
 
   useEffect(() => {

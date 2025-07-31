@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ChevronLeftIcon } from '@heroicons/react/24/outline'
-import FloatingInput from '../../components/FloatingInput'
+import { ChevronLeft } from 'lucide-react'
+import FormInput from '../../components/FormInput'
 import { useCreateUser } from '../../hooks/useCreateUser'
+import FormActions from '../../components/FormActions'
 
 export default function AddUser() {
   const navigate = useNavigate()
@@ -58,7 +59,7 @@ export default function AddUser() {
         onClick={() => navigate(-1)}
         className="mb-4 flex items-center text-sm text-blue-600 dark:text-blue-400 hover:underline "
       >
-        <ChevronLeftIcon className="h-5 w-5 mr-1" />
+        <ChevronLeft className="h-5 w-5 mr-1" />
         Volver
       </button>
 
@@ -67,7 +68,7 @@ export default function AddUser() {
       </h1>
 
       <form onSubmit={handleSubmit} className="max-w-md mx-auto space-y-6">
-        <FloatingInput
+        <FormInput
           label="Nombre"
           name="name"
           value={formData.name}
@@ -75,7 +76,7 @@ export default function AddUser() {
           required
         />
 
-        <FloatingInput
+        <FormInput
           label="Apellido"
           name="lastName"
           value={formData.lastName}
@@ -83,7 +84,7 @@ export default function AddUser() {
           required
         />
 
-        <FloatingInput
+        <FormInput
           label="Correo electrónico"
           name="email"
           type="email"
@@ -92,7 +93,7 @@ export default function AddUser() {
           required
         />
 
-        <FloatingInput
+        <FormInput
           label="Contraseña"
           name="password"
           type="password"
@@ -103,7 +104,7 @@ export default function AddUser() {
           showToggle
         />
 
-        <FloatingInput
+        <FormInput
           label="Confirmar contraseña"
           name="confirmPassword"
           type="password"
@@ -129,13 +130,7 @@ export default function AddUser() {
         {error && <div className="text-red-500 text-sm">{error}</div>}
         {success && <div className="text-green-600 text-sm">{success}</div>}
 
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 disabled:opacity-50"
-        >
-          {loading ? 'Creando...' : 'Crear usuario'}
-        </button>
+        <FormActions />
       </form>
     </div>
   )

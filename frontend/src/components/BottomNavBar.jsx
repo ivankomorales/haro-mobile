@@ -2,14 +2,18 @@ import {
   House,
   Clipboard,
   Plus,
-  ChartBar, // o ChartNoAxesCombined si prefieres
+  ChartNoAxesCombined, // o ChartNoAxesCombined
   UserRound,
 } from 'lucide-react'
 import { useNavigate, useLocation } from 'react-router-dom'
+import { smartNavigate } from '../utils/smartNavigate'
+import { useConfirm } from '../context/ConfirmContext'
 
 export default function BottomNavBar() {
   const navigate = useNavigate()
-  const { pathname } = useLocation()
+  const location = useLocation()
+  const confirm = useConfirm()
+  const { pathname } = location
 
   const isActive = (route) => pathname.startsWith(route)
 
@@ -26,7 +30,9 @@ export default function BottomNavBar() {
       <div className="grid grid-cols-5 h-full max-w-lg mx-auto">
         {/* Home */}
         <button
-          onClick={() => navigate('/home')}
+          onClick={() =>
+            smartNavigate(navigate, pathname, '/home', { confirm })
+          }
           className="inline-flex flex-col items-center justify-center px-5 rounded-s-full group"
         >
           <House
@@ -49,7 +55,9 @@ export default function BottomNavBar() {
 
         {/* Orders */}
         <button
-          onClick={() => navigate('/orders')}
+          onClick={() =>
+            smartNavigate(navigate, pathname, '/orders', { confirm })
+          }
           className="relative flex flex-col items-center justify-center px-5 group"
         >
           <Clipboard
@@ -73,7 +81,9 @@ export default function BottomNavBar() {
         {/* Central Plus Button */}
         <div className="flex items-center justify-center">
           <button
-            onClick={() => navigate('/orders/new')}
+            onClick={() =>
+              navigate('/orders/new', { state: { from: location.pathname } })
+            }
             className="
               inline-flex items-center justify-center 
               w-10 h-10 
@@ -91,10 +101,12 @@ export default function BottomNavBar() {
 
         {/* Dashboard */}
         <button
-          onClick={() => navigate('/dashboard')}
+          onClick={() =>
+            smartNavigate(navigate, pathname, '/dashboard', { confirm })
+          }
           className="inline-flex flex-col items-center justify-center px-5 group"
         >
-          <ChartBar
+          <ChartNoAxesCombined
             className={`
               w-5 h-5 transition-transform duration-200
               ${
@@ -114,7 +126,9 @@ export default function BottomNavBar() {
 
         {/* Profile */}
         <button
-          onClick={() => navigate('/profile')}
+          onClick={() =>
+            smartNavigate(navigate, pathname, '/profile', { confirm })
+          }
           className="inline-flex flex-col items-center justify-center px-5 rounded-e-full group"
         >
           <UserRound

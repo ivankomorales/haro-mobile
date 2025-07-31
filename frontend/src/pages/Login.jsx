@@ -1,16 +1,31 @@
 import { useState } from 'react'
 import { useAuth } from '../context/AuthContext'
-import FloatingInput from '../components/FloatingInput'
+import FormInput from '../components/FormInput'
+import { showError } from '../utils/toastUtils'
 
 export default function Login() {
   const { login } = useAuth()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [errors, setErrors] = useState({})
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    if (!email || !password) return alert('Please fill in all fields')
-    await login(email, password)
+
+    const newErrors = {}
+    if (!email) newErrors.email = 'auth.EmailRequired'
+    if (!password) newErrors.password = 'auth.PasswordRequired'
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors)
+      return
+    }
+
+    try {
+      await login(email, password)
+    } catch (err) {
+      setErrors({ form: 'auth.LoginFailed' })
+    }
   }
 
   return (
@@ -21,23 +36,37 @@ export default function Login() {
       >
         <h2 className="text-xl font-semibold text-center">Login</h2>
 
-        <FloatingInput
+        <FormInput
           label="Correo electrónico"
           name="email"
           type="email"
           value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
+          onChange={(e) => {
+            setEmail(e.target.value)
+            setErrors((prev) => ({ ...prev, email: null }))
+          }}
+          error={errors.email}
         />
-        <FloatingInput
+
+        <FormInput
           label="Contraseña"
           name="password"
           type="password"
           value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-          
+          onChange={(e) => {
+            setPassword(e.target.value)
+            setErrors((prev) => ({ ...prev, password: null }))
+          }}
+          showToggle
+          error={errors.password}
         />
+
+        {/* Mensaje de error general */}
+        {errors.form && (
+          <div className="text-red-500 text-sm text-center -mt-2">
+            {getMessage(errors.form)}
+          </div>
+        )}
 
         <button
           type="submit"

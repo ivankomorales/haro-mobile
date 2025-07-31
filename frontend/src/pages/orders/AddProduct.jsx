@@ -2,7 +2,7 @@
 import { useEffect, useState, useRef } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { getAllGlazes } from '../../api/glazes'
-import FloatingInput from '../../components/FloatingInput'
+import FormInput from '../../components/FormInput'
 import GlazeSelect from '../../components/GlazeSelect'
 import { uploadToCloudinary } from '../../utils/uploadToCloudinary'
 import ImageUploader from '../../components/ImageUploader'
@@ -34,10 +34,16 @@ export default function AddProduct() {
   }
 
   useEffect(() => {
-    if (!baseOrder.name) {
-      navigate('/orders/new') // fallback si entras directo
+    // Valida contra la nueva estructura que envías desde NewOrder
+    const hasMinimumData =
+      baseOrder?.customer?.name &&
+      baseOrder?.orderDate &&
+      typeof baseOrder?.shipping?.isRequired === 'boolean'
+
+    if (!hasMinimumData) {
+      navigate('/orders/new', { replace: true })
     }
-  }, [])
+  }, [baseOrder, navigate])
 
   useEffect(() => {
     async function fetchGlazes() {
@@ -98,7 +104,7 @@ export default function AddProduct() {
         description: '',
         images: [],
       })
-      setPreviewUrls([]) // cleanup previews after product is added
+      objectUrls.current = [] // cleanup previews after product is added
       fileInputRef.current.value = null
       setErrors({}) // clean up
 
@@ -237,7 +243,7 @@ export default function AddProduct() {
             </div>
 
             <div className="ml-auto">
-              <FloatingInput
+              <FormInput
                 label="Precio"
                 name="price"
                 type="number"
@@ -289,7 +295,7 @@ export default function AddProduct() {
             onChange={(imgs) => setFormData({ ...formData, images: imgs })}
           />
 
-          <FloatingInput
+          <FormInput
             label="Descripción"
             name="description"
             value={formData.description}

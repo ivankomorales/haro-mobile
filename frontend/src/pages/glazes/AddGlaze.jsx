@@ -1,10 +1,10 @@
 import { useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ChevronLeftIcon } from '@heroicons/react/24/outline'
-import FloatingInput from '../../components/FloatingInput'
+import FormInput from '../../components/FormInput'
 import { useCreateGlaze } from '../../hooks/useCreateGlaze'
 import { uploadToCloudinary } from '../../utils/uploadToCloudinary'
 import ImageUploader from '../../components/ImageUploader'
+import { ChevronLeft } from 'lucide-react'
 
 export default function AddGlaze() {
   const navigate = useNavigate()
@@ -25,14 +25,6 @@ export default function AddGlaze() {
     setFormData({ ...formData, [e.target.name]: e.target.value })
     setError(null)
     setSuccess(null)
-  }
-
-  const handleAddImage = (e) => {
-    const files = Array.from(e.target.files)
-    setFormData((prev) => ({
-      ...prev,
-      images: [...prev.images, ...files],
-    }))
   }
 
   const handleSubmit = async (e) => {
@@ -78,7 +70,7 @@ export default function AddGlaze() {
         onClick={() => navigate(-1)}
         className="mb-4 flex items-center text-sm text-blue-600 dark:text-blue-400 hover:underline "
       >
-        <ChevronLeftIcon className="h-5 w-5 mr-1" />
+        <ChevronLeft className="h-5 w-5 mr-1" />
         Volver
       </button>
       <h1 className="text-center mb-8 text-xl font-semibold">Nuevo Esmalte</h1>
@@ -86,7 +78,7 @@ export default function AddGlaze() {
       <form onSubmit={handleSubmit} className="max-w-md mx-auto space-y-6">
         {/* Nombre + color */}
         <div className="flex items-center gap-4">
-          <FloatingInput
+          <FormInput
             label="Nombre"
             name="name"
             value={formData.name}
@@ -109,7 +101,7 @@ export default function AddGlaze() {
         </div>
 
         {/* Código opcional */}
-        <FloatingInput
+        <FormInput
           label="Código (opcional)"
           name="code"
           value={formData.code}
@@ -120,7 +112,7 @@ export default function AddGlaze() {
         <ImageUploader
           multiple={false}
           value={formData.images}
-          onChange={(imgs) => setFormData({ ...formData, images: imgs})}
+          onChange={(imgs) => setFormData({ ...formData, images: imgs })}
         />
 
         {error && <div className="text-red-500 text-sm">{error}</div>}

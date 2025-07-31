@@ -1,7 +1,4 @@
 // components/AppBar.jsx
-
-import React from 'react'
-
 export default function AppBar({ left, right, extra, progress }) {
   return (
     <div

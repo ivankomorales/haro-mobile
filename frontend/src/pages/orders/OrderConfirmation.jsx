@@ -57,8 +57,8 @@ const OrderConfirmation = () => {
         deposit: Number(order.deposit || 0),
         notes: order.notes || '',
         shipping: {
-          isRequired: Boolean(order.shipping),
-          addresses: [],
+          isRequired: order.shipping?.isRequired || false,
+          addresses: order.shipping?.addresses || [],
         },
         products: cleanProducts,
       }

@@ -8,8 +8,8 @@ const CustomerSchema = new mongoose.Schema(
     email: String,
     socialMedia: {
       instagram: String,
-      facebook: String, // opcional, en blanco
-      tiktok: String, // opcional
+      facebook: String, // Optional
+      // tiktok: String, // We can add more later
     },
     address: String,
     city: String,

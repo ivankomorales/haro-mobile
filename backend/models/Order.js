@@ -45,12 +45,28 @@ const OrderSchema = new mongoose.Schema(
       required: true,
     },
 
+    orderDate: {
+      type: Date,
+      default: Date.now,
+    },
+
     status: {
       type: String,
       enum: ["New", "Pending", "In Progress", "Completed", "Cancelled"],
       default: "New",
     },
+
+    deliverDate: {
+      type: Date,
+      default: () => {
+        const now = new Date();
+        now.setDate(now.getDate() + 35); // 5 weeks = 35 days
+        return now;
+      },
+    },
+
     deposit: { type: Number, default: 0 },
+
     shipping: {
       isRequired: { type: Boolean, default: false },
       addresses: [
@@ -62,7 +78,9 @@ const OrderSchema = new mongoose.Schema(
         },
       ],
     },
+
     notes: String,
+
     products: {
       type: [ProductItemSchema],
       validate: [(arr) => arr.length > 0, "At least one product is required."],

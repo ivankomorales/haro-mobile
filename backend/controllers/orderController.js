@@ -28,6 +28,8 @@ const createOrder = async (req, res, next) => {
       "notes",
       "products",
       "shipping",
+      "orderDate", // ✅ NUEVO
+      "deliverDate", // ✅ por si lo envían manual
     ];
     const orderData = {};
 
@@ -87,17 +89,17 @@ const getOrders = async (req, res, next) => {
     }
 
     //Filter by Date
-    const createdAtFilter = {};
+    const orderDateFilter = {};
     if (req.query.from) {
-      createdAtFilter.$gte = new Date(req.query.from);
+      orderDateFilter.$gte = new Date(req.query.from);
     }
     if (req.query.to) {
       const toDate = new Date(req.query.to);
       toDate.setDate(toDate.getDate() + 1);
-      createdAtFilter.$lt = toDate;
+      orderDateFilter.$lt = toDate;
     }
-    if (Object.keys(createdAtFilter).length > 0) {
-      filter.createdAt = createdAtFilter;
+    if (Object.keys(orderDateFilter).length > 0) {
+      filter.orderDate = orderDateFilter;
     }
 
     // Return count only if requested
@@ -111,7 +113,7 @@ const getOrders = async (req, res, next) => {
 
     const orders = await Order.find(filter)
       .populate("customer")
-      .sort({ createdAt: sortOrder })
+      .sort({ orderDate: sortOrder })
       .limit(limit);
     res.json(orders);
   } catch (err) {
@@ -148,6 +150,8 @@ const updateOrder = async (req, res, next) => {
       "notes",
       "products",
       "shipping",
+      "orderDate", // ✅
+      "deliverDate", // ✅
     ];
     for (const key of allowedFields) {
       if (req.body[key] !== undefined) {

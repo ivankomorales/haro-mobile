@@ -1,6 +1,7 @@
 import { createContext, useState, useContext, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getUserFromToken } from '../utils/jwt'
+import { showError } from '../utils/toastUtils'
 
 const AuthContext = createContext()
 
@@ -31,7 +32,10 @@ export function AuthProvider({ children }) {
       setUser({}) // We can decode token here if we need more data
       navigate('/home')
     } catch (err) {
-      alert('Login failed: ' + err.message)
+      const message = err?.message?.includes('credentials')
+        ? 'auth.LoginFailed'
+        : 'auth.ServerError'
+      showError(message)
     }
   }
 
@@ -39,6 +43,7 @@ export function AuthProvider({ children }) {
     localStorage.removeItem('token')
     setToken(null)
     setUser(null)
+    showSuccess('auth.LoggedOut')
     navigate('/')
   }
 

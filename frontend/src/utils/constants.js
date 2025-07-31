@@ -7,3 +7,10 @@ export const HIDE_BARS_ROUTES = [
   '/orders/details',
   '/orders/edit-product',
 ]
+
+export const ORDER_CREATION_ROUTES = [
+  '/orders/new',
+  '/orders/new/products',
+  '/orders/new/confirm',
+  
+]
