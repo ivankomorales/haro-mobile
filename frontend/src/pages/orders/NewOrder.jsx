@@ -1,6 +1,9 @@
-import { useState } from 'react'
+// src/pages/orders/NewOrder.jsx
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import FormInput from '../../components/FormInput'
+import FormActions from '../../components/FormActions'
+import FormAddress from '../../components/FormAddress'
 import {
   Menu,
   MenuButton,
@@ -9,14 +12,40 @@ import {
   Switch,
 } from '@headlessui/react'
 import { Instagram, Facebook, Plus } from 'lucide-react'
-import ConfirmModal from '../../components/ConfirmModal'
+import { toast } from 'react-hot-toast'
+import { getMessage as t } from '../../utils/getMessage'
+
+// Edit Mode Variables
+const isEditBase = location.state?.mode === 'editBase'
+const returnTo = location.state?.returnTo
+const existingProducts = location.state?.products || []
+
+// Helpers para mapear el draft (location.state) -> formData aplanado
+const splitName = (full = '') => {
+  const parts = full.trim().split(/\s+/)
+  const name = parts.shift() || ''
+  const lastName = parts.join(' ') || ''
+  return { name, lastName }
+}
+
+const parsePhone = (raw = '') => {
+  // Espera "+52XXXXXXXXXX" → countryCode="+52", phone="XXXXXXXXXX"
+  const m = raw.match(/^(\+\d{1,3})(\d{6,15})$/)
+  if (m) return { countryCode: m[1], phone: m[2] }
+  return { countryCode: '+52', phone: '' }
+}
 
 export default function NewOrder() {
   const navigate = useNavigate()
   const location = useLocation()
-  const prevLocation = location.state?.from
 
-  const [isCancelOpen, setIsCancelOpen] = useState(false)
+  const originPathRef = useRef(
+    location.state?.originPath ??
+      location.state?.from ?? // compat si algo viejo manda `from`
+      '/orders' // fallback
+  )
+
+  const [errors, setErrors] = useState({})
 
   const [formData, setFormData] = useState({
     // Basic data
@@ -84,11 +113,12 @@ export default function NewOrder() {
 
     // Minimal validation
     if (currentSocialType === 'instagram' && !val.startsWith('@')) {
-      alert('Instagram must start with @')
+      toast.error(t('validation.instagramFormat'))
       return
     }
-    if (currentSocialType === 'facebook' && !val.startsWith('http')) {
-      alert('Facebook must be a valid URL')
+    if (currentSocialType === 'facebook' && !val.startsWith('/')) {
+      // We can use http for full address later
+      toast.error(t('validation.facebookFormat'))
       return
     }
 
@@ -114,87 +144,151 @@ export default function NewOrder() {
   }
 
   // Address handlers
+  const emptyAddress = { address: '', city: '', zip: '', phone: '' }
+
   const addAddress = () => {
-    if (formData.addresses.length > 0) {
-      const last = formData.addresses[formData.addresses.length - 1]
-      if (!last.address || !last.city || !last.zip || !last.phone) {
-        alert('Complete the current address before adding another one')
-        return
-      }
+    const last = formData.addresses.at(-1)
+    const isIncomplete =
+      last && (!last.address || !last.city || !last.zip || !last.phone)
+
+    if (isIncomplete) {
+      toast.error(t('validation.incompleteAddressBeforeAdding'))
+      return
     }
+
     setFormData((prev) => ({
       ...prev,
-      addresses: [
-        ...(prev.addresses || []),
-        { address: '', city: '', zip: '', phone: '' },
-      ],
+      addresses: [...(prev.addresses || []), { ...emptyAddress }],
     }))
   }
 
   const updateAddress = (index, field, value) => {
     setFormData((prev) => {
-      const addresses = [...prev.addresses]
-      addresses[index] = { ...addresses[index], [field]: value }
-      return { ...prev, addresses }
+      const updated = [...prev.addresses]
+      updated[index] = { ...updated[index], [field]: value }
+      return { ...prev, addresses: updated }
     })
   }
 
   const removeAddress = (index) => {
     setFormData((prev) => {
-      const addresses = [...prev.addresses]
-      addresses.splice(index, 1)
-      return { ...prev, addresses }
+      const updated = [...prev.addresses]
+      updated.splice(index, 1)
+      return { ...prev, addresses: updated }
     })
   }
 
-  // Submit handler
-  const handleSubmit = (e) => {
-    e.preventDefault()
+  // Prefill desde location.state (draft/baseOrder) -> formData
+  useEffect(() => {
+    if (!location.state) return
 
-    // Build a merged socialMedia object with pending input (if any)
+    const draft = location.state
+    const { name, lastName } = splitName(draft.customer?.name || '')
+    const { countryCode, phone } = parsePhone(draft.customer?.phone || '')
+
+    setFormData((prev) => ({
+      ...prev,
+      // Customer
+      name,
+      lastName,
+      countryCode,
+      phone,
+      email: draft.customer?.email || '',
+      socialMedia: draft.customer?.socialMedia || prev.socialMedia,
+      // Dates & status
+      orderDate: draft.orderDate || '',
+      deliverDate: draft.deliverDate || '',
+      status: draft.status || prev.status,
+      deposit: draft.deposit ?? prev.deposit,
+      // Shipping
+      shipping: Boolean(draft.shipping?.isRequired),
+      addresses: draft.shipping?.addresses || [],
+      // Notes
+      notes: draft.notes || '',
+    }))
+  }, [location.state])
+
+  // Camino único: Validar + armar baseOrder + navegar
+  const handleContinue = () => {
+    setErrors({})
+    const newErrors = {}
+
+    // Merge social input if pending
     const socialMedia = { ...formData.socialMedia }
     if (socialInput.trim()) {
       socialMedia[currentSocialType] = socialInput.trim()
     }
 
-    // Basic validations
-    if (
-      !formData.name ||
-      !formData.lastName ||
-      !formData.status ||
-      !formData.orderDate
-    ) {
-      alert('Please complete all required fields')
-      return
-    }
+    // Required fields
+    if (!formData.name) newErrors.name = 'errors.customer.missingName'
+    if (!formData.lastName)
+      newErrors.lastName = 'errors.customer.missingLastName'
+    // if (!formData.phone) newErrors.phone = 'validation.requiredFields'
+    if (!formData.status) newErrors.status = 'validation.requiredFields'
+    if (!formData.orderDate) newErrors.orderDate = 'errors.order.missingDate'
 
-    // Dates validation
+    // Date validation
     if (
       formData.deliverDate &&
       formData.orderDate &&
       formData.deliverDate < formData.orderDate
     ) {
-      alert('Delivery date cannot be earlier than order date')
+      newErrors.deliverDate = 'validation.invalidDeliveryDate'
+      toast.error(t('validation.invalidDeliveryDate'))
+    }
+
+    // Phone format
+    if (formData.phone && !/^\d{10}$/.test(formData.phone)) {
+      newErrors.phone = 'errors.user.invalidPhone'
+    }
+
+    // Email format (optional but must be valid)
+    if (
+      formData.email &&
+      !/^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$/.test(formData.email)
+    ) {
+      newErrors.email = 'errors.user.invalidEmail'
+    }
+
+    // Shipping addresses validation (if shipping)
+    if (formData.shipping) {
+      const addressErrors = formData.addresses.map((addr) => {
+        const err = {}
+        if (!addr.address) err.address = 'validation.addressRequired'
+        if (!addr.city) err.city = 'validation.cityRequired'
+        if (!addr.zip) err.zip = 'validation.zipRequired'
+        if (!addr.phone) err.phone = 'validation.phoneRequired'
+        return err
+      })
+
+      const hasErrors = addressErrors.some((e) =>
+        Object.values(e).some(Boolean)
+      )
+
+      if (hasErrors) {
+        const formatted = addressErrors.map((e) => {
+          const formattedObj = {}
+          for (const key in e) {
+            formattedObj[key] = t(e[key])
+          }
+          return formattedObj
+        })
+
+        setErrors((prev) => ({ ...prev, addresses: formatted }))
+        toast.error(t('validation.incompleteShipping'))
+        return
+      }
+    }
+
+    // If any error, show'em
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors)
+      toast.error(t('validation.requiredFields'))
       return
     }
 
-    // Address validation (if shipping is required)
-    if (formData.shipping) {
-      if (!formData.addresses || formData.addresses.length === 0) {
-        alert('Please add at least one shipping address')
-        return
-      }
-      const hasEmpty = formData.addresses.some(
-        (a) => !a.address || !a.city || !a.zip || !a.phone
-      )
-      if (hasEmpty) {
-        alert('Complete all the shipping address fields')
-        return
-      }
-    }
-
-    // Final clean data to send
-    const cleanData = {
+    // Build baseOrder (draft) for AddProduct
+    const baseOrder = {
       orderDate: formData.orderDate,
       deliverDate: formData.deliverDate,
       status: formData.status,
@@ -210,17 +304,26 @@ export default function NewOrder() {
         email: formData.email,
         socialMedia,
       },
+      originPath: originPathRef.current, // IMPORTANT: from location, this is the origin page where we came from
+      from: '/orders/new', // OPTIONAL
     }
 
-    // Go to next step with state
-    navigate('/orders/new/products', { state: cleanData })
-    console.log(cleanData)
+    // AddProduct Route
+    navigate('/orders/new/products', {
+      state: {
+        ...baseOrder,
+        from: '/orders/new', // 👈 para que AddProduct cancele SIEMPRE a NewOrder
+      },
+    })
   }
 
   return (
     <div className="min-h-screen pb-24 bg-white dark:bg-neutral-900 dark:text-gray-100">
       <form
-        onSubmit={handleSubmit}
+        onSubmit={(e) => {
+          e.preventDefault()
+          handleContinue()
+        }}
         className="max-w-2xl mx-auto px-4 pt-6 space-y-6"
       >
         <h1 className="text-center mb-8 text-xl font-semibold">New Order</h1>
@@ -231,15 +334,23 @@ export default function NewOrder() {
             label="First Name"
             name="name"
             value={formData.name}
-            onChange={handleChange}
-            required
+            onChange={(e) => {
+              handleChange(e)
+              setErrors((prev) => ({ ...prev, name: null }))
+            }}
+            error={errors.name}
+            errorFormatter={t}
           />
           <FormInput
             label="Last Name"
             name="lastName"
             value={formData.lastName}
-            onChange={handleChange}
-            required
+            onChange={(e) => {
+              handleChange(e)
+              setErrors((prev) => ({ ...prev, lastName: null }))
+            }}
+            error={errors.lastName}
+            errorFormatter={t}
           />
         </div>
 
@@ -269,7 +380,12 @@ export default function NewOrder() {
                 pattern="\d{10}"
                 maxLength={10}
                 value={formData.phone}
-                onChange={handleChange}
+                onChange={(e) => {
+                  handleChange(e)
+                  setErrors((prev) => ({ ...prev, phone: null }))
+                }}
+                error={errors.phone}
+                errorFormatter={t}
               />
             </div>
 
@@ -278,7 +394,12 @@ export default function NewOrder() {
               name="email"
               type="email"
               value={formData.email}
-              onChange={handleChange}
+              onChange={(e) => {
+                handleChange(e)
+                setErrors((prev) => ({ ...prev, email: null }))
+              }}
+              error={errors.email}
+              errorFormatter={t}
             />
           </div>
 
@@ -301,6 +422,7 @@ export default function NewOrder() {
                   {socialOptions.map((opt) => (
                     <MenuItem
                       as="button"
+                      type="button"
                       key={opt.type}
                       onClick={() => setTypeAndPrefill(opt.type)}
                       className={({ focus }) =>
@@ -320,7 +442,7 @@ export default function NewOrder() {
               <input
                 type="text"
                 placeholder={
-                  currentSocialType === 'instagram' ? '@username' : 'URL'
+                  currentSocialType === 'instagram' ? '@username' : '/username'
                 }
                 value={socialInput}
                 onChange={(e) => setSocialInput(e.target.value)}
@@ -394,10 +516,17 @@ export default function NewOrder() {
               type="date"
               name="orderDate"
               value={formData.orderDate}
-              onChange={handleChange}
-              required
-              className="w-full h-10 px-3 py-3 text-sm border rounded dark:bg-neutral-800 dark:text-white dark:border-gray-600"
+              onChange={(e) => {
+                handleChange(e)
+                setErrors((prev) => ({ ...prev, orderDate: null }))
+              }}
+              className={`w-full h-10 px-3 py-3 text-sm border rounded dark:bg-neutral-800 dark:text-white dark:border-gray-600
+                ${errors.orderDate ? 'border-red-500' : ''}
+              `}
             />
+            {errors.orderDate && (
+              <p className="text-red-500 text-sm mt-1">{t(errors.orderDate)}</p>
+            )}
           </div>
 
           <div>
@@ -408,9 +537,19 @@ export default function NewOrder() {
               type="date"
               name="deliverDate"
               value={formData.deliverDate}
-              onChange={handleChange}
-              className="w-full h-10 px-3 py-3 text-sm border rounded dark:bg-neutral-800 dark:text-white dark:border-gray-600"
+              onChange={(e) => {
+                handleChange(e)
+                setErrors((prev) => ({ ...prev, deliverDate: null }))
+              }}
+              className={`w-full h-10 px-3 py-3 text-sm border rounded dark:bg-neutral-800 dark:text-white dark:border-gray-600
+                ${errors.deliverDate ? 'border-red-500' : ''}
+              `}
             />
+            {errors.deliverDate && (
+              <p className="text-red-500 text-sm mt-1">
+                {t(errors.deliverDate)}
+              </p>
+            )}
           </div>
         </div>
 
@@ -425,7 +564,6 @@ export default function NewOrder() {
               value={formData.status}
               onChange={handleChange}
               className="w-full h-10 px-3 py-3 text-sm border rounded dark:bg-neutral-800 dark:text-white dark:border-gray-600"
-              required
             >
               <option value="New">New</option>
               <option value="Pending">Pending</option>
@@ -436,31 +574,30 @@ export default function NewOrder() {
           </div>
 
           <div>
-            <label className="block mb-1 text-sm font-medium text-gray-800 dark:text-gray-200">
-              Deposit
-            </label>
-            <div className="relative">
-              <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-sm text-gray-500">
-                $
-              </span>
-              <input
-                type="number"
-                name="deposit"
-                value={formData.deposit}
-                onChange={handleChange}
-                min={0}
-                step="0.01"
-                placeholder="0.00"
-                className="w-full h-10 pl-7 pr-3 py-3 text-sm border rounded dark:bg-neutral-800 dark:text-white dark:border-gray-600"
-              />
-            </div>
+            <FormInput
+              label="Deposit"
+              name="deposit"
+              type="number"
+              value={formData.deposit}
+              onChange={(e) => {
+                handleChange(e)
+                setErrors((prev) => ({ ...prev, deposit: null }))
+              }}
+              prefix="$"
+              min={0}
+              step="0.01"
+              placeholder="0.00"
+              error={errors.deposit}
+              errorFormatter={t}
+              floating={false}
+            />
           </div>
         </div>
 
         {/* Shipping toggle */}
         <div className="flex flex-col items-center gap-2">
           <label className="text-sm font-medium text-gray-800 dark:text-gray-200">
-            Requires shipping?
+            {t('forms.product.buttons.shipping')}
           </label>
           <Switch
             checked={formData.shipping}
@@ -479,107 +616,13 @@ export default function NewOrder() {
 
         {/* Addresses */}
         {formData.shipping && (
-          <div className="p-4 border rounded bg-gray-50 dark:bg-neutral-800 dark:border-neutral-700">
-            <div className="flex items-center justify-between mb-3">
-              <p className="text-sm font-medium text-gray-800 dark:text-gray-200">
-                Shipping address(es)
-              </p>
-              <button
-                type="button"
-                onClick={addAddress}
-                className="px-2 py-1 text-sm border rounded hover:bg-gray-100 dark:hover:bg-neutral-700"
-              >
-                + Add address
-              </button>
-            </div>
-
-            {formData.addresses.map((addr, idx) => (
-              <div
-                key={idx}
-                className="mb-4 rounded border p-3 dark:border-neutral-700"
-              >
-                <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                  <div>
-                    <label className="block mb-1 text-xs font-medium">
-                      Address
-                    </label>
-                    <input
-                      type="text"
-                      value={addr.address}
-                      onChange={(e) =>
-                        updateAddress(idx, 'address', e.target.value)
-                      }
-                      className="w-full h-10 px-3 text-sm border rounded dark:bg-neutral-800 dark:text-white dark:border-gray-600"
-                      placeholder="Street, number, neighborhood"
-                      required
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block mb-1 text-xs font-medium">
-                      City
-                    </label>
-                    <input
-                      type="text"
-                      value={addr.city}
-                      onChange={(e) =>
-                        updateAddress(idx, 'city', e.target.value)
-                      }
-                      className="w-full h-10 px-3 text-sm border rounded dark:bg-neutral-800 dark:text-white dark:border-gray-600"
-                      placeholder="City"
-                      required
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block mb-1 text-xs font-medium">
-                      ZIP
-                    </label>
-                    <input
-                      type="text"
-                      value={addr.zip}
-                      onChange={(e) =>
-                        updateAddress(idx, 'zip', e.target.value)
-                      }
-                      className="w-full h-10 px-3 text-sm border rounded dark:bg-neutral-800 dark:text-white dark:border-gray-600"
-                      placeholder="ZIP Code"
-                      inputMode="numeric"
-                      maxLength={10}
-                      required
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block mb-1 text-xs font-medium">
-                      Phone (shipping)
-                    </label>
-                    <input
-                      type="tel"
-                      value={addr.phone}
-                      onChange={(e) =>
-                        updateAddress(idx, 'phone', e.target.value)
-                      }
-                      className="w-full h-10 px-3 text-sm border rounded dark:bg-neutral-800 dark:text-white dark:border-gray-600"
-                      placeholder="10 digits"
-                      pattern="\d{10}"
-                      maxLength={10}
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div className="mt-3 flex justify-end">
-                  <button
-                    type="button"
-                    onClick={() => removeAddress(idx)}
-                    className="text-xs text-red-600 hover:underline"
-                  >
-                    Remove
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
+          <FormAddress
+            addresses={formData.addresses}
+            onAdd={addAddress}
+            onRemove={removeAddress}
+            onChange={updateAddress}
+            errors={errors.addresses || []}
+          />
         )}
 
         {/* Notes */}
@@ -587,46 +630,39 @@ export default function NewOrder() {
           label="Notes"
           name="notes"
           value={formData.notes}
-          onChange={handleChange}
+          onChange={(e) => {
+            handleChange(e)
+            setErrors((prev) => ({ ...prev, notes: null }))
+          }}
           maxLength={200}
+          error={errors.notes}
+          errorFormatter={t}
         />
-        <p className="text-right text-xs text-gray-400">
+        <p className="-mt-4 text-right text-xs text-gray-400">
           {formData.notes.length}/200
         </p>
 
         {/* Actions */}
-        <div className="flex gap-4 pt-2">
-          {/* Cancel */}
-          <button
-            type="button"
-            onClick={() => setIsCancelOpen(true)}
-            className="w-1/2 py-2 rounded bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-neutral-700 dark:text-gray-200 dark:hover:bg-neutral-600"
-          >
-            Cancel
-          </button>
-
-          {/* Confirm modal */}
-          <ConfirmModal
-            open={isCancelOpen}
-            onClose={() => setIsCancelOpen(false)}
-            onConfirm={() => {
-              setIsCancelOpen(false)
-              navigate(prevLocation || '/orders')
-            }}
-            title="Cancel new order?"
-            message="You will lose all entered data if you exit now."
-            confirmText="Yes, exit"
-            cancelText="No, stay"
-          />
-
-          {/* Submit */}
-          <button
-            type="submit"
-            className="w-1/2 py-2 rounded bg-black text-white hover:bg-neutral-800"
-          >
-            Create
-          </button>
-        </div>
+        <FormActions
+          onSubmit={isEditBase ? handleSaveBaseEdits : handleContinue}
+          submitButtonText={
+            isEditBase
+              ? t('formActions.saveChanges')
+              : t('labels.order.addProduct')
+          }
+          cancelButtonText={t('formActions.cancel')}
+          confirmTitle={t('formActions.confirmTitle')}
+          confirmMessage={t('formActions.confirmMessage')}
+          confirmText={t('formActions.confirmText')}
+          cancelText={t('formActions.cancelText')}
+          // Cancel: en edición vuelve a OrderConfirmation; en flujo normal, al origen
+          cancelRedirect={
+            isEditBase
+              ? returnTo || '/orders/confirmation'
+              : originPathRef.current
+          }
+          cancelState={isEditBase ? location.state : undefined}
+        />
       </form>
     </div>
   )

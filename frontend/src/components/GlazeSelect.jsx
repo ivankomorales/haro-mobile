@@ -12,6 +12,11 @@ export default function GlazeSelect({
   glazes = [],
   selected,
   onChange,
+  // NUEVO: textos
+  placeholderText = 'Buscar esmalte...',
+  noneText = 'Sin esmalte',
+  noResultsText = 'Sin resultados',
+  ariaLabelText = 'Esmalte',
 }) {
   const [query, setQuery] = useState('')
 
@@ -55,14 +60,16 @@ export default function GlazeSelect({
             )}
 
             <ComboboxInput
+              aria-label={ariaLabelText}
               className="flex-1 outline-none bg-transparent text-sm text-black dark:text-white"
               onChange={(e) => setQuery(e.target.value)}
               displayValue={getDisplayName}
-              placeholder="Buscar esmalte..."
+              placeholder={placeholderText}
             />
           </div>
 
           <ComboboxOptions className="absolute z-10 w-full mt-1 max-h-60 overflow-auto bg-white dark:bg-neutral-800 border border-gray-300 dark:border-gray-700 rounded shadow">
+            {/* Opción 'Sin esmalte' */}
             <ComboboxOption
               value=""
               className={({ active }) =>
@@ -71,29 +78,41 @@ export default function GlazeSelect({
                 }`
               }
             >
-              Sin esmalte
+              {noneText}
             </ComboboxOption>
-            {filteredGlazes.map((g) => (
-              <ComboboxOption
-                key={g._id}
-                value={g._id}
-                className={({ active }) =>
-                  `cursor-pointer px-4 py-2 text-sm flex items-center gap-2 ${
-                    active ? 'bg-gray-100 dark:bg-neutral-700' : ''
-                  }`
-                }
-              >
-                {g.image ? (
-                  <img src={g.image} alt={g.name} className="w-6 h-6 rounded" />
-                ) : (
-                  <span
-                    className="w-6 h-6 rounded border"
-                    style={{ backgroundColor: g.hex }}
-                  />
-                )}
-                {g.name}
-              </ComboboxOption>
-            ))}
+
+            {/* Lista de resultados */}
+            {filteredGlazes.length > 0 ? (
+              filteredGlazes.map((g) => (
+                <ComboboxOption
+                  key={g._id}
+                  value={g._id}
+                  className={({ active }) =>
+                    `cursor-pointer px-4 py-2 text-sm flex items-center gap-2 ${
+                      active ? 'bg-gray-100 dark:bg-neutral-700' : ''
+                    }`
+                  }
+                >
+                  {g.image ? (
+                    <img
+                      src={g.image}
+                      alt={g.name}
+                      className="w-6 h-6 rounded"
+                    />
+                  ) : (
+                    <span
+                      className="w-6 h-6 rounded border"
+                      style={{ backgroundColor: g.hex }}
+                    />
+                  )}
+                  {g.name}
+                </ComboboxOption>
+              ))
+            ) : (
+              <div className="px-4 py-2 text-sm text-gray-500 dark:text-gray-300">
+                {noResultsText}
+              </div>
+            )}
           </ComboboxOptions>
         </div>
       </Combobox>

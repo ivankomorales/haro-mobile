@@ -16,10 +16,10 @@ export const smartNavigate = (
 
   if (needsConfirmation && typeof confirm === 'function') {
     confirm(() => navigate(targetPath, options), {
-      title: messages.confirm.ExitFlowTitle,
-      message: messages.confirm.ExitFlowMessage,
-      confirmText: messages.confirm.ExitFlowConfirm,
-      cancelText: messages.confirm.ExitFlowCancel,
+      title: messages.confirm.exitFlowTitle,
+      message: messages.confirm.exitFlowMessage,
+      confirmText: messages.confirm.exitFlowConfirm,
+      cancelText: messages.confirm.exitFlowCancel,
     })
   } else {
     navigate(targetPath, options)

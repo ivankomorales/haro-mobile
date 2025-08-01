@@ -6,6 +6,10 @@ import FormInput from '../../components/FormInput'
 import GlazeSelect from '../../components/GlazeSelect'
 import { uploadToCloudinary } from '../../utils/uploadToCloudinary'
 import ImageUploader from '../../components/ImageUploader'
+import FormActions from '../../components/FormActions'
+import { getMessage as t } from '../../utils/getMessage'
+import { showError } from '../../utils/toastUtils'
+import { useRequireState } from '../../utils/useRequireState'
 
 export default function AddProduct() {
   const navigate = useNavigate()
@@ -33,18 +37,17 @@ export default function AddProduct() {
     return formData.type.trim() !== '' && Number(formData.price) > 0
   }
 
-  useEffect(() => {
-    // Valida contra la nueva estructura que envías desde NewOrder
-    const hasMinimumData =
-      baseOrder?.customer?.name &&
-      baseOrder?.orderDate &&
-      typeof baseOrder?.shipping?.isRequired === 'boolean'
+  // Redirige a /orders/new si no vienen los datos mínimos
+  useRequireState(
+    (st) =>
+      st?.customer?.name &&
+      st?.orderDate &&
+      typeof st?.shipping?.isRequired === 'boolean',
+    '/orders/new',
+    () => ({ originPath: location.state?.originPath ?? '/orders' })
+  )
 
-    if (!hasMinimumData) {
-      navigate('/orders/new', { replace: true })
-    }
-  }, [baseOrder, navigate])
-
+  // Cargar esmaltes
   useEffect(() => {
     async function fetchGlazes() {
       try {
@@ -54,7 +57,6 @@ export default function AddProduct() {
         console.error('Failed to fetch glazes', error)
       }
     }
-
     fetchGlazes()
   }, [])
 
@@ -63,22 +65,22 @@ export default function AddProduct() {
     setFormData((prev) => ({ ...prev, [name]: value }))
   }
 
-  // Image Cleanup for component dismount
+  // Cleanup de previews al desmontar
   useEffect(() => {
     return () => {
       objectUrls.current.forEach((url) => URL.revokeObjectURL(url))
     }
   }, [])
 
-  // Add product
+  // Agregar producto a la lista local (todavía no subimos imágenes)
   const handleAddProduct = async () => {
     const newErrors = {}
     const interior = glazes.find((g) => g._id === formData.glazeInterior)
     const exterior = glazes.find((g) => g._id === formData.glazeExterior)
 
-    if (!formData.type.trim()) newErrors.type = 'Tipo requerido'
+    if (!formData.type.trim()) newErrors.type = t('errors.product.typeRequired')
     if (!formData.price || Number(formData.price) <= 0)
-      newErrors.price = 'Precio inválido'
+      newErrors.price = t('errors.product.priceInvalid')
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors)
@@ -95,6 +97,8 @@ export default function AddProduct() {
       }
 
       setProducts((prev) => [...prev, newProduct])
+
+      // Reset formulario del producto
       setFormData({
         type: '',
         quantity: 1,
@@ -104,24 +108,27 @@ export default function AddProduct() {
         description: '',
         images: [],
       })
-      objectUrls.current = [] // cleanup previews after product is added
-      fileInputRef.current.value = null
-      setErrors({}) // clean up
 
+      // Limpia previews
+      objectUrls.current = []
+      fileInputRef.current && (fileInputRef.current.value = null)
+      setErrors({})
+
+      // Scroll para ver la lista actualizada
       setTimeout(() => {
         window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' })
       }, 50)
     } catch (err) {
-      console.error('Error uploading product:', err)
-      setErrors({ ...newErrors, images: 'Error al cargar producto' })
+      console.error('Error adding product:', err)
+      setErrors({ ...newErrors, images: t('errors.image.uploadFailed') })
     }
   } // end handleAddProduct
 
-  // Remove product
+  // Eliminar producto de la lista local
   const handleRemoveProduct = (i) => {
-    // Free memory in previews
     const imgs = products[i]?.images || []
 
+    // Liberar memory de previews (Object URLs) si fueran File
     imgs.forEach((file) => {
       if (file instanceof File) {
         const url = objectUrls.current.find((u) => u.includes(file.name))
@@ -135,10 +142,16 @@ export default function AddProduct() {
     setProducts((prev) => prev.filter((_, idx) => idx !== i))
   }
 
-  // Confirm and submit all products added
+  // Confirmar y navegar a OrderConfirmation (subiendo imágenes antes)
   const handleSubmitAll = async () => {
     try {
-      // Upload allimages before navigating to OrderConfirmation
+      if (products.length === 0) {
+        // Usa t(...) para mostrar el texto final en el toast
+        showError(t('errors.order.missingProduct'))
+        return
+      }
+
+      // Sube imágenes de cada producto y reemplaza File[] por urls[]
       const updatedProducts = await Promise.all(
         products.map(async (product) => {
           const urls = await Promise.all(
@@ -146,7 +159,6 @@ export default function AddProduct() {
               uploadToCloudinary(file, 'haromobile/products')
             )
           )
-
           return {
             ...product,
             images: urls,
@@ -158,40 +170,31 @@ export default function AddProduct() {
         ...baseOrder,
         products: updatedProducts,
       }
-      if (products.length === 0) {
-        alert('Debes agregar al menos un producto antes de continuar.')
-        return
-      }
-      navigate(`/orders/confirmation`, { state: fullOrder })
+
+      navigate('/orders/confirmation', {
+        state: {
+          ...fullOrder,
+          // Propaga el origen para que la confirmation/cierre sepan a dónde volver
+          originPath: baseOrder.originPath ?? '/orders',
+        },
+      })
     } catch (err) {
       console.error('Error uploading images before submit:', err)
-      alert('Hubo un error al subir imágenes. Intenta de nuevo.')
+      showError(t('errors.image.uploadFailed'))
     }
   }
 
   return (
-    <div
-      className="
-        min-h-screen 
-        pb-24
-        bg-white dark:bg-neutral-900 
-        dark:text-gray-100"
-    >
-      {/*
-      <AppBar
-        title="Agregar Producto"
-        left={<button onClick={() => navigate(-1)}>←</button>}
-        progress={0.66}
-      />        
-       
-       */}
-
+    <div className="min-h-screen pb-24 bg-white dark:bg-neutral-900 dark:text-gray-100">
       <div className="max-w-xl mx-auto px-4 py-4 space-y-6">
         <h1 className="text-center mb-8 text-xl font-semibold">
-          Agregar Producto
+          {t('forms.product.title')}
         </h1>
+
         <div className="space-y-4">
-          <label className="block text-sm font-medium mb-2">Tipo:</label>
+          <label className="block text-sm font-medium mb-2">
+            {t('labels.product.type')}:
+          </label>
           <select
             name="type"
             value={formData.type}
@@ -199,12 +202,12 @@ export default function AddProduct() {
             className="w-full p-2 border rounded dark:bg-neutral-800 dark:border-gray-700 dark:text-white"
             required
           >
-            <option value="">Selecciona un tipo</option>
+            <option value="">{t('forms.product.placeholders.type')}</option>
             <option value="Taza">Taza</option>
             <option value="Taza a mano">Taza a mano</option>
             <option value="Plato">Plato</option>
             <option value="Figura">Figura</option>
-            {/* TODO obtenerlo de la base de datos*/}
+            {/* TODO: obtener tipos desde DB */}
           </select>
           {errors.type && (
             <p className="text-red-500 text-xs mt-1">{errors.type}</p>
@@ -212,7 +215,7 @@ export default function AddProduct() {
 
           <div className="flex justify-between items-center">
             <div>
-              <label className="text-sm">Figuras:</label>
+              <label className="text-sm">{t('labels.product.quantity')}:</label>
               <div className="flex items-center gap-4">
                 <button
                   type="button"
@@ -244,17 +247,17 @@ export default function AddProduct() {
 
             <div className="ml-auto">
               <FormInput
-                label="Precio"
+                label={t('labels.product.price')}
+                floating={false}
+                prefix={t('forms.product.placeholders.price')}
                 name="price"
                 type="number"
                 min="0"
                 value={formData.price}
                 onChange={handleChange}
-                placeholder="$"
+                placeholder="0.00"
+                error={errors.price}
               />
-              {errors.price && (
-                <p className="text-red-500 text-xs mt-1">{errors.price}</p>
-              )}
             </div>
           </div>
 
@@ -262,26 +265,34 @@ export default function AddProduct() {
           {formData.type !== 'Figura' && (
             <details className="bg-neutral-100 dark:bg-neutral-800 rounded p-4">
               <summary className="cursor-pointer font-medium text-sm dark:text-white">
-                Esmalte
+                {t('labels.glaze.title')}
               </summary>
               <div className="mt-4 space-y-2">
                 {formData.type !== 'Plato' && (
                   <GlazeSelect
-                    label="Interior:"
+                    label={t('labels.glaze.interior')}
                     glazes={glazes}
                     selected={formData.glazeInterior}
                     onChange={(value) =>
                       setFormData((prev) => ({ ...prev, glazeInterior: value }))
                     }
+                    placeholderText={t('forms.glaze.search')}
+                    noneText={t('labels.glaze.none')}
+                    noResultsText={t('labels.glaze.noResults')}
+                    ariaLabelText={t('labels.glaze.title')}
                   />
                 )}
                 <GlazeSelect
-                  label="Exterior:"
+                  label={t('labels.glaze.exterior')}
                   glazes={glazes}
                   selected={formData.glazeExterior}
                   onChange={(value) =>
                     setFormData((prev) => ({ ...prev, glazeExterior: value }))
                   }
+                  placeholderText={t('forms.glaze.search')}
+                  noneText={t('labels.glaze.none')}
+                  noResultsText={t('labels.glaze.noResults')}
+                  ariaLabelText={t('labels.glaze.title')}
                 />
               </div>
             </details>
@@ -290,17 +301,22 @@ export default function AddProduct() {
           {/* Imágenes */}
           <ImageUploader
             multiple={true}
-            label="Agregar imagenes"
+            label={t('labels.product.images')}
             value={formData.images}
             onChange={(imgs) => setFormData({ ...formData, images: imgs })}
+            inputRef={fileInputRef}
           />
 
           <FormInput
-            label="Descripción"
+            label={t('labels.product.description')}
             name="description"
             value={formData.description}
             onChange={handleChange}
+            maxLength={200}
           />
+          <p className="-mt-2 text-right text-xs text-gray-400">
+          {formData.description.length}/200
+        </p>
         </div>
 
         <button
@@ -313,13 +329,13 @@ export default function AddProduct() {
               : 'bg-gray-300 text-gray-500 cursor-not-allowed'
           }`}
         >
-          + Agregar
+          + {t('forms.product.buttons.add')}
         </button>
 
         {products.length > 0 && (
           <>
             <h2 className="text-sm font-semibold mt-6 mb-2 text-gray-600 dark:text-gray-200">
-              Productos agregados:
+              {t('forms.product.sections.addedProducts')}
             </h2>
             <ul className="space-y-2 text-sm text-gray-800 dark:text-white">
               {products.map((p, i) => (
@@ -342,54 +358,22 @@ export default function AddProduct() {
           </>
         )}
 
-        {/* Mobile button (only check icon) */}
-        <div className="fixed bottom-5 inset-x-0 flex justify-center md:hidden">
-          <button
-            type="button"
-            onClick={handleSubmitAll}
-            className="bg-green-600 text-white p-4 rounded-full shadow-lg hover:bg-green-700"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-6 w-6"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M5 13l4 4L19 7"
-              />
-            </svg>
-          </button>
-        </div>
-
-        {/* Desktop button (text + icon) */}
-        <div className="hidden md:flex justify-center mt-8">
-          <button
-            type="button"
-            onClick={handleSubmitAll}
-            className="bg-green-600 text-white px-6 py-3 rounded-full font-semibold hover:bg-green-700 flex items-center gap-2"
-          >
-            Confirmar
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-5 w-5"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M5 13l4 4L19 7"
-              />
-            </svg>
-          </button>
-        </div>
+        {/* Footer */}
+        <FormActions
+          onSubmit={handleSubmitAll}
+          // Texto botón derecho (siguiente/persistir)
+          submitButtonText={t('formActions.submitDefault')}
+          // Texto botón izquierdo (cancelar)
+          cancelButtonText={t('formActions.cancel')}
+          // Confirm modal al cancelar
+          confirmTitle={t('formActions.confirmTitle')}
+          confirmMessage={t('formActions.confirmMessage')}
+          confirmText={t('formActions.confirmText')}
+          cancelText={t('formActions.cancelText')}
+          // ← Ir a NewOrder con el borrador (draft) para prefill
+          cancelRedirect="/orders/new"
+          cancelState={baseOrder}
+        />
       </div>
     </div>
   )

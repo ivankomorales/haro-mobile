@@ -5,8 +5,10 @@ import { useNavigate, useLocation } from 'react-router-dom'
 
 export default function FormActions({
   onSubmit,
-  cancelRedirect = '/orders',
-  submitText = 'Create',
+  cancelRedirect = '/orders', // By default sent back to orders, we can prompt to send back to where we were
+  cancelState, // For the Order Dradt and being able to go back when cancel Product Add
+  submitButtonText = 'Create',
+  cancelButtonText = 'Cancel',
   confirmTitle = 'Cancel?',
   confirmMessage = 'You will lose unsaved changes if you exit now.',
   confirmText = 'Yes, exit',
@@ -18,7 +20,7 @@ export default function FormActions({
 
   const handleCancel = () => {
     setIsCancelOpen(false)
-    navigate(location.state?.from || cancelRedirect)
+    navigate(cancelRedirect, { state: cancelState })
   }
 
   return (
@@ -28,7 +30,7 @@ export default function FormActions({
         onClick={() => setIsCancelOpen(true)}
         className="w-1/2 py-2 rounded bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-neutral-700 dark:text-gray-200 dark:hover:bg-neutral-600"
       >
-        Cancel
+        {cancelButtonText}
       </button>
 
       <ConfirmModal
@@ -42,11 +44,11 @@ export default function FormActions({
       />
 
       <button
-        type="submit"
+        type="button"
         onClick={onSubmit}
         className="w-1/2 py-2 rounded bg-black text-white hover:bg-neutral-800"
       >
-        {submitText}
+        {submitButtonText}
       </button>
     </div>
   )

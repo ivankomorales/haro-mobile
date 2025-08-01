@@ -26,7 +26,7 @@ export default function SplitActionButton() {
         <button
           onClick={() =>
             handleSelect('/orders/new', {
-              state: { from: location.pathname },
+              state: { originPath: location.pathname },
             })
           }
           className="bg-orange-600 text-white px-4 py-2 text-sm font-medium hover:bg-orange-700"
@@ -48,7 +48,7 @@ export default function SplitActionButton() {
           <button
             onClick={() =>
               handleSelect('/orders/new', {
-                state: { from: location.pathname },
+                state: { originPath: location.pathname },
               })
             }
             className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-neutral-700"

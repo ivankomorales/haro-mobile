@@ -1,112 +1,78 @@
-// components/ImageUploader.jsx
-import { useRef, useState, useEffect } from 'react'
+// src/components/ImageUploader.jsx
+
+import { useRef } from 'react'
+import { ImagePlus, X } from 'lucide-react'
 
 export default function ImageUploader({
+  label,
   multiple = false,
-  label = 'Imagen',
   value = [],
   onChange,
-  previewSize = 96,
-  rounded = true,
-  showDeleteButton = true,
+  inputRef,
 }) {
-  const inputRef = useRef(null)
-  const [previews, setPreviews] = useState([])
+  const localRef = useRef(null)
 
-  // Generate preview URLs
-  useEffect(() => {
-    const objectUrls = []
-
-    if (value && value.length > 0) {
-      const urls = value.map((file) => {
-        const url = URL.createObjectURL(file)
-        objectUrls.push(url)
-        return url
-      })
-      setPreviews(urls)
-    } else {
-      setPreviews([])
-    }
-
-    return () => {
-      objectUrls.forEach((url) => URL.revokeObjectURL(url))
-    }
-  }, [value])
-
-  const handleFileChange = (e) => {
-    const files = Array.from(e.target.files)
-    const valid = files.filter(
-      (f) => f.type.startsWith('image/') && f.size < 5 * 1024 * 1024
-    )
-
-    if (valid.length > 0) {
-      const newFiles = multiple ? [...value, ...valid] : valid
-      onChange?.(newFiles)
-    }
-
-    inputRef.current.value = ''
+  const handleFiles = (e) => {
+    const files = Array.from(e.target.files || [])
+    if (!files.length) return
+    const newFiles = multiple ? [...value, ...files] : files
+    onChange(newFiles)
   }
 
-  const handleRemove = (index) => {
-    const updated = value.filter((_, i) => i !== index)
-    onChange?.(updated)
+  const removeImage = (index) => {
+    const updated = [...value]
+    updated.splice(index, 1)
+    onChange(updated)
   }
 
   return (
-    <div>
-      <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">
-        {label}
-      </label>
-
-      {(multiple || value.length === 0) && (
-        <div className="relative w-full">
-          <input
-            id="imageInput"
-            type="file"
-            multiple={multiple}
-            accept="image/*"
-            onChange={handleFileChange}
-            className="hidden"
-          />
-          <label
-            htmlFor="imageInput"
-            className="block cursor-pointer text-center border border-dashed rounded p-4 bg-neutral-50 dark:bg-neutral-800 text-gray-500 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition"
-          >
-            📸 Haz clic o arrastra una imagen aquí
-          </label>
-        </div>
+    <div className="space-y-2">
+      {label && (
+        <label className="block text-sm font-medium text-gray-800 dark:text-gray-200">
+          {label}
+        </label>
       )}
 
-      {previews.length > 0 && (
-        <div className="flex flex-wrap gap-2 mt-2">
-          {previews.map((src, i) => (
+      <div className="flex items-center gap-3 flex-wrap">
+        {value.map((file, idx) => {
+          const preview =
+            typeof file === 'string'
+              ? file
+              : URL.createObjectURL(file)
+
+          return (
             <div
-              key={i}
-              className="relative"
-              style={{
-                width: previewSize,
-                height: previewSize,
-              }}
+              key={idx}
+              className="relative w-20 h-20 rounded overflow-hidden border dark:border-gray-600"
             >
               <img
-                src={src}
-                alt={`preview-${i}`}
-                className={`w-full h-full object-cover ${rounded ? 'rounded' : ''}`}
+                src={preview}
+                alt={`preview-${idx}`}
+                className="object-cover w-full h-full"
               />
-              {showDeleteButton && (
-                <button
-                  type="button"
-                  onClick={() => handleRemove(i)}
-                  className="absolute top-[-6px] right-[-6px] bg-red-600 text-white rounded-full w-5 h-5 text-xs flex items-center justify-center shadow"
-                  title="Eliminar imagen"
-                >
-                  ✕
-                </button>
-              )}
+              <button
+                type="button"
+                onClick={() => removeImage(idx)}
+                className="absolute top-0 right-0 bg-black bg-opacity-50 text-white p-1 rounded-bl"
+              >
+                <X size={14} />
+              </button>
             </div>
-          ))}
-        </div>
-      )}
+          )
+        })}
+
+        <label className="w-20 h-20 border border-dashed dark:border-gray-600 flex items-center justify-center rounded cursor-pointer hover:bg-gray-100 dark:hover:bg-neutral-700">
+          <ImagePlus className="w-5 h-5 text-gray-500 dark:text-gray-300" />
+          <input
+            type="file"
+            accept="image/*"
+            ref={inputRef || localRef} // ✅ usa inputRef si se provee
+            onChange={handleFiles}
+            className="hidden"
+            multiple={multiple}
+          />
+        </label>
+      </div>
     </div>
   )
 }

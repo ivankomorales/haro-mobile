@@ -1,7 +1,11 @@
 import { Phone, Mail, Globe, AlertCircle, SquarePen } from 'lucide-react'
 import { format } from 'date-fns'
 
-export default function OrderDetailsCard({ order = {} }) {
+export default function OrderDetailsCard({
+  order = {},
+  onEditBase,
+  onEditProducts,
+}) {
   const {
     orderID = 'ORD#-----',
     createdAt = new Date(),
@@ -44,7 +48,10 @@ export default function OrderDetailsCard({ order = {} }) {
 
       {/* Customer Info */}
       <div className="relative p-3 rounded border border-gray-200 dark:border-neutral-700">
-        <button className="absolute top-2 right-2 p-1 rounded hover:bg-gray-200 dark:hover:bg-neutral-700">
+        <button
+          onClick={onEditBase}
+          className="absolute top-2 right-2 p-1 rounded hover:bg-gray-200 dark:hover:bg-neutral-700"
+        >
           <SquarePen className="w-4 h-4" />
         </button>
         <div className="space-y-1">
@@ -64,7 +71,7 @@ export default function OrderDetailsCard({ order = {} }) {
               <Globe className="w-4 h-4" /> {customer.social}
             </div>
           )}
-          {shipping?.required && (
+          {shipping?.isRequired && (
             <div className="flex items-center gap-1 text-sm text-red-600 mt-2">
               <AlertCircle className="w-4 h-4" />
               <span className="font-medium">Requiere envío *</span>
@@ -93,7 +100,10 @@ export default function OrderDetailsCard({ order = {} }) {
             key={index}
             className="relative p-3 rounded border border-gray-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 space-y-2"
           >
-            <button className="absolute top-2 right-2 p-1 rounded hover:bg-gray-200 dark:hover:bg-neutral-700">
+            <button
+              onClick={() => onEditProducts?.(index)}
+              className="absolute top-2 right-2 p-1 rounded hover:bg-gray-200 dark:hover:bg-neutral-700"
+            >
               <SquarePen className="w-4 h-4" />
             </button>
 

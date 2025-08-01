@@ -1,99 +1,156 @@
 // src/pages/orders/OrderConfirmation.jsx
 import { useLocation, useNavigate } from 'react-router-dom'
-import { useEffect, useState } from 'react'
-import {
-  Check,
-  Edit2,
-  MapPin,
-  Mail,
-  Phone,
-  UserRound,
-  Share2,
-} from 'lucide-react'
-import { createOrder } from '../../api/orders'
+import { useMemo, useState } from 'react'
 import OrderDetailsCard from '../../components/OrderDetailsCard'
+import { useRequireState } from '../../utils/useRequireState'
+import { getMessage as t } from '../../utils/getMessage'
+import FormActions from '../../components/FormActions'
+import {
+  showError,
+  showSuccess,
+  showLoading,
+  dismissToast,
+} from '../../utils/toastUtils'
+import { createOrder } from '../../api/orders'
 
-const OrderConfirmation = () => {
+export default function OrderConfirmation() {
   const location = useLocation()
   const navigate = useNavigate()
-  const { state } = location
-  const [order, setOrder] = useState(state || null)
+  const order = location.state || null
 
-  useEffect(() => {
-    if (!state) navigate('/orders')
-  }, [state])
+  // 1) Guard: Do not allow to enter without minimal data
+  useRequireState(
+    (st) =>
+      st?.customer?.name &&
+      Array.isArray(st?.products) &&
+      st.products.length > 0,
+    '/orders/new',
+    () => ({ originPath: location.state?.originPath ?? '/orders' })
+  )
 
   if (!order) return null
 
-  const { customer, products = [], deposit, shipping } = order
-  const subtotal = products.reduce((sum, p) => sum + (p.price || 0), 0)
-  const total = subtotal - (deposit || 0)
+  const originPath = order.originPath ?? '/orders'
+  const [submitting, setSubmitting] = useState(false)
 
-  const [loading, setLoading] = useState(false)
+  // 2) Totals (sum only price; price already includes the quantity in your model)
+  const totals = useMemo(() => {
+    const subtotal = (order.products || []).reduce((acc, p) => {
+      const price = Number(p.price || 0)
+      return acc + price
+    }, 0)
+    const deposit = Number(order.deposit || 0)
+    const remaining = Math.max(subtotal - deposit, 0)
+    return { subtotal, deposit, remaining }
+  }, [order.products, order.deposit])
 
+  // 3) Edit base data (customer/dates/shipping/notes)
+  const handleEditBase = () => {
+    navigate('/orders/new', {
+      state: {
+        ...order,
+        originPath,
+        mode: 'editBase',
+        returnTo: '/orders/confirmation',
+      },
+    })
+  }
+
+  // 4) Edit products
+  const handleEditProducts = () => {
+    navigate('/orders/new/products', {
+      state: {
+        ...order,
+        originPath,
+        mode: 'editProduct',
+        returnTo: '/orders/confirmation',
+        editIndex: index,
+      },
+    })
+  }
+
+  // 5) Confirm order (API + toasts + redirect)
   const handleConfirm = async () => {
-    setLoading(true)
-
     try {
+      setSubmitting(true)
+      showLoading(t('loading.order')) // "Creating order..."
+
       const cleanProducts = order.products.map((p) => ({
         type: p.type,
-        quantity: Number(p.quantity),
+        quantity: Number(p.quantity), // lo sigues guardando si te sirve
         price: Number(p.price),
         description: p.description || '',
-        glazes: {
-          interior: p.glazeInterior || null,
-          exterior: p.glazeExterior || null,
-        },
+        glazes: p.glazes || { interior: null, exterior: null },
+        images: (p.images || []).map((img) => String(img)), // deben ser URLs
         decorations: p.decorations || {},
-        images: p.images.map((img) =>
-          typeof img === 'string' ? img : URL.createObjectURL(img)
-        ),
       }))
 
       const payload = {
         customer: order.customer,
-        status: order.status,
-        date: order.date,
+        orderDate: order.orderDate || order.date || null,
+        deliverDate: order.deliverDate || null,
+        status: order.status || 'New',
         deposit: Number(order.deposit || 0),
         notes: order.notes || '',
         shipping: {
-          isRequired: order.shipping?.isRequired || false,
+          isRequired: !!order.shipping?.isRequired,
           addresses: order.shipping?.addresses || [],
         },
         products: cleanProducts,
+        totals, // opcional si el backend lo recalcula
       }
 
-      console.log('Payload to backend:', payload)
       const saved = await createOrder(payload)
+      dismissToast()
+      showSuccess(t('success.order.created')) // asegúrate camelCase en i18n
 
-      navigate(`/orders/${saved._id}/details`)
+      if (saved?._id) {
+        navigate(`/orders/${saved._id}/details`, { replace: true })
+      } else {
+        navigate('/orders', { replace: true })
+      }
     } catch (err) {
       console.error('Failed to confirm order:', err)
-      alert('Error al guardar el pedido')
+      dismissToast()
+      showError(t('auth.serverError')) // camelCase en i18n
     } finally {
-      setLoading(false)
+      setSubmitting(false)
     }
   }
 
   return (
-    <div className="min-h-screen bg-white text-white dark:bg-neutral-900 flex flex-col items-center px-4 py-6">
-      <OrderDetailsCard order={order} />
+    <div className="min-h-screen bg-white dark:bg-neutral-900 flex flex-col items-center px-4 py-6">
+      {/* Header */}
+      <h1 className="text-xl font-semibold text-black dark:text-white mb-4">
+        {t('labels.order.confirm') || 'Confirm Order'}
+      </h1>
 
-      <button
-        onClick={handleConfirm}
-        disabled={loading}
-        className="w-64 bg-black text-white mt-4 py-3 rounded-full font-semibold flex items-center justify-center gap-2"
-      >
-        <Check size={18} />
-        {loading ? 'Guardando...' : 'Confirmar'}
-      </button>
+      {/* Card with details (your component) */}
+      <div className="w-full max-w-2xl">
+        <OrderDetailsCard
+          order={order}
+          onEditBase={handleEditBase}
+          onEditProducts={handleEditProducts}
+        />
+      </div>
 
-      <p className="text-xs text-white mt-4 flex items-center gap-2">
-        <Share2 size={12} />
-        Opción de compartir el pedido
-      </p>
+      {/* Footer actions */}
+      <div className="w-full max-w-2xl mt-6">
+        <FormActions
+          onSubmit={handleConfirm}
+          submitButtonText={
+            submitting
+              ? t('loading.order')
+              : t('labels.order.submit') || 'Create Order'
+          }
+          cancelButtonText={t('formActions.cancel')}
+          confirmTitle={t('formActions.confirmTitle')}
+          confirmMessage={t('formActions.confirmMessage')}
+          confirmText={t('formActions.confirmText')}
+          cancelText={t('formActions.cancelText')}
+          cancelRedirect={originPath}
+        />
+      </div>
     </div>
   )
 }
-
-export default OrderConfirmation

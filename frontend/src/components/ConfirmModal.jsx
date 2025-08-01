@@ -15,16 +15,16 @@ export default function ConfirmModal({
       <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
       <div className="fixed inset-0 flex items-center justify-center p-4">
         <DialogPanel className="mx-auto max-w-sm rounded bg-white dark:bg-neutral-800 p-6 shadow-lg">
-          <DialogTitle className="text-lg font-semibold mb-2">
+          <DialogTitle className="text-lg text-black dark:text-white font-semibold mb-2">
             {title}
           </DialogTitle>
-          <Description className="text-sm text-gray-500 mb-4">
+          <Description className="text-sm text-gray-500 dar:text-gray-500 mb-4">
             {message}
           </Description>
           <div className="flex gap-2">
             <button
               onClick={onClose}
-              className="flex-1 py-2 rounded bg-gray-200 dark:bg-neutral-700 hover:bg-gray-300 dark:hover:bg-neutral-600"
+              className="flex-1 py-2 rounded bg-gray-200 dark:bg-neutral-700 dark:text-white hover:bg-gray-300 dark:hover:bg-neutral-600"
             >
               {cancelText}
             </button>

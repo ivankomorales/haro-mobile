@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { useAuth } from '../context/AuthContext'
 import FormInput from '../components/FormInput'
-import { showError } from '../utils/toastUtils'
+import { getMessage } from '../utils/getMessage'
+
 
 export default function Login() {
   const { login } = useAuth()
@@ -46,6 +47,7 @@ export default function Login() {
             setErrors((prev) => ({ ...prev, email: null }))
           }}
           error={errors.email}
+          errorFormatter={getMessage}
         />
 
         <FormInput
@@ -59,6 +61,7 @@ export default function Login() {
           }}
           showToggle
           error={errors.password}
+          errorFormatter={getMessage}
         />
 
         {/* Mensaje de error general */}

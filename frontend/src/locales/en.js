@@ -1,70 +1,159 @@
 // locales/en.js
-// Access these messages via the helper at utils/getMessage.js using dot notation keys
+// Access these messages via utils/getMessage.js using dot notation keys
 
 export const en = {
+  // ─── ERRORS & VALIDATION ────────────────────────────────
   errors: {
-    user: {
-      InvalidEmail: 'Invalid email format.',
-      InvalidPhone: 'Phone number must be 10 digits.',
-      NameRequired: 'User name is required.',
+    address: {
+      missingAddress: 'Address is required',
+      missingCity: 'City is required',
+      missingZip: 'ZIP code is required',
+      missingPhone: 'Phone number is required',
     },
     customer: {
-      MissingName: 'Customer name is required.',
-    },
-    order: {
-      CreateFailed: 'Something went wrong while creating the order.',
-      DeliverDateBeforeCreation:
-        'Delivery date cannot be earlier than order date.',
-      MissingProduct: 'You must add at least one product before continuing.',
+      missingName: 'Customer name is required.',
+      missingLastName: 'Customer last name is required.',
     },
     glaze: {
-      FetchFailed: 'Could not load glazes. Please try again.',
+      fetchFailed: 'Could not load glazes. Please try again.',
     },
     image: {
-      UploadFailed: 'Failed to upload images. Please try again.',
-    },
-  },
-
-  success: {
-    user: {
-      Created: 'User created successfully.',
-    },
-    glaze: {
-      Loaded: 'Glazes loaded successfully.',
-      Added: 'Glaze added successfully.',
+      uploadFailed: 'Failed to upload images. Please try again.',
     },
     order: {
-      Created: 'Order created successfully.',
+      createFailed: 'Something went wrong while creating the order.',
+      deliverDateBeforeCreation:
+        'Delivery date cannot be earlier than order date.',
+      missingProduct: 'You must add at least one product before continuing.',
+      missingDate: 'Order date is required.',
+    },
+    user: {
+      invalidEmail: 'Invalid email format.',
+      invalidPhone: 'Phone number must be 10 digits.',
+      nameRequired: 'User name is required.',
     },
     product: {
-      Added: 'Product added to order.',
+      typeRequired: 'Type is required.',
+      priceInvalid: 'Invalid price.',
+      addFailed: 'Failed to add product.',
+    },
+  },
+
+  validation: {
+    facebookFormat: 'Facebook must start with /',
+    incompleteAddressBeforeAdding:
+      'Complete the current address before adding another one',
+    incompleteShipping: 'Complete all the shipping address fields',
+    instagramFormat: 'Instagram must start with @',
+    invalidDeliveryDate: 'Delivery date cannot be earlier than order date',
+    missingShippingAddress: 'Please add at least one shipping address',
+    requiredFields: 'Please complete all required fields',
+    positiveNumber: 'Value must be greater than 0',
+  },
+
+  // ─── SUCCESS ─────────────────────────────────────────────
+  success: {
+    glaze: {
+      added: 'Glaze added successfully.',
+      loaded: 'Glazes loaded successfully.',
     },
     image: {
-      Uploaded: 'Images uploaded successfully.',
-    },
-  },
-
-  labels: {
-    general: {
-      Name: 'Name',
-      Email: 'Email',
-      Phone: 'Phone',
-      Notes: 'Notes',
+      uploaded: 'Images uploaded successfully.',
     },
     order: {
-      DeliveryDate: 'Delivery Date',
-      Submit: 'Create Order',
-      AddProduct: 'Add Product',
+      created: 'Order created successfully.',
+    },
+    product: {
+      added: 'Product added to order.',
+    },
+    user: {
+      created: 'User created successfully.',
     },
   },
 
-  confirm: {
-    ExitFlowTitle: 'Cancel creation?',
-    ExitFlowMessage: 'If you leave now, you will lose all unsaved changes.',
-    ExitFlowConfirm: 'Yes, exit',
-    ExitFlowCancel: 'No, stay',
+  // ─── AUTH ────────────────────────────────────────────────
+  auth: {
+    emailRequired: 'Email is required.',
+    loginFailed: 'Incorrect email or password.',
+    loggedOut: 'You have been logged out.',
+    missingFields: 'Please fill in all fields.',
+    passwordRequired: 'Password is required.',
+    serverError: 'An unexpected error occurred. Please try again later.',
   },
 
+  // ─── LABELS ──────────────────────────────────────────────
+  labels: {
+    common: {
+      noResults: 'No results',
+    },
+    general: {
+      email: 'Email',
+      name: 'Name',
+      notes: 'Notes',
+      phone: 'Phone',
+    },
+    glaze: {
+      title: 'Glaze', // nombre genérico
+      none: 'No glaze', // opción "sin esmalte"
+      noResults: 'No results',
+      interior: 'Interior:', // etiqueta para interior
+      exterior: 'Exterior:', // etiqueta para exterior
+    },
+    order: {
+      addProduct: 'Add Product',
+      deliveryDate: 'Delivery Date',
+      submit: 'Create Order',
+      confirm: 'Confirm Order',
+    },
+    product: {
+      // Nombres de campos que se ven en el formulario
+      type: 'Type',
+      quantity: 'Quantity',
+      price: 'Price',
+      description: 'Description',
+      images: 'Images',
+    },
+  },
+
+  // ───────────────────── FORMS ───────────────────────────
+  forms: {
+    glaze: {
+      select: 'Select glaze',
+      search: 'Search glaze',
+    },
+    product: {
+      title: 'Add Product',
+      placeholders: {
+        type: 'Select a type',
+        quantity: 'Enter quantity',
+        price: '$',
+        description: 'Short description (optional)',
+        images: 'Add images',
+      },
+      help: {
+        quantity: 'Minimum: 1',
+        price: 'Use numbers only',
+        glaze: 'Interior glaze is optional for plates', // To remove, no make sense
+      },
+      buttons: {
+        add: 'Add',
+        confirm: 'Confirm',
+        addProduct: 'Add Product',
+        proceed: 'Proceed',
+        shipping: 'Requires shipping?',
+      },
+      // Textos del UI que no encajan en labels/errores
+      sections: {
+        glaze: 'Glaze', // Duplicated
+        addedProducts: 'Added products:',
+      },
+      messages: {
+        scrollAfterAdd: 'Scrolling to the bottom…',
+      },
+    },
+  },
+
+  // ─── FORM ACTIONS & CONFIRM MODALS ───────────────────────
   formActions: {
     cancel: 'Cancel',
     submitDefault: 'Submit',
@@ -73,51 +162,57 @@ export const en = {
     confirmText: 'Yes, exit',
     cancelText: 'No, stay',
   },
-
   formActionsUser: {
     cancel: 'Cancel',
     submitDefault: 'Create User',
     confirmTitle: 'Cancel creating user?',
     confirmMessage: 'All entered user data will be lost if you exit.',
-    confirmText: 'Yes, changed my mind',
-    cancelText: 'No, keep editing',
+    //confirmText: 'Yes, changed my mind',
+    //cancelText: 'No, keep editing',
   },
-
   formActionsGlaze: {
     cancel: 'Cancel',
     submitDefault: 'Add Glaze',
     confirmTitle: 'Cancel glaze creation?',
     confirmMessage: 'You will lose the glaze configuration if you exit.',
-    confirmText: 'Yes, discard glaze',
-    cancelText: 'No, keep working',
+    //confirmText: 'Yes, discard glaze',
+    //cancelText: 'No, keep working',
   },
-
   formActionsOrder: {
     cancel: 'Cancel',
     submitDefault: 'Create Order',
     confirmTitle: 'Cancel this order?',
     confirmMessage: 'All progress in the order will be lost.',
-    confirmText: 'Yes, cancel order',
-    cancelText: 'No, go back',
+    //confirmText: 'Yes, cancel order',
+    //cancelText: 'No, go back',
+  },
+  formActionsProduct: {
+    cancel: 'Cancel',
+    submitDefault: 'Proceed',
+    confirmTitle: 'Cancel this order?',
+    confirmMessage: 'All progress in the order will be lost.',
+    //confirmText: 'Yes, cancel order',
+    //cancelText: 'No, go back',
   },
 
-  auth: {
-    EmailRequired: 'Email is required.',
-    PasswordRequired: 'Password is required.',
-    MissingFields: 'Please fill in all fields.',
-    LoginFailed: 'Incorrect email or password.',
-    ServerError: 'An unexpected error occurred. Please try again later.',
-    LoggedOut: 'You have been logged out.',
+  confirm: {
+    exitFlowTitle: 'Cancel creation?',
+    exitFlowMessage: 'If you leave now, you will lose all unsaved changes.',
+    exitFlowConfirm: 'Yes, exit',
+    exitFlowCancel: 'No, stay',
   },
 
+  // ─── LOADING STATES ──────────────────────────────────────
   loading: {
+    generic: 'Please wait...',
     image: 'Uploading image...',
     order: 'Creating order...',
     user: 'Registering user...',
-    generic: 'Please wait...',
   },
+
+  // ─── INFO MESSAGES ───────────────────────────────────────
   info: {
-    welcome: 'Welcome to Haro Mobile!',
     logout: 'You have been logged out.',
+    welcome: 'Welcome to Haro Mobile!',
   },
 }

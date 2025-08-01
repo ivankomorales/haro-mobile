@@ -82,7 +82,7 @@ export default function BottomNavBar() {
         <div className="flex items-center justify-center">
           <button
             onClick={() =>
-              navigate('/orders/new', { state: { from: location.pathname } })
+              navigate('/orders/new', { state: { originPath: location.pathname } })
             }
             className="
               inline-flex items-center justify-center 
