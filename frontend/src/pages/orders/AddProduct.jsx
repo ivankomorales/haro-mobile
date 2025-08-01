@@ -14,7 +14,10 @@ import { useRequireState } from '../../utils/useRequireState'
 export default function AddProduct() {
   const navigate = useNavigate()
   const location = useLocation()
+  const originPath = location.state?.originPath || '/home'
   const baseOrder = location.state || {}
+  const editIndex = location.state?.editIndex
+  const isEdit = typeof editIndex === 'number'
 
   const [glazes, setGlazes] = useState([])
   const [products, setProducts] = useState([])
@@ -37,7 +40,7 @@ export default function AddProduct() {
     return formData.type.trim() !== '' && Number(formData.price) > 0
   }
 
-  // Redirige a /orders/new si no vienen los datos mínimos
+  // Redirect to NewOrder if no minimal data found
   useRequireState(
     (st) =>
       st?.customer?.name &&
@@ -47,7 +50,7 @@ export default function AddProduct() {
     () => ({ originPath: location.state?.originPath ?? '/orders' })
   )
 
-  // Cargar esmaltes
+  // Fetch Glazes
   useEffect(() => {
     async function fetchGlazes() {
       try {
@@ -60,9 +63,26 @@ export default function AddProduct() {
     fetchGlazes()
   }, [])
 
+  // Preload product if on EditMode
+  useEffect(() => {
+    if (isEdit && baseOrder.products && baseOrder.products[editIndex]) {
+      const product = baseOrder.products[editIndex]
+      setFormData({
+        type: product.type,
+        quantity: product.quantity,
+        price: product.price,
+        glazeInterior: product.glazes?.interior?._id || '',
+        glazeExterior: product.glazes?.exterior?._id || '',
+        description: product.description || '',
+        images: product.images || [], // URLs en modo edición
+      })
+    }
+  }, [isEdit, editIndex, baseOrder.products])
+
   const handleChange = (e) => {
     const { name, value } = e.target
     setFormData((prev) => ({ ...prev, [name]: value }))
+    setErrors((prev) => ({ ...prev, [name]: null }))
   }
 
   // Cleanup de previews al desmontar
@@ -72,13 +92,16 @@ export default function AddProduct() {
     }
   }, [])
 
-  // Agregar producto a la lista local (todavía no subimos imágenes)
+  // Add product to local list (no images yet)
   const handleAddProduct = async () => {
     const newErrors = {}
     const interior = glazes.find((g) => g._id === formData.glazeInterior)
     const exterior = glazes.find((g) => g._id === formData.glazeExterior)
 
     if (!formData.type.trim()) newErrors.type = t('errors.product.typeRequired')
+    if (!formData.quantity || formData.quantity <= 0) {
+      newErrors.quantity = 'errors.invalid_quantity'
+    }
     if (!formData.price || Number(formData.price) <= 0)
       newErrors.price = t('errors.product.priceInvalid')
 
@@ -98,7 +121,7 @@ export default function AddProduct() {
 
       setProducts((prev) => [...prev, newProduct])
 
-      // Reset formulario del producto
+      // Reset form
       setFormData({
         type: '',
         quantity: 1,
@@ -109,26 +132,21 @@ export default function AddProduct() {
         images: [],
       })
 
-      // Limpia previews
+      // Clean previews
       objectUrls.current = []
       fileInputRef.current && (fileInputRef.current.value = null)
       setErrors({})
-
-      // Scroll para ver la lista actualizada
-      setTimeout(() => {
-        window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' })
-      }, 50)
     } catch (err) {
       console.error('Error adding product:', err)
       setErrors({ ...newErrors, images: t('errors.image.uploadFailed') })
     }
   } // end handleAddProduct
 
-  // Eliminar producto de la lista local
+  // Delete product from local list
   const handleRemoveProduct = (i) => {
     const imgs = products[i]?.images || []
 
-    // Liberar memory de previews (Object URLs) si fueran File
+    // Free memory previews (Object URLs)
     imgs.forEach((file) => {
       if (file instanceof File) {
         const url = objectUrls.current.find((u) => u.includes(file.name))
@@ -142,39 +160,63 @@ export default function AddProduct() {
     setProducts((prev) => prev.filter((_, idx) => idx !== i))
   }
 
-  // Confirmar y navegar a OrderConfirmation (subiendo imágenes antes)
+  // Confirm $ navigate to OrderConfirmation (uploading images first)
   const handleSubmitAll = async () => {
     try {
-      if (products.length === 0) {
-        // Usa t(...) para mostrar el texto final en el toast
-        showError(t('errors.order.missingProduct'))
-        return
-      }
+      let updatedProducts
+      let finalProducts
 
-      // Sube imágenes de cada producto y reemplaza File[] por urls[]
-      const updatedProducts = await Promise.all(
-        products.map(async (product) => {
-          const urls = await Promise.all(
-            product.images.map((file) =>
-              uploadToCloudinary(file, 'haromobile/products')
-            )
+      if (isEdit) {
+        const urls = await Promise.all(
+          formData.images.map((file) =>
+            uploadToCloudinary(file, 'haromobile/products')
           )
-          return {
-            ...product,
-            images: urls,
-          }
-        })
-      )
+        )
+
+        const editedProduct = {
+          ...formData,
+          glazes: {
+            interior:
+              glazes.find((g) => g._id === formData.glazeInterior) || null,
+            exterior:
+              glazes.find((g) => g._id === formData.glazeExterior) || null,
+          },
+          images: urls,
+        }
+
+        finalProducts = [...baseOrder.products]
+        finalProducts[editIndex] = editedProduct
+      } else {
+        if (products.length === 0) {
+          showError(t('errors.order.missingProduct'))
+          return
+        }
+
+        updatedProducts = await Promise.all(
+          products.map(async (product) => {
+            const urls = await Promise.all(
+              product.images.map((file) =>
+                uploadToCloudinary(file, 'haromobile/products')
+              )
+            )
+            return {
+              ...product,
+              images: urls,
+            }
+          })
+        )
+
+        finalProducts = updatedProducts
+      }
 
       const fullOrder = {
         ...baseOrder,
-        products: updatedProducts,
+        products: finalProducts,
       }
 
       navigate('/orders/confirmation', {
         state: {
           ...fullOrder,
-          // Propaga el origen para que la confirmation/cierre sepan a dónde volver
           originPath: baseOrder.originPath ?? '/orders',
         },
       })
@@ -188,30 +230,30 @@ export default function AddProduct() {
     <div className="min-h-screen pb-24 bg-white dark:bg-neutral-900 dark:text-gray-100">
       <div className="max-w-xl mx-auto px-4 py-4 space-y-6">
         <h1 className="text-center mb-8 text-xl font-semibold">
-          {t('forms.product.title')}
+          {isEdit ? t('titles.editProduct') : t('titles.addProduct')}
         </h1>
 
         <div className="space-y-4">
-          <label className="block text-sm font-medium mb-2">
-            {t('labels.product.type')}:
-          </label>
-          <select
+          <FormInput
+            as="select"
             name="type"
+            label={t('forms.product.placeholders.type')}
             value={formData.type}
             onChange={handleChange}
-            className="w-full p-2 border rounded dark:bg-neutral-800 dark:border-gray-700 dark:text-white"
+            error={errors.type}
+            errorFormatter={t}
             required
           >
-            <option value="">{t('forms.product.placeholders.type')}</option>
-            <option value="Taza">Taza</option>
-            <option value="Taza a mano">Taza a mano</option>
-            <option value="Plato">Plato</option>
-            <option value="Figura">Figura</option>
-            {/* TODO: obtener tipos desde DB */}
-          </select>
-          {errors.type && (
-            <p className="text-red-500 text-xs mt-1">{errors.type}</p>
-          )}
+            <option value="">{t('forms.product.placeholders.select')}</option>
+            <option value="cup">{t('forms.product.types.cup')}</option>
+            <option value="handmadeCup">
+              {t('forms.product.types.handmadeCup')}
+            </option>
+            <option value="plate">{t('forms.product.types.plate')}</option>
+            <option value="figurine">
+              {t('forms.product.types.figurine')}
+            </option>
+          </FormInput>
 
           <div className="flex justify-between items-center">
             <div>
@@ -262,7 +304,7 @@ export default function AddProduct() {
           </div>
 
           {/* Esmaltes */}
-          {formData.type !== 'Figura' && (
+          {formData.type !== 'figurine' && (
             <details className="bg-neutral-100 dark:bg-neutral-800 rounded p-4">
               <summary className="cursor-pointer font-medium text-sm dark:text-white">
                 {t('labels.glaze.title')}
@@ -315,21 +357,21 @@ export default function AddProduct() {
             maxLength={200}
           />
           <p className="-mt-2 text-right text-xs text-gray-400">
-          {formData.description.length}/200
-        </p>
+            {formData.description.length}/200
+          </p>
         </div>
 
         <button
           type="button"
           onClick={handleAddProduct}
-          disabled={!isFormValid()}
+          //disabled={!isFormValid()}
           className={`w-full py-2 rounded font-semibold transition-colors duration-200 ${
             isFormValid()
               ? 'bg-black text-white hover:bg-neutral-800'
               : 'bg-gray-300 text-gray-500 cursor-not-allowed'
           }`}
         >
-          + {t('forms.product.buttons.add')}
+          + {t('forms.product.buttons.addProduct')}
         </button>
 
         {products.length > 0 && (
@@ -344,7 +386,11 @@ export default function AddProduct() {
                   className="p-2 border rounded bg-neutral-100 dark:bg-neutral-800 flex items-center justify-between"
                 >
                   <div className="flex-1 truncate">
-                    {p.type} — {p.quantity} piezas — ${p.price}
+                    <div className="flex-1 truncate">
+                      {p.type} — {p.quantity}{' '}
+                      {t('forms.product.figure')}
+                      {p.quantity > 1 ? 's' : ''} — ${p.price}
+                    </div>
                   </div>
                   <button
                     onClick={() => handleRemoveProduct(i)}
@@ -362,7 +408,11 @@ export default function AddProduct() {
         <FormActions
           onSubmit={handleSubmitAll}
           // Texto botón derecho (siguiente/persistir)
-          submitButtonText={t('formActions.submitDefault')}
+          submitButtonText={
+            isEdit
+              ? t('forms.product.buttons.save')
+              : t('forms.product.buttons.confirm')
+          }
           // Texto botón izquierdo (cancelar)
           cancelButtonText={t('formActions.cancel')}
           // Confirm modal al cancelar
@@ -370,8 +420,7 @@ export default function AddProduct() {
           confirmMessage={t('formActions.confirmMessage')}
           confirmText={t('formActions.confirmText')}
           cancelText={t('formActions.cancelText')}
-          // ← Ir a NewOrder con el borrador (draft) para prefill
-          cancelRedirect="/orders/new"
+          cancelRedirect={isEdit ? '/orders/confirmation' : originPath}
           cancelState={baseOrder}
         />
       </div>

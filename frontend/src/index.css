@@ -39,6 +39,11 @@ button {
   cursor: pointer;
 }
 
+input[type="date"]::-webkit-calendar-picker-indicator {
+  opacity: 0;
+  cursor: pointer;
+}
+
 /* 5. Remove background override – Tailwind handles it */
 /* Browser autofill overwrite bg-color */
 /* Apply autofill styles ONLY in dark mode */

@@ -14,8 +14,8 @@ export default function Login() {
     e.preventDefault()
 
     const newErrors = {}
-    if (!email) newErrors.email = 'auth.EmailRequired'
-    if (!password) newErrors.password = 'auth.PasswordRequired'
+    if (!email) newErrors.email = 'auth.emailRequired'
+    if (!password) newErrors.password = 'auth.passwordRequired'
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors)

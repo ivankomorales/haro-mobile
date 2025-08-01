@@ -123,8 +123,16 @@ export const en = {
     },
     product: {
       title: 'Add Product',
+      figure: 'Figure', // Figures that go inside the Cups, or Plates
+      types: {
+        cup: 'Cup',
+        handmadeCup: 'Handmade Cup',
+        plate: 'Plate',
+        figurine: 'Figurine',
+      },
       placeholders: {
-        type: 'Select a type',
+        type: 'Type',
+        select: 'Select a product',
         quantity: 'Enter quantity',
         price: '$',
         description: 'Short description (optional)',
@@ -141,6 +149,7 @@ export const en = {
         addProduct: 'Add Product',
         proceed: 'Proceed',
         shipping: 'Requires shipping?',
+        save: 'Save Product',
       },
       // Textos del UI que no encajan en labels/errores
       sections: {
@@ -151,9 +160,14 @@ export const en = {
         scrollAfterAdd: 'Scrolling to the bottom…',
       },
     },
+    shipping: {
+      remove: 'Remove',
+      address: 'Shipping address',
+      add: '+ Add address',
+    },
   },
 
-  // ─── FORM ACTIONS & CONFIRM MODALS ───────────────────────
+  // ─── FORM ACTIONS & CONFIRM MODALS (FOOTER ONLY)───────────────────────
   formActions: {
     cancel: 'Cancel',
     submitDefault: 'Submit',
@@ -161,6 +175,7 @@ export const en = {
     confirmMessage: 'You will lose unsaved changes if you exit now.',
     confirmText: 'Yes, exit',
     cancelText: 'No, stay',
+    saveChanges: 'Save Changes',
   },
   formActionsUser: {
     cancel: 'Cancel',
@@ -214,5 +229,16 @@ export const en = {
   info: {
     logout: 'You have been logged out.',
     welcome: 'Welcome to Haro Mobile!',
+  },
+
+  // ─── TITLES ──────────────────────────────────────────────
+  titles: {
+    // NEW/ EDIT ORDER
+    editOrder: 'Edit Order',
+    newOrder: 'New Order',
+
+    // ADD/ EDIT PRODUCT
+    editProduct: 'Edit Product',
+    addProduct: 'Add Product',
   },
 }

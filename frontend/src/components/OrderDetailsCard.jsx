@@ -1,5 +1,6 @@
+// src/components/OrderDetailsCard.jsx
 import { Phone, Mail, Globe, AlertCircle, SquarePen } from 'lucide-react'
-import { format } from 'date-fns'
+import { parseISO, format } from 'date-fns'
 
 export default function OrderDetailsCard({
   order = {},
@@ -8,7 +9,7 @@ export default function OrderDetailsCard({
 }) {
   const {
     orderID = 'ORD#-----',
-    createdAt = new Date(),
+    orderDate = new Date(),
     customer = {},
     deposit = 0,
     products = [],
@@ -22,14 +23,14 @@ export default function OrderDetailsCard({
   )
   const total = subtotal - deposit
 
-  // Group and label products
+  // Group and label products To arrange in order by product type
   const groupedProducts = {}
   products.forEach((p) => {
     if (!groupedProducts[p.type]) groupedProducts[p.type] = []
     groupedProducts[p.type].push(p)
   })
 
-  const labeledProducts = []
+  const labeledProducts = [] // Number each product
   Object.entries(groupedProducts).forEach(([type, items]) => {
     items.forEach((item, i) => {
       labeledProducts.push({ ...item, label: `${type} ${i + 1}` })
@@ -42,7 +43,7 @@ export default function OrderDetailsCard({
       <div className="text-center space-y-1">
         <p className="text-2xl font-bold">{orderID}</p>
         <p className="text-sm text-gray-500 dark:text-gray-400">
-          {format(new Date(createdAt), 'MMM dd, yyyy')}
+          {format(parseISO(order?.orderDate), 'MMM dd, yyyy')}
         </p>
       </div>
 
@@ -55,7 +56,7 @@ export default function OrderDetailsCard({
           <SquarePen className="w-4 h-4" />
         </button>
         <div className="space-y-1">
-          <p className="font-semibold">{customer.name}</p>
+          <p className="font-semibold">{customer.name}{' '}{customer.lastName}</p>
           {customer.phone && (
             <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
               <Phone className="w-4 h-4" /> {customer.phone}

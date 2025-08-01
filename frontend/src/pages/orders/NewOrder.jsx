@@ -14,39 +14,23 @@ import {
 import { Instagram, Facebook, Plus } from 'lucide-react'
 import { toast } from 'react-hot-toast'
 import { getMessage as t } from '../../utils/getMessage'
-
-// Edit Mode Variables
-const isEditBase = location.state?.mode === 'editBase'
-const returnTo = location.state?.returnTo
-const existingProducts = location.state?.products || []
-
-// Helpers para mapear el draft (location.state) -> formData aplanado
-const splitName = (full = '') => {
-  const parts = full.trim().split(/\s+/)
-  const name = parts.shift() || ''
-  const lastName = parts.join(' ') || ''
-  return { name, lastName }
-}
-
-const parsePhone = (raw = '') => {
-  // Espera "+52XXXXXXXXXX" → countryCode="+52", phone="XXXXXXXXXX"
-  const m = raw.match(/^(\+\d{1,3})(\d{6,15})$/)
-  if (m) return { countryCode: m[1], phone: m[2] }
-  return { countryCode: '+52', phone: '' }
-}
+import {
+  prefillFormFromDraft,
+  validateBaseForm,
+  buildBaseOrder,
+} from '../../utils/orderBuilder'
 
 export default function NewOrder() {
   const navigate = useNavigate()
   const location = useLocation()
 
-  const originPathRef = useRef(
-    location.state?.originPath ??
-      location.state?.from ?? // compat si algo viejo manda `from`
-      '/orders' // fallback
-  )
-
+  // Edit Mode Variables
+  const isEditBase = location.state?.mode === 'editBase'
+  const returnTo = location.state?.returnTo
+  const originPath =
+    location.state?.originPath ?? location.state?.from ?? '/orders'
+  const existingProducts = location.state?.products || []
   const [errors, setErrors] = useState({})
-
   const [formData, setFormData] = useState({
     // Basic data
     name: '',
@@ -75,7 +59,6 @@ export default function NewOrder() {
   // Social media input states
   const [socialInput, setSocialInput] = useState('')
   const [currentSocialType, setCurrentSocialType] = useState('instagram')
-
   const socialOptions = [
     { type: 'instagram', label: 'Instagram', icon: Instagram },
     { type: 'facebook', label: 'Facebook', icon: Facebook },
@@ -181,141 +164,50 @@ export default function NewOrder() {
   // Prefill desde location.state (draft/baseOrder) -> formData
   useEffect(() => {
     if (!location.state) return
-
-    const draft = location.state
-    const { name, lastName } = splitName(draft.customer?.name || '')
-    const { countryCode, phone } = parsePhone(draft.customer?.phone || '')
-
-    setFormData((prev) => ({
-      ...prev,
-      // Customer
-      name,
-      lastName,
-      countryCode,
-      phone,
-      email: draft.customer?.email || '',
-      socialMedia: draft.customer?.socialMedia || prev.socialMedia,
-      // Dates & status
-      orderDate: draft.orderDate || '',
-      deliverDate: draft.deliverDate || '',
-      status: draft.status || prev.status,
-      deposit: draft.deposit ?? prev.deposit,
-      // Shipping
-      shipping: Boolean(draft.shipping?.isRequired),
-      addresses: draft.shipping?.addresses || [],
-      // Notes
-      notes: draft.notes || '',
-    }))
+    const filled = prefillFormFromDraft(location.state)
+    setFormData((prev) => ({ ...prev, ...filled }))
   }, [location.state])
 
   // Camino único: Validar + armar baseOrder + navegar
-  const handleContinue = () => {
+  const handleBaseSubmit = (e) => {
+    e.preventDefault()
     setErrors({})
-    const newErrors = {}
 
-    // Merge social input if pending
-    const socialMedia = { ...formData.socialMedia }
-    if (socialInput.trim()) {
-      socialMedia[currentSocialType] = socialInput.trim()
-    }
-
-    // Required fields
-    if (!formData.name) newErrors.name = 'errors.customer.missingName'
-    if (!formData.lastName)
-      newErrors.lastName = 'errors.customer.missingLastName'
-    // if (!formData.phone) newErrors.phone = 'validation.requiredFields'
-    if (!formData.status) newErrors.status = 'validation.requiredFields'
-    if (!formData.orderDate) newErrors.orderDate = 'errors.order.missingDate'
-
-    // Date validation
-    if (
-      formData.deliverDate &&
-      formData.orderDate &&
-      formData.deliverDate < formData.orderDate
-    ) {
-      newErrors.deliverDate = 'validation.invalidDeliveryDate'
-      toast.error(t('validation.invalidDeliveryDate'))
-    }
-
-    // Phone format
-    if (formData.phone && !/^\d{10}$/.test(formData.phone)) {
-      newErrors.phone = 'errors.user.invalidPhone'
-    }
-
-    // Email format (optional but must be valid)
-    if (
-      formData.email &&
-      !/^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$/.test(formData.email)
-    ) {
-      newErrors.email = 'errors.user.invalidEmail'
-    }
-
-    // Shipping addresses validation (if shipping)
-    if (formData.shipping) {
-      const addressErrors = formData.addresses.map((addr) => {
-        const err = {}
-        if (!addr.address) err.address = 'validation.addressRequired'
-        if (!addr.city) err.city = 'validation.cityRequired'
-        if (!addr.zip) err.zip = 'validation.zipRequired'
-        if (!addr.phone) err.phone = 'validation.phoneRequired'
-        return err
-      })
-
-      const hasErrors = addressErrors.some((e) =>
-        Object.values(e).some(Boolean)
-      )
-
-      if (hasErrors) {
-        const formatted = addressErrors.map((e) => {
-          const formattedObj = {}
-          for (const key in e) {
-            formattedObj[key] = t(e[key])
-          }
-          return formattedObj
-        })
-
-        setErrors((prev) => ({ ...prev, addresses: formatted }))
-        toast.error(t('validation.incompleteShipping'))
-        return
-      }
-    }
-
-    // If any error, show'em
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors)
+    const errs = validateBaseForm(formData)
+    if (Object.keys(errs).length > 0) {
+      setErrors(errs)
       toast.error(t('validation.requiredFields'))
+      if (errs.deliverDate) toast.error(t('validation.invalidDeliveryDate'))
+      if (errs.addresses) toast.error(t('validation.incompleteShipping'))
       return
     }
 
-    // Build baseOrder (draft) for AddProduct
-    const baseOrder = {
-      orderDate: formData.orderDate,
-      deliverDate: formData.deliverDate,
-      status: formData.status,
-      deposit: Number(formData.deposit || 0),
-      notes: formData.notes,
-      shipping: {
-        isRequired: formData.shipping,
-        addresses: formData.shipping ? formData.addresses : [],
-      },
-      customer: {
-        name: `${formData.name} ${formData.lastName}`.trim(),
-        phone: formData.phone ? `${formData.countryCode}${formData.phone}` : '',
-        email: formData.email,
-        socialMedia,
-      },
-      originPath: originPathRef.current, // IMPORTANT: from location, this is the origin page where we came from
-      from: '/orders/new', // OPTIONAL
-    }
-
-    // AddProduct Route
-    navigate('/orders/new/products', {
-      state: {
-        ...baseOrder,
-        from: '/orders/new', // 👈 para que AddProduct cancele SIEMPRE a NewOrder
-      },
+    const baseOrder = buildBaseOrder(formData, {
+      socialInput,
+      currentSocialType,
     })
-  }
+
+    if (isEditBase) {
+      const updatedOrder = {
+        ...location.state,
+        ...baseOrder,
+        products: existingProducts,
+      }
+
+      navigate(returnTo || '/orders/confirmation', {
+        state: updatedOrder,
+        replace: true,
+      })
+    } else {
+      navigate('/orders/new/products', {
+        state: {
+          ...baseOrder,
+          originPath,
+          from: '/orders/new',
+        },
+      })
+    }
+  } // end handleBaseSubmit
 
   return (
     <div className="min-h-screen pb-24 bg-white dark:bg-neutral-900 dark:text-gray-100">
@@ -326,7 +218,9 @@ export default function NewOrder() {
         }}
         className="max-w-2xl mx-auto px-4 pt-6 space-y-6"
       >
-        <h1 className="text-center mb-8 text-xl font-semibold">New Order</h1>
+        <h1 className="text-center mb-8 text-xl font-semibold">
+          {isEditBase ? t('titles.editOrder') : t('titles.newOrder')}
+        </h1>
 
         {/* Name + Lastname */}
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -508,49 +402,37 @@ export default function NewOrder() {
 
         {/* Dates */}
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <div>
-            <label className="block mb-1 text-sm font-medium text-gray-800 dark:text-gray-200">
-              Order date
-            </label>
-            <input
-              type="date"
-              name="orderDate"
-              value={formData.orderDate}
-              onChange={(e) => {
-                handleChange(e)
-                setErrors((prev) => ({ ...prev, orderDate: null }))
-              }}
-              className={`w-full h-10 px-3 py-3 text-sm border rounded dark:bg-neutral-800 dark:text-white dark:border-gray-600
-                ${errors.orderDate ? 'border-red-500' : ''}
-              `}
-            />
-            {errors.orderDate && (
-              <p className="text-red-500 text-sm mt-1">{t(errors.orderDate)}</p>
-            )}
-          </div>
+          <FormInput
+            type="date"
+            name="orderDate"
+            label="Order date"
+            placeholder="dd-mm-yyyy"
+            value={formData.orderDate}
+            onChange={(e) => {
+              handleChange(e)
+              setErrors((prev) => ({ ...prev, orderDate: null }))
+            }}
+            error={errors.orderDate}
+            errorFormatter={t}
+            icon="calendar"
+            floating={false}
+          />
 
-          <div>
-            <label className="block mb-1 text-sm font-medium text-gray-800 dark:text-gray-200">
-              Delivery date
-            </label>
-            <input
-              type="date"
-              name="deliverDate"
-              value={formData.deliverDate}
-              onChange={(e) => {
-                handleChange(e)
-                setErrors((prev) => ({ ...prev, deliverDate: null }))
-              }}
-              className={`w-full h-10 px-3 py-3 text-sm border rounded dark:bg-neutral-800 dark:text-white dark:border-gray-600
-                ${errors.deliverDate ? 'border-red-500' : ''}
-              `}
-            />
-            {errors.deliverDate && (
-              <p className="text-red-500 text-sm mt-1">
-                {t(errors.deliverDate)}
-              </p>
-            )}
-          </div>
+          <FormInput
+            type="date"
+            name="deliverDate"
+            label="Delivery date"
+            placeholder="dd-mm-yyyy" //TODO to locale i18n
+            value={formData.deliverDate}
+            onChange={(e) => {
+              handleChange(e)
+              setErrors((prev) => ({ ...prev, deliverDate: null }))
+            }}
+            error={errors.deliverDate}
+            errorFormatter={t}
+            icon="calendar"
+            floating={false}
+          />
         </div>
 
         {/* Status & deposit */}
@@ -585,11 +467,12 @@ export default function NewOrder() {
               }}
               prefix="$"
               min={0}
-              step="0.01"
+              step="0.00"
               placeholder="0.00"
               error={errors.deposit}
               errorFormatter={t}
               floating={false}
+              onWheel={(e) => e.target.blur()} // Remove focus when using mousewheel
             />
           </div>
         </div>
@@ -644,7 +527,7 @@ export default function NewOrder() {
 
         {/* Actions */}
         <FormActions
-          onSubmit={isEditBase ? handleSaveBaseEdits : handleContinue}
+          onSubmit={handleBaseSubmit}
           submitButtonText={
             isEditBase
               ? t('formActions.saveChanges')
@@ -657,9 +540,7 @@ export default function NewOrder() {
           cancelText={t('formActions.cancelText')}
           // Cancel: en edición vuelve a OrderConfirmation; en flujo normal, al origen
           cancelRedirect={
-            isEditBase
-              ? returnTo || '/orders/confirmation'
-              : originPathRef.current
+            isEditBase ? returnTo || '/orders/confirmation' : originPath
           }
           cancelState={isEditBase ? location.state : undefined}
         />

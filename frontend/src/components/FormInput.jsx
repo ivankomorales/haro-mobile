@@ -1,6 +1,8 @@
 // components/FormInput.jsx
 import { useState } from 'react'
 import { Eye, EyeOff, Calendar } from 'lucide-react'
+import DatePicker from 'react-datepicker'
+import 'react-datepicker/dist/react-datepicker.css'
 
 /**
  * FormInput (reusable)
@@ -44,11 +46,9 @@ export default function FormInput({
 }) {
   const [show, setShow] = useState(false)
 
-  // If it's a password and toggle is enabled, swap between text/password
   const inputType =
     type === 'password' && showToggle ? (show ? 'text' : 'password') : type
 
-  // If there's a right-side icon (toggle or calendar), add right padding
   const hasRightIcon =
     (type === 'password' && showToggle) ||
     (icon === 'calendar' && type === 'date')
@@ -56,14 +56,14 @@ export default function FormInput({
   return (
     <div className="w-full">
       <div className="relative w-full">
-        {/* Prefix */}
+        {/* Prefix (left aligned inside input) */}
         {prefix && (
           <span className="absolute left-3 top-2/3 -translate-y-1/2 text-sm text-gray-500 dark:text-gray-300 pointer-events-none">
             {prefix}
           </span>
         )}
 
-        {/* Classic label (floating = false) */}
+        {/* Classic label (if floating is disabled) */}
         {!floating && (
           <label
             htmlFor={name}
@@ -73,7 +73,7 @@ export default function FormInput({
           </label>
         )}
 
-        {/* Input */}
+        {/* Input field logic */}
         {as === 'select' ? (
           <select
             name={name}
@@ -81,7 +81,7 @@ export default function FormInput({
             value={value}
             onChange={onChange}
             className={`
-              peer w-full px-3 py-2 min-h-[44px]
+              peer w-full appearance-none px-3 py-2 min-h-[44px]
               rounded-lg border text-sm bg-white dark:bg-neutral-700
               text-gray-900 dark:text-white
               focus:outline-none focus:ring-2 focus:ring-blue-500
@@ -92,6 +92,33 @@ export default function FormInput({
           >
             {props.children}
           </select>
+        ) : type === 'date' ? (
+          <DatePicker
+            selected={value ? new Date(value) : null}
+            onChange={(date) => {
+              const syntheticEvent = {
+                target: {
+                  name,
+                  value: date?.toISOString().split('T')[0] || '',
+                },
+              }
+              onChange(syntheticEvent)
+            }}
+            dateFormat="dd-MM-yyyy"
+            className={`
+              peer w-full ${prefix ? 'pl-10' : 'px-3'} py-1 min-h-[44px]
+              rounded-lg border text-sm bg-white dark:bg-neutral-700
+              text-gray-900 dark:text-white
+              focus:outline-none focus:ring-2 focus:ring-blue-500
+              ${error ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'}
+              ${floating ? 'pt-5' : ''}
+              ${hasRightIcon ? 'pr-11' : ''}
+            `}
+            wrapperClassName="w-full"
+            placeholderText={floating ? ' ' : (props.placeholder ?? label)}
+            showPopperArrow={false}
+            {...props}
+          />
         ) : (
           <input
             type={inputType}
@@ -99,8 +126,6 @@ export default function FormInput({
             id={name}
             value={value}
             onChange={onChange}
-            // In floating mode we keep a single-space placeholder to trigger the animation.
-            // In classic mode you can pass your own placeholder via props or fall back to label.
             placeholder={floating ? ' ' : (props.placeholder ?? label)}
             minLength={minLength}
             min={min}
@@ -120,7 +145,7 @@ export default function FormInput({
           />
         )}
 
-        {/* Floating label */}
+        {/* Floating label (if enabled) */}
         {floating && (
           <label
             htmlFor={name}
@@ -138,13 +163,13 @@ export default function FormInput({
 
         {/* Icon wrapper (right-aligned) */}
         {hasRightIcon && (
-          <div className="absolute inset-y-0 right-3 flex items-center">
+          <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
             {type === 'password' && showToggle && (
               <button
                 type="button"
                 tabIndex={-1}
                 onClick={() => setShow((prev) => !prev)}
-                className="text-gray-500 dark:text-gray-300"
+                className="text-gray-500 dark:text-gray-300 pointer-events-auto"
                 aria-label={show ? 'Hide password' : 'Show password'}
               >
                 {show ? <EyeOff size={18} /> : <Eye size={18} />}
@@ -154,15 +179,14 @@ export default function FormInput({
             {icon === 'calendar' && type === 'date' && (
               <Calendar
                 size={18}
-                className="text-gray-500 dark:text-gray-300 pointer-events-none"
-                aria-hidden="true"
+                className="text-gray-500 dark:text-gray-300 translate-y-2.5"
               />
             )}
           </div>
         )}
       </div>
 
-      {/* Error message (outside relative box) */}
+      {/* Error message (below input) */}
       {error && (
         <p className="text-red-500 text-sm mt-1">
           {errorFormatter ? errorFormatter(error) : error}

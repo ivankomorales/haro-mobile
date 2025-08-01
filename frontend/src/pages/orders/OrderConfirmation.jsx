@@ -57,12 +57,13 @@ export default function OrderConfirmation() {
   }
 
   // 4) Edit products
-  const handleEditProducts = () => {
+  const handleEditProducts = (index) => {
     navigate('/orders/new/products', {
       state: {
-        ...order,
+        ...order, // todos los datos del pedido
         originPath,
-        mode: 'editProduct',
+
+        mode: 'editProducts',
         returnTo: '/orders/confirmation',
         editIndex: index,
       },

@@ -1,6 +1,6 @@
 // src/utils/orderForm.js
 
-// Helpers simples para partir nombre y teléfono
+// Helpers to split name & parse phone
 export function splitName(fullName = '') {
   const parts = fullName.trim().split(/\s+/)
   const name = parts[0] || ''
@@ -9,7 +9,7 @@ export function splitName(fullName = '') {
 }
 
 export function parsePhone(fullPhone = '') {
-  // Ejemplos: "+52XXXXXXXXXX", "XXXXXXXXXX"
+  // Example: "+52XXXXXXXXXX", "XXXXXXXXXX"
   const match = fullPhone.match(/^(\+\d{1,3})?(\d{10})$/)
   if (!match) return { countryCode: '+52', phone: '' }
   const countryCode = match[1] || '+52'
@@ -18,11 +18,12 @@ export function parsePhone(fullPhone = '') {
 }
 
 /**
- * A partir de un draft (location.state) generamos valores iniciales del formulario.
- * No setea TODO, solo aquello que sí viene en el draft.
+ * Generates initial form values from a draft (location.state).
+ * Does not set everything — only the fields that are present in the draft.
  */
 export function prefillFormFromDraft(draft = {}) {
-  const { name, lastName } = splitName(draft.customer?.name || '')
+  const name = draft.customer?.name || ''
+  const lastName = draft.customer?.lastName || ''
   const { countryCode, phone } = parsePhone(draft.customer?.phone || '')
 
   return {
@@ -47,8 +48,8 @@ export function prefillFormFromDraft(draft = {}) {
 }
 
 /**
- * Valida el formulario base (NewOrder). Devuelve un objeto `errors` con claves i18n.
- * Si no hay errores => errors = {}
+ * Validates the base form (NewOrder). Returns an `errors` object with i18n keys.
+ * If there are no errors => errors = {}
  */
 export function validateBaseForm(formData) {
   const errors = {}
@@ -67,12 +68,12 @@ export function validateBaseForm(formData) {
     errors.deliverDate = 'validation.invalidDeliveryDate'
   }
 
-  // Teléfono opcional pero, si viene, deben ser 10 dígitos
+  // Phone Optional, 10 digits
   if (formData.phone && !/^\d{10}$/.test(formData.phone)) {
     errors.phone = 'errors.user.invalidPhone'
   }
 
-  // Email opcional pero válido
+  // Email optional / has to be valid
   if (
     formData.email &&
     !/^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$/.test(formData.email)
@@ -80,7 +81,7 @@ export function validateBaseForm(formData) {
     errors.email = 'errors.user.invalidEmail'
   }
 
-  // Shipping (si aplica)
+  // Shipping (only if applies)
   if (formData.shipping) {
     const hasAnyAddressError = (formData.addresses || []).some((addr) => {
       return !addr.address || !addr.city || !addr.zip || !addr.phone
@@ -94,8 +95,8 @@ export function validateBaseForm(formData) {
 }
 
 /**
- * Construye el objeto baseOrder a partir del form.
- * `opts` permite mezclar la social pendiente del input actual si existe.
+ * Builds the baseOrder object from the form data.
+ * `opts` allows merging the pending social input if provided.
  */
 export function buildBaseOrder(formData, opts = {}) {
   const { socialInput = '', currentSocialType = 'instagram' } = opts
@@ -116,7 +117,8 @@ export function buildBaseOrder(formData, opts = {}) {
       addresses: formData.shipping ? formData.addresses : [],
     },
     customer: {
-      name: `${formData.name} ${formData.lastName}`.trim(),
+      name: formData.name,
+      lastName: formData.lastName,
       phone: formData.phone ? `${formData.countryCode}${formData.phone}` : '',
       email: formData.email,
       socialMedia,
