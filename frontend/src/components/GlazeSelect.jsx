@@ -12,7 +12,7 @@ export default function GlazeSelect({
   glazes = [],
   selected,
   onChange,
-  // NUEVO: textos
+  // i18n TEXTS
   placeholderText = 'Buscar esmalte...',
   noneText = 'Sin esmalte',
   noResultsText = 'Sin resultados',

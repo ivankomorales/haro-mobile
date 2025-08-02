@@ -80,27 +80,34 @@ const validateCustomer = [
 
 // ORDER
 const validateOrder = [
-  body("customer").notEmpty().withMessage("Customer data is required"),
+  body("customer")
+    .notEmpty()
+    .withMessage("Customer data is required")
+    .isObject()
+    .withMessage("Customer must be an object"),
 
   body("customer.email")
-    .optional()
+    .optional({ checkFalsy: true })
     .isEmail()
     .withMessage("Customer email is invalid")
     .normalizeEmail(),
 
   body("customer.name")
-    .optional()
-    .isLength({ min: 2 })
-    .withMessage("Customer name must be at least 2 characters"),
+    .notEmpty()
+    .withMessage("Customer first name is required")
+    .isLength({ min: 2, max: 50 })
+    .withMessage("First name must be between 2 and 50 characters")
+    .matches(/^[A-Za-zÁÉÍÓÚáéíóúÑñ\s'-]+$/)
+    .withMessage("First name must contain only letters and valid characters")
+    .trim()
+    .escape(),
 
   body("customer.lastName")
-    .optional()
+    .optional({ checkFalsy: true })
     .isLength({ min: 1, max: 50 })
-    .withMessage("Customer last name must be between 1 and 50 characters")
+    .withMessage("Last name must be between 1 and 50 characters")
     .matches(/^[A-Za-zÁÉÍÓÚáéíóúÑñ\s'-]+$/)
-    .withMessage(
-      "Customer last name must contain only letters and valid characters"
-    )
+    .withMessage("Last name must contain only letters and valid characters")
     .trim()
     .escape(),
 
@@ -134,7 +141,10 @@ const validateOrder = [
     .escape(),
 
   // Product: glazes
-  body("products.*.glazes").optional().isObject(),
+  body("products.*.glazes")
+    .optional({ nullable: true })
+    .custom((value) => value === null || typeof value === "object")
+    .withMessage("Glazes must be an object or null"),
 
   body("products.*.glazes.interior")
     .optional({ nullable: true })
@@ -220,6 +230,8 @@ const validateOrder = [
 const handleValidationErrors = (req, res, next) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
+    console.warn("🔴 Validation failed with errors:");
+    console.table(errors.array());
     return res
       .status(400)
       .json({ message: "Validation error", errors: errors.array() });

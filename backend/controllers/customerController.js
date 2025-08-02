@@ -2,14 +2,34 @@ const Customer = require("../models/Customer");
 const ApiError = require("../utils/ApiError");
 const { logEvent } = require("../utils/audit");
 
-// Utility: used by other controllers
+// TODO: Improve customer deduplication logic
+// Current version allows creating customers with only a name.
+// Future versions should enforce at least one unique identifier: email, Instagram, or phone.
 const findOrCreateCustomer = async (customerData, req) => {
-  if (!customerData || !customerData.email) {
-    throw new ApiError("Customer email is required", 400);
+  if (!customerData || !customerData.name) {
+    throw new ApiError("Customer name is required", 400);
   }
 
-  let customer = await Customer.findOne({ email: customerData.email });
+  let customer = null;
 
+  if (customerData.email) {
+    customer = await Customer.findOne({ email: customerData.email });
+  }
+
+  if (!customer && customerData.socialMedia?.instagram) {
+    customer = await Customer.findOne({
+      "socialMedia.instagram": customerData.socialMedia.instagram,
+    });
+  }
+
+  if (!customer && customerData.name) {
+    customer = await Customer.findOne({
+      name: customerData.name,
+      ...(customerData.lastName && { lastName: customerData.lastName }),
+    });
+  }
+
+  // Si no hay email ni instagram, simplemente crea uno nuevo
   if (!customer) {
     customer = new Customer(customerData);
     await customer.save();
@@ -17,7 +37,7 @@ const findOrCreateCustomer = async (customerData, req) => {
     await logEvent({
       event: "customer_created",
       objectId: customer._id,
-      description: `Customer ${customer.email} created via order`,
+      description: `Customer created via order (name only)`,
       req,
     });
   }

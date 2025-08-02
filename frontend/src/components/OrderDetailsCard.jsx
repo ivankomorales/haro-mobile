@@ -6,6 +6,15 @@ export default function OrderDetailsCard({
   order = {},
   onEditBase,
   onEditProducts,
+  // i18n TEXTS
+  shippingRequired = 'Requiere envío *',
+  subtotalLabel = 'Subtotal: ',
+  advanceLabel = 'Anticipo: ',
+  totalLabel = 'Total: ',
+  figureLabel = 'Figure',
+  glazeLabel = 'Glaze',
+
+
 }) {
   const {
     orderID = 'ORD#-----',
@@ -75,7 +84,7 @@ export default function OrderDetailsCard({
           {shipping?.isRequired && (
             <div className="flex items-center gap-1 text-sm text-red-600 mt-2">
               <AlertCircle className="w-4 h-4" />
-              <span className="font-medium">Requiere envío *</span>
+              <span className="font-medium">{shippingRequired}</span>
             </div>
           )}
         </div>
@@ -85,12 +94,12 @@ export default function OrderDetailsCard({
       <div className="text-sm text-center space-y-1">
         <hr className="border-gray-300 dark:border-neutral-700" />
         <p>
-          Subtotal: <span className="font-medium">${subtotal}</span>
+          {subtotalLabel}<span className="font-medium">${subtotal}</span>
         </p>
         <p>
-          Anticipo: <span className="text-red-500">-${deposit}</span>
+          {advanceLabel}<span className="text-red-500">-${deposit}</span>
         </p>
-        <p className="text-lg font-bold">Total: ${total}</p>
+        <p className="text-lg font-bold">{totalLabel} ${total}</p>
         <hr className="border-gray-300 dark:border-neutral-700" />
       </div>
 
@@ -111,9 +120,9 @@ export default function OrderDetailsCard({
             <p className="font-semibold">{product.label}</p>
             <p className="text-sm">
               {(() => {
-                const figureLabel =
-                  product.quantity === 1 ? 'Figura' : 'Figuras'
-                return `${product.quantity} ${figureLabel}`
+                const label =
+                  product.quantity === 1 ? figureLabel : `${figureLabel}s`
+                return `${product.quantity} ${label}`
               })()}
             </p>
 
@@ -126,7 +135,7 @@ export default function OrderDetailsCard({
                   ].filter(Boolean).length
                   return (
                     <p className="text-sm font-medium">
-                      Esmalte{count > 1 ? 's' : ''}:
+                      {glazeLabel}{count > 1 ? 's' : ''}:
                     </p>
                   )
                 })()}

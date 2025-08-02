@@ -406,7 +406,7 @@ export default function NewOrder() {
             type="date"
             name="orderDate"
             label="Order date"
-            placeholder="dd-mm-yyyy"
+            placeholder={t('forms.shipping.dateFormat')}
             value={formData.orderDate}
             onChange={(e) => {
               handleChange(e)
@@ -422,7 +422,7 @@ export default function NewOrder() {
             type="date"
             name="deliverDate"
             label="Delivery date"
-            placeholder="dd-mm-yyyy" //TODO to locale i18n
+            placeholder={t('forms.shipping.dateFormat')}
             value={formData.deliverDate}
             onChange={(e) => {
               handleChange(e)
@@ -439,7 +439,7 @@ export default function NewOrder() {
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <div>
             <label className="block mb-1 text-sm font-medium text-gray-800 dark:text-gray-200">
-              Status
+              {t('labels.order.status')} 
             </label>
             <select
               name="status"
@@ -457,7 +457,7 @@ export default function NewOrder() {
 
           <div>
             <FormInput
-              label="Deposit"
+              label={t('labels.order.deposit')} 
               name="deposit"
               type="number"
               value={formData.deposit}
@@ -510,7 +510,7 @@ export default function NewOrder() {
 
         {/* Notes */}
         <FormInput
-          label="Notes"
+          label={t('labels.order.notes')} 
           name="notes"
           value={formData.notes}
           onChange={(e) => {

@@ -310,7 +310,7 @@ export default function AddProduct() {
                 {t('labels.glaze.title')}
               </summary>
               <div className="mt-4 space-y-2">
-                {formData.type !== 'Plato' && (
+                {formData.type !== 'plate' && (
                   <GlazeSelect
                     label={t('labels.glaze.interior')}
                     glazes={glazes}

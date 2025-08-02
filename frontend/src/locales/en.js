@@ -104,6 +104,9 @@ export const en = {
       deliveryDate: 'Delivery Date',
       submit: 'Create Order',
       confirm: 'Confirm Order',
+      status: 'Status',
+      deposit: 'Deposit',
+      notes: 'Notes',
     },
     product: {
       // Nombres de campos que se ven en el formulario
@@ -162,9 +165,22 @@ export const en = {
     },
     shipping: {
       remove: 'Remove',
-      address: 'Shipping address',
+      shippingAddress: 'Shipping address',
       add: '+ Add address',
+      address: 'Address',
+      country: 'Country',
+      street: 'Street',
+      city: 'City',
+      zip: 'ZIP',
+      phone: 'Phone (shipping)',
+      dateFormat: 'dd-mm-yyyy', // dd-mm-aaaa ES
+      shippingRequired: 'Shipping Required *',
     },
+    payment: {
+      subtotal: 'Subtotal',
+      advance: 'Advance',
+      total: 'Total',
+    }
   },
 
   // ─── FORM ACTIONS & CONFIRM MODALS (FOOTER ONLY)───────────────────────

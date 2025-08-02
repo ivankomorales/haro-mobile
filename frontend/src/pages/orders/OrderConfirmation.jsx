@@ -81,13 +81,23 @@ export default function OrderConfirmation() {
         quantity: Number(p.quantity), // lo sigues guardando si te sirve
         price: Number(p.price),
         description: p.description || '',
-        glazes: p.glazes || { interior: null, exterior: null },
+        glazes: {
+          interior: p.glazes?.interior?._id ?? null,
+          exterior: p.glazes?.exterior?._id ?? null,
+        },
         images: (p.images || []).map((img) => String(img)), // deben ser URLs
         decorations: p.decorations || {},
       }))
 
       const payload = {
-        customer: order.customer,
+        // baseOrder
+        customer: {
+          name: order.customer.name,
+          lastName: order.customer.lastName,
+          email: order.customer.email || undefined,
+          phone: order.customer.phone,
+          socialMedia: order.customer.socialMedia,
+        },
         orderDate: order.orderDate || order.date || null,
         deliverDate: order.deliverDate || null,
         status: order.status || 'New',
@@ -100,7 +110,7 @@ export default function OrderConfirmation() {
         products: cleanProducts,
         totals, // opcional si el backend lo recalcula
       }
-
+      console.log('Payload being sent to createOrder:', payload)
       const saved = await createOrder(payload)
       dismissToast()
       showSuccess(t('success.order.created')) // asegúrate camelCase en i18n
