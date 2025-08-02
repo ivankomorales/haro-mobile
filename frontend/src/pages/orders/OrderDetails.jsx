@@ -1,60 +1,48 @@
-import { useParams, useNavigate } from 'react-router-dom'
+import OrderDetailsCard from '../../components/OrderDetailsCard'
+import { getOrderById } from '../../api/orders'
+import { useParams } from 'react-router-dom'
 import { useEffect, useState } from 'react'
-import fetchWithAuth from '../../utils/fetchWithAuth'
+import { showError } from '../../utils/toastUtils'
+import { getMessage as t } from '../../utils/getMessage'
+import { formatProductsWithLabels } from '../../utils/transformProducts'
 
 export default function OrderDetails() {
   const { id } = useParams()
-  const navigate = useNavigate()
   const [order, setOrder] = useState(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const loadOrder = async () => {
+    async function fetchOrder() {
       try {
-        const res = await fetchWithAuth(`/api/orders/${id}`)
-        setOrder(res)
+        const data = await getOrderById(id)
+        const labeled = formatProductsWithLabels(data.products, t)
+        setOrder({ ...data, products: labeled })
       } catch (err) {
-        console.error('Error loading order:', err)
-        navigate('/login') // fallback si el token no es válido
+        console.error(err)
+        showError(t('errors.order.notFound')) // toast
+        navigate('/orders')
       } finally {
         setLoading(false)
       }
     }
-
-    loadOrder()
+    fetchOrder()
   }, [id])
 
-  if (loading) return <p className="p-4">Cargando pedido...</p>
-  if (!order) return <p className="p-4">Pedido no encontrado.</p>
+  if (loading) return <p className="p-4">{t('loading.order')}</p>
+  if (!order) return <p className="p-4">{t('errors.order.notFound')}</p>
 
   return (
-    <div className="max-w-2xl mx-auto p-4">
-      <h1 className="text-xl font-bold mb-4">Detalle del Pedido</h1>
-
-      <p>
-        <strong>Folio:</strong> {order.orderID}
-      </p>
-      <p>
-        <strong>Cliente:</strong> {order.customer?.name}
-      </p>
-      <p>
-        <strong>Estatus:</strong> {order.status}
-      </p>
-      <p>
-        <strong>Anticipo:</strong> ${order.deposit}
-      </p>
-      <p>
-        <strong>Notas:</strong> {order.notes}
-      </p>
-
-      <h2 className="text-lg font-semibold mt-6">Productos:</h2>
-      <ul className="list-disc ml-6 mt-2 space-y-1">
-        {order.products.map((p, idx) => (
-          <li key={idx}>
-            {p.type} — {p.quantity} piezas — ${p.price}
-          </li>
-        ))}
-      </ul>
+    <div className="p-4 pb-20">
+      <OrderDetailsCard
+        order={order}
+        shippingRequired={t('order.shippingRequired')}
+        subtotalLabel={t('order.subtotal')}
+        advanceLabel={t('order.deposit')}
+        totalLabel={t('order.total')}
+        figureLabel={t('forms.product.figure')}
+        glazeLabel={t('labels.glaze.title')}
+        descriptionLabel={t('labels.product.description')}
+      />
     </div>
   )
 }

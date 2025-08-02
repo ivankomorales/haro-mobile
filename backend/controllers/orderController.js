@@ -4,6 +4,7 @@ const { findOrCreateCustomer } = require("./customerController");
 const ApiError = require("../utils/ApiError");
 const { logEvent } = require("../utils/audit");
 
+// TODO i18n TEXTS
 // CREATE
 const createOrder = async (req, res, next) => {
   try {
@@ -28,8 +29,8 @@ const createOrder = async (req, res, next) => {
       "notes",
       "products",
       "shipping",
-      "orderDate", // ✅ NUEVO
-      "deliverDate", // ✅ por si lo envían manual
+      "orderDate",
+      "deliverDate",
     ];
     const orderData = {};
 
@@ -122,9 +123,13 @@ const getOrders = async (req, res, next) => {
 }; // end getOrders
 
 // READ one
-const getOrderById = async (req, res) => {
+const getOrderById = async (req, res, next) => {
   try {
-    const order = await Order.findById(req.params.id).populate("customer");
+    const order = await Order.findById(req.params.id)
+      .populate("customer")
+      .populate("products.glazes.interior")
+      .populate("products.glazes.exterior");
+
     if (!order) {
       return next(new ApiError("Order not found", 404));
     }
@@ -150,8 +155,8 @@ const updateOrder = async (req, res, next) => {
       "notes",
       "products",
       "shipping",
-      "orderDate", // ✅
-      "deliverDate", // ✅
+      "orderDate",
+      "deliverDate",
     ];
     for (const key of allowedFields) {
       if (req.body[key] !== undefined) {

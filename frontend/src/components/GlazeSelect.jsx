@@ -7,6 +7,7 @@ import {
 } from '@headlessui/react'
 import { useState } from 'react'
 
+// TODO active deprecated
 export default function GlazeSelect({
   label,
   glazes = [],

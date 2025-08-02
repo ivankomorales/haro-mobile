@@ -11,8 +11,7 @@ const validateUser = [
     .withMessage("Name must be between 1 and 50 characters")
     .matches(/^[A-Za-zÁÉÍÓÚáéíóúÑñ\s'-]+$/)
     .withMessage("Name must contain only letters and valid characters")
-    .trim()
-    .escape(),
+    .trim(),
 
   body("lastName")
     .optional()
@@ -20,8 +19,7 @@ const validateUser = [
     .withMessage("Last name must be between 1 and 50 characters")
     .matches(/^[A-Za-zÁÉÍÓÚáéíóúÑñ\s'-]+$/)
     .withMessage("Last name must contain only letters and valid characters")
-    .trim()
-    .escape(),
+    .trim(),
 
   body("email").isEmail().withMessage("Invalid email").normalizeEmail(),
 
@@ -44,8 +42,7 @@ const validateCustomer = [
     .withMessage("Name must contain only letters and valid characters")
     .isLength({ min: 2, max: 50 })
     .withMessage("Name must be between 2 and 50 characters")
-    .trim()
-    .escape(),
+    .trim(),
 
   body("lastName")
     .optional()
@@ -53,8 +50,7 @@ const validateCustomer = [
     .withMessage("Last name must contain only letters and valid characters")
     .isLength({ min: 1, max: 50 })
     .withMessage("Last name must be between 1 and 50 characters")
-    .trim()
-    .escape(),
+    .trim(),
 
   body("email")
     .optional()
@@ -67,15 +63,19 @@ const validateCustomer = [
     .matches(/^[0-9]{10,15}$/)
     .withMessage("Phone must be a valid number"),
 
-  body("notes").optional().trim().escape(),
+  body("notes").optional().trim(),
 
-  body("socialMedia.instagram").optional().trim().escape(),
-  body("socialMedia.facebook").optional().trim().escape(),
-  body("socialMedia.tiktok").optional().trim().escape(),
+  body("socialMedia.instagram").optional().trim(),
+  body("socialMedia.facebook").optional().trim(),
+  body("socialMedia.tiktok").optional().trim(),
 
-  body("address").optional().trim().escape(),
-  body("city").optional().trim().escape(),
-  body("zip").optional().trim().escape(),
+  body("address").optional().trim(),
+  body("city").optional().trim(),
+  body("zip")
+    .optional()
+    .trim()
+    .isPostalCode("any")
+    .withMessage("Zip code must be valid"),
 ];
 
 // ORDER
@@ -99,8 +99,7 @@ const validateOrder = [
     .withMessage("First name must be between 2 and 50 characters")
     .matches(/^[A-Za-zÁÉÍÓÚáéíóúÑñ\s'-]+$/)
     .withMessage("First name must contain only letters and valid characters")
-    .trim()
-    .escape(),
+    .trim(),
 
   body("customer.lastName")
     .optional({ checkFalsy: true })
@@ -108,8 +107,7 @@ const validateOrder = [
     .withMessage("Last name must be between 1 and 50 characters")
     .matches(/^[A-Za-zÁÉÍÓÚáéíóúÑñ\s'-]+$/)
     .withMessage("Last name must contain only letters and valid characters")
-    .trim()
-    .escape(),
+    .trim(),
 
   // Products
   body("products")
@@ -119,8 +117,7 @@ const validateOrder = [
   body("products.*.type")
     .notEmpty()
     .withMessage("Product type is required")
-    .trim()
-    .escape(),
+    .trim(),
 
   //Product: Figures quantity
   body("products.*.quantity")
@@ -137,8 +134,7 @@ const validateOrder = [
     .optional()
     .isLength({ max: 300 })
     .withMessage("Description too long")
-    .trim()
-    .escape(),
+    .trim(),
 
   // Product: glazes
   body("products.*.glazes")
@@ -178,8 +174,7 @@ const validateOrder = [
   body("products.*.decorations.decorationDescription")
     .optional()
     .isLength({ max: 300 })
-    .trim()
-    .escape(),
+    .trim(),
 
   // Product: Images
   body("products.*.images")
@@ -190,9 +185,7 @@ const validateOrder = [
   body("products.*.images.*")
     .optional()
     .isString()
-    .withMessage("Each image must be a string (URL or file name)")
-    .trim()
-    .escape(),
+    .withMessage("Each image must be a string (URL or file name)"),
 
   // Product: workflowStage
   body("products.*.workflowStage")
@@ -217,13 +210,13 @@ const validateOrder = [
     .isFloat({ min: 0 })
     .withMessage("Deposit must be a positive number"),
 
-  body("notes").optional().trim().escape(),
+  body("notes").optional().trim(),
 
   body("shipping").optional().isObject(),
 
-  body("shipping.address").optional().trim().escape(),
-  body("shipping.city").optional().trim().escape(),
-  body("shipping.zip").optional().trim().escape(),
+  body("shipping.address").optional().trim(),
+  body("shipping.city").optional().trim(),
+  body("shipping.zip").optional().trim(),
 ];
 
 // Common

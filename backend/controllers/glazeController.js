@@ -2,6 +2,7 @@ const Glaze = require("../models/Glaze");
 const ApiError = require("../utils/ApiError");
 const { logEvent } = require("../utils/audit");
 
+// TODO i18n TEXTS
 // Create
 const createGlaze = async (req, res, next) => {
   const { name, colorHex, code, image } = req.body;

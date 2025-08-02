@@ -4,6 +4,7 @@ const { logEvent } = require("../utils/audit");
 const bcrypt = require("bcryptjs");
 const { validationResult } = require("express-validator");
 
+// TODO i18n TEXTS
 // POST /api/users (admin only)
 const createUser = async (req, res, next) => {
   const errors = validationResult(req);

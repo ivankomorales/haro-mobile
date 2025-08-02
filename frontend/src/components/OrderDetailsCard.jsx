@@ -13,12 +13,11 @@ export default function OrderDetailsCard({
   totalLabel = 'Total: ',
   figureLabel = 'Figure',
   glazeLabel = 'Glaze',
-
-
+  descriptionLabel = 'Descripción',
 }) {
   const {
     orderID = 'ORD#-----',
-    orderDate = new Date(),
+    orderDate,
     customer = {},
     deposit = 0,
     products = [],
@@ -32,27 +31,13 @@ export default function OrderDetailsCard({
   )
   const total = subtotal - deposit
 
-  // Group and label products To arrange in order by product type
-  const groupedProducts = {}
-  products.forEach((p) => {
-    if (!groupedProducts[p.type]) groupedProducts[p.type] = []
-    groupedProducts[p.type].push(p)
-  })
-
-  const labeledProducts = [] // Number each product
-  Object.entries(groupedProducts).forEach(([type, items]) => {
-    items.forEach((item, i) => {
-      labeledProducts.push({ ...item, label: `${type} ${i + 1}` })
-    })
-  })
-
   return (
     <div className="relative w-full max-w-2xl mx-auto p-4 bg-white dark:bg-neutral-900 text-black dark:text-white rounded-xl shadow-md space-y-6">
       {/* Header */}
       <div className="text-center space-y-1">
         <p className="text-2xl font-bold">{orderID}</p>
         <p className="text-sm text-gray-500 dark:text-gray-400">
-          {format(parseISO(order?.orderDate), 'MMM dd, yyyy')}
+          {orderDate ? format(orderDate, 'MMM dd, yyyy') : 'No date'}
         </p>
       </div>
 
@@ -65,7 +50,9 @@ export default function OrderDetailsCard({
           <SquarePen className="w-4 h-4" />
         </button>
         <div className="space-y-1">
-          <p className="font-semibold">{customer.name}{' '}{customer.lastName}</p>
+          <p className="font-semibold">
+            {customer.name} {customer.lastName}
+          </p>
           {customer.phone && (
             <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
               <Phone className="w-4 h-4" /> {customer.phone}
@@ -93,19 +80,25 @@ export default function OrderDetailsCard({
       {/* Payment */}
       <div className="text-sm text-center space-y-1">
         <hr className="border-gray-300 dark:border-neutral-700" />
-        <p>
-          {subtotalLabel}<span className="font-medium">${subtotal}</span>
-        </p>
-        <p>
-          {advanceLabel}<span className="text-red-500">-${deposit}</span>
-        </p>
-        <p className="text-lg font-bold">{totalLabel} ${total}</p>
+        <div className="flex items-center justify-center gap-8 text-sm">
+          <span>{subtotalLabel}</span>
+          <span className="font-medium">${subtotal}</span>
+        </div>
+        <div className="flex items-center justify-center gap-8 text-sm">
+          <span>{advanceLabel}</span>
+          <span className="text-red-500">-${deposit}</span>
+        </div>
+
+        <div className="flex items-center justify-center gap-8 text-lg font-bold">
+          <span>{totalLabel}</span>
+          <span>${total}</span>
+        </div>
         <hr className="border-gray-300 dark:border-neutral-700" />
       </div>
 
       {/* Products */}
       <div className="space-y-6">
-        {labeledProducts.map((product, index) => (
+        {products.map((product, index) => (
           <div
             key={index}
             className="relative p-3 rounded border border-gray-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 space-y-2"
@@ -135,7 +128,8 @@ export default function OrderDetailsCard({
                   ].filter(Boolean).length
                   return (
                     <p className="text-sm font-medium">
-                      {glazeLabel}{count > 1 ? 's' : ''}:
+                      {glazeLabel}
+                      {count > 1 ? 's' : ''}:
                     </p>
                   )
                 })()}
@@ -160,7 +154,7 @@ export default function OrderDetailsCard({
 
             {product.description && (
               <p className="text-sm text-gray-600 dark:text-gray-400">
-                Descripción: {product.description}
+                {descriptionLabel}: {product.description}
               </p>
             )}
 

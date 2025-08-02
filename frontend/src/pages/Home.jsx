@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { getRecentOrders, getPendingCount } from '../api/orders'
 import { useNavigate } from 'react-router-dom'
 import { useMediaQuery } from 'react-responsive'
+import { getMessage as t } from '../utils/getMessage'
 
 export default function Home() {
   const [lastUpdated, setLastUpdated] = useState(null)
@@ -34,7 +35,7 @@ export default function Home() {
         text-gray-800 dark:text-gray-100
       "
     >
-      <h1 className="text-xl font-semibold mb-4">Inicio</h1>
+      <h1 className="text-xl font-semibold mb-4">{t('home.title')}</h1>
 
       <div
         className="
@@ -45,11 +46,11 @@ export default function Home() {
         "
       >
         <h2 className="text-base text-gray-500 dark:text-gray-300">
-          Pedidos pendientes
+          {t('home.pendingTitle')}
         </h2>
         <p className="my-2 text-3xl font-bold">{pendingCount}</p>
         <span className="text-sm text-gray-400">
-          Última actualización:{' '}
+          {t('home.updatedAt')}{' '}
           {lastUpdated
             ? lastUpdated.toLocaleString('es-MX', {
                 hour: '2-digit',
@@ -58,12 +59,12 @@ export default function Home() {
                 month: 'short',
                 year: '2-digit',
               })
-            : 'Cargando...'}
+            : t('loading.generic')}
         </span>
       </div>
 
       <section className="mb-10">
-        <h3 className="mb-2 text-lg font-medium">Pedidos recientes</h3>
+        <h3 className="mb-2 text-lg font-medium">{t('home.recentTitle')}</h3>
         <ul className="space-y-2">
           {recentOrders.map((order) => (
             <li
@@ -77,10 +78,16 @@ export default function Home() {
             >
               <div>
                 <strong className="block text-sm">
-                  {order.customer?.name}
+                  {order.customer?.name}{' '}{order.customer?.lastName}
                 </strong>
                 <span className="text-xs text-gray-500">
-                  {new Date(order.createdAt).toLocaleDateString()}
+                  {order.orderDate
+                    ? new Date(order.orderDate).toLocaleDateString('es-MX', {
+                        day: '2-digit',
+                        month: 'short',
+                        year: '2-digit',
+                      })
+                    : '-'}
                 </span>
               </div>
               <div className="text-right">

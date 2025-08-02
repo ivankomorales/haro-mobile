@@ -81,7 +81,24 @@ export default function AddProduct() {
 
   const handleChange = (e) => {
     const { name, value } = e.target
-    setFormData((prev) => ({ ...prev, [name]: value }))
+
+    setFormData((prev) => {
+      const updated = { ...prev, [name]: value }
+
+      if (name === 'type') {
+        // Clean invalid glaze fields
+        if (value === 'figurine') {
+          updated.glazeInterior = ''
+          updated.glazeExterior = ''
+        } else if (value === 'plate') {
+          updated.glazeInterior = ''
+        } else if (value === 'cup' || value === 'handmadeCup') {
+          // keep both
+        }
+      }
+
+      return updated
+    })
     setErrors((prev) => ({ ...prev, [name]: null }))
   }
 
@@ -361,18 +378,20 @@ export default function AddProduct() {
           </p>
         </div>
 
-        <button
-          type="button"
-          onClick={handleAddProduct}
-          //disabled={!isFormValid()}
-          className={`w-full py-2 rounded font-semibold transition-colors duration-200 ${
-            isFormValid()
-              ? 'bg-black text-white hover:bg-neutral-800'
-              : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-          }`}
-        >
-          + {t('forms.product.buttons.addProduct')}
-        </button>
+        {!isEdit && (
+          <button
+            type="button"
+            onClick={handleAddProduct}
+            //disabled={!isFormValid()}
+            className={`w-full py-2 rounded font-semibold transition-colors duration-200 ${
+              isFormValid()
+                ? 'bg-black text-white hover:bg-neutral-800'
+                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+            }`}
+          >
+            + {t('forms.product.buttons.addProduct')}
+          </button>
+        )}
 
         {products.length > 0 && (
           <>
@@ -387,8 +406,7 @@ export default function AddProduct() {
                 >
                   <div className="flex-1 truncate">
                     <div className="flex-1 truncate">
-                      {p.type} — {p.quantity}{' '}
-                      {t('forms.product.figure')}
+                      {t(`forms.product.types.${p.type}`)} — {p.quantity} {t('forms.product.figure')}
                       {p.quantity > 1 ? 's' : ''} — ${p.price}
                     </div>
                   </div>

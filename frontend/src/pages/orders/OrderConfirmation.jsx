@@ -18,6 +18,24 @@ export default function OrderConfirmation() {
   const navigate = useNavigate()
   const order = location.state || null
 
+
+  //TODO create function and move to UTILS
+  const groupedProducts = order.products.reduce((acc, p) => {
+    if (!acc[p.type]) acc[p.type] = []
+    acc[p.type].push(p)
+    return acc
+  }, {})
+
+  const labeledProducts = []
+  Object.entries(groupedProducts).forEach(([type, items]) => {
+    items.forEach((item, i) => {
+      labeledProducts.push({
+        ...item,
+        label: `${t(`forms.product.types.${type}`)} ${i + 1}`,
+      })
+    })
+  })
+
   // 1) Guard: Do not allow to enter without minimal data
   useRequireState(
     (st) =>
@@ -74,7 +92,7 @@ export default function OrderConfirmation() {
   const handleConfirm = async () => {
     try {
       setSubmitting(true)
-      showLoading(t('loading.order')) // "Creating order..."
+      showLoading(t('loading.orderCreate')) // "Creating order..."
 
       const cleanProducts = order.products.map((p) => ({
         type: p.type,
@@ -139,9 +157,17 @@ export default function OrderConfirmation() {
       {/* Card with details (your component) */}
       <div className="w-full max-w-2xl">
         <OrderDetailsCard
-          order={order}
+          order={{ ...order, products: labeledProducts }}
+          t={t}
           onEditBase={handleEditBase}
           onEditProducts={handleEditProducts}
+          shippingRequired={t('order.shippingRequired')}
+          subtotalLabel={t('order.subtotal')}
+          advanceLabel={t('order.deposit')}
+          totalLabel={t('order.total')}
+          figureLabel={t('forms.product.figure')}
+          glazeLabel={t('labels.glaze.title')}
+          descriptionLabel={t('labels.product.description')}
         />
       </div>
 

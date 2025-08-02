@@ -26,6 +26,7 @@ export const en = {
         'Delivery date cannot be earlier than order date.',
       missingProduct: 'You must add at least one product before continuing.',
       missingDate: 'Order date is required.',
+      notFound: 'Error loading order',
     },
     user: {
       invalidEmail: 'Invalid email format.',
@@ -107,6 +108,7 @@ export const en = {
       status: 'Status',
       deposit: 'Deposit',
       notes: 'Notes',
+      details: 'Order Details',
     },
     product: {
       // Nombres de campos que se ven en el formulario
@@ -115,6 +117,10 @@ export const en = {
       price: 'Price',
       description: 'Description',
       images: 'Images',
+    },
+    orders: {
+      title: 'Orders',
+      empty: 'No orders found',
     },
   },
 
@@ -125,6 +131,7 @@ export const en = {
       search: 'Search glaze',
     },
     product: {
+      // {t('forms.product.')}
       title: 'Add Product',
       figure: 'Figure', // Figures that go inside the Cups, or Plates
       types: {
@@ -174,13 +181,12 @@ export const en = {
       zip: 'ZIP',
       phone: 'Phone (shipping)',
       dateFormat: 'dd-mm-yyyy', // dd-mm-aaaa ES
-      shippingRequired: 'Shipping Required *',
     },
     payment: {
-      subtotal: 'Subtotal',
+      subtotal: 'Subtotal', // {t('forms.payment.subtotal')}
       advance: 'Advance',
       total: 'Total',
-    }
+    },
   },
 
   // ─── FORM ACTIONS & CONFIRM MODALS (FOOTER ONLY)───────────────────────
@@ -235,10 +241,12 @@ export const en = {
 
   // ─── LOADING STATES ──────────────────────────────────────
   loading: {
-    generic: 'Please wait...',
+    generic: 'Loading...',
     image: 'Uploading image...',
-    order: 'Creating order...',
+    orderCreate: 'Creating order...',
     user: 'Registering user...',
+    order: 'Loading order...',
+    orders: 'Loading orders...',
   },
 
   // ─── INFO MESSAGES ───────────────────────────────────────
@@ -256,5 +264,22 @@ export const en = {
     // ADD/ EDIT PRODUCT
     editProduct: 'Edit Product',
     addProduct: 'Add Product',
+  },
+
+  // ───────────────────── HOME ───────────────────────────
+  home: {
+    title: 'Home',
+    pendingTitle: 'Pending Orders',
+    updatedAt: 'Last updated:', //Última actualización:
+    recentTitle: 'Recent Orders',
+    status: 'Status',
+  },
+
+  // ───────────────────── ORDER ───────────────────────────
+  order: {
+    deposit: 'Deposit',
+    subtotal: 'Subtotal',
+    total: 'Total',
+    shippingRequired: 'Shipping Required *',
   },
 }
