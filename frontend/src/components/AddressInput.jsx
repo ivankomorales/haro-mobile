@@ -1,5 +1,8 @@
+// src/components/AddressInput.jsx
 import FormInput from './FormInput'
 
+// Renders a grouped set of input fields for address, city, ZIP code, and phone.
+//Supports validation errors, dynamic indexing, and a remove button for handling multiple address entries in a form.
 export default function AddressInput({
   index,
   value,
@@ -7,12 +10,11 @@ export default function AddressInput({
   onRemove,
   errors = {},
   // i18n TEXTS
-  address= 'Address',
-  city= 'City',
-  zip= 'ZIP',
-  phone= 'Phone (shipping)',
-  remove= 'Remove',
-
+  address = 'Address',
+  city = 'City',
+  zip = 'ZIP',
+  phone = 'Phone (shipping)',
+  remove = 'Remove',
 }) {
   return (
     <div className="mb-4 rounded border p-3 dark:border-neutral-700">

@@ -1,12 +1,14 @@
 // src/utils/useRequireState.js
+
 import { useEffect } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 
 /**
- * Verifica una condición sobre location.state. Si no se cumple, redirige.
- * @param {(st:any)=>boolean} check  Función que retorna true si el state es válido
- * @param {string} redirectTo        Ruta a donde mandar si falla
- * @param {()=>any} [buildState]     (Opcional) state a pasar al redirect (ej. originPath)
+ * Hook that verifies a condition based on location.state. Redirects if the condition fails.
+ *
+ * @param {(state: any) => boolean} check - Function that returns true if state is valid
+ * @param {string} redirectTo - Route to redirect to if check fails
+ * @param {() => any} [buildState] - Optional function to build state for the redirect
  */
 export function useRequireState(check, redirectTo, buildState) {
   const location = useLocation()
@@ -20,9 +22,12 @@ export function useRequireState(check, redirectTo, buildState) {
         state: buildState ? buildState() : undefined,
       })
     }
-    // Nota: si tu linter se queja por "exhaustive-deps",
-    // puedes envolver `check` y `buildState` en useCallback en el componente que llama,
-    // o simplemente deshabilitar la regla para esta línea.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
+    /**
+     * Note: If your linter complains about "exhaustive-deps",
+     * you can wrap `check` and `buildState` in useCallback in the calling component,
+     * or disable the rule for this line.
+     * eslint-disable-next-line react-hooks/exhaustive-deps
+     */
   }, [location.state, navigate, redirectTo])
 }

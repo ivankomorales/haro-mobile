@@ -1,4 +1,7 @@
 // src/utils/jwt.js
+
+// Extracts and returns user information from the JWT stored in localStorage.
+// Returns null if there's no token, it's invalid, or it's expired.
 export function getUserFromToken() {
   const token = localStorage.getItem('token')
   if (!token) return null
@@ -7,8 +10,8 @@ export function getUserFromToken() {
     const [, payload] = token.split('.') // [header, payload, signature]
     const decoded = JSON.parse(atob(payload))
 
-    // Validar si el token ha expirado
-    const now = Date.now() / 1000 // en segundos
+    // Check if the token has expired
+    const now = Date.now() / 1000 // in seconds
     if (decoded.exp && decoded.exp < now) {
       console.warn('Token expired')
       return null

@@ -7,15 +7,65 @@ import BottomNavBar from '../components/BottomNavBar'
 import useHideBars from '../hooks/useHideBars'
 import { useAuth } from '../context/AuthContext'
 import SplitActionButton from '../components/SplitActionButton'
+import { getMessage as t } from '../utils/getMessage'
+import { useLayout } from '../context/LayoutContext'
+import { useEffect, useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { LogOut } from 'lucide-react'
+import { logout } from '../api/auth'
 
 export default function DashboardLayout() {
   const isDesktop = useMediaQuery({ minWidth: 1024 })
   const hideBars = useHideBars()
   const { isAdmin } = useAuth()
+  const { title } = useLayout()
+  const [showMenu, setShowMenu] = useState(false)
+  const menuRef = useRef()
+  const avatarRef = useRef()
+  const navigate = useNavigate()
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (
+        menuRef.current &&
+        !menuRef.current.contains(event.target) &&
+        avatarRef.current &&
+        !avatarRef.current.contains(event.target)
+      ) {
+        setShowMenu(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [])
+
+  const handleAvatarClick = () => {
+    setShowMenu(!showMenu) // Muestra o esconde el menú al hacer click
+  }
+
+  const handleLogout = () => {
+    logout(navigate)
+  }
+
+  const splitLabels = {
+    main: t('splitAction.new'),
+    order: t('splitAction.order'),
+    user: t('splitAction.user'),
+    glaze: t('splitAction.glaze'),
+  }
+
+  const splitShow = {
+    order: true,
+    user: isAdmin,
+    glaze: isAdmin,
+  }
 
   return (
     <div className="flex h-screen bg-white dark:bg-neutral-900 text-black dark:text-white overflow-hidden">
-      {/* Sidebar en desktop */}
+      {/* Sidebar on Desktop */}
       {isDesktop && !hideBars && <SideBar />}
 
       {/* Main container */}
@@ -23,11 +73,23 @@ export default function DashboardLayout() {
         {/* AppBar fijo */}
         {!hideBars && (
           <AppBar
-            title="Haro Mobile"
-            extra={isDesktop ? <SplitActionButton /> : null}
+            title={title}
+            extra={
+              isDesktop ? (
+                <SplitActionButton
+                  showSecondary={isAdmin}
+                  labels={splitLabels}
+                  show={splitShow}
+                />
+              ) : null
+            }
             right={
               <div className="mr-4">
-                <div className="w-10 h-10 rounded-full overflow-hidden">
+                <div
+                  ref={avatarRef}
+                  className="w-8 h-8 rounded-full overflow-hidden cursor-pointer"
+                  onClick={handleAvatarClick}
+                >
                   <img
                     src="https://i.pravatar.cc/40"
                     alt="Avatar"
@@ -38,15 +100,36 @@ export default function DashboardLayout() {
             }
           />
         )}
+        {showMenu && (
+          <div
+            ref={menuRef}
+            className="absolute right-1 mt-10 w-40 bg-white shadow-md rounded-md z-50"
+          >
+            <ul className="py-2">
+              <li className="px-4 py-2 hover:bg-gray-100 cursor-pointer">
+                Perfil
+              </li>
+              <li className="px-4 py-2 hover:bg-gray-100 cursor-pointer">
+                Ajustes
+              </li>
+              <li
+                className="px-4 py-2 hover:bg-gray-100 cursor-pointer text-red-600"
+                onClick={handleLogout}
+              >
+                Cerrar sesión
+              </li>
+            </ul>
+          </div>
+        )}
 
-        {/* Contenido scrolleable */}
-        <main className="flex-1 overflow-y-auto">
+        {/* Scrollable Content */}
+        <main id="scrollable-content" className="flex-1 overflow-y-auto">
           <div className="max-w-[92%] mx-auto px-4 py-6">
             <Outlet />
           </div>
         </main>
 
-        {/* Bottom Nav en mobile */}
+        {/* BottomNav for Mobile */}
         {!isDesktop && !hideBars && <BottomNavBar />}
       </div>
     </div>

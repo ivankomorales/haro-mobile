@@ -31,5 +31,5 @@ export const login = async (credentials) => {
  */
 export const logout = (navigate) => {
   localStorage.removeItem('token')
-  navigate('/login')
+  navigate('/')
 }

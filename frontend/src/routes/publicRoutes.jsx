@@ -1,6 +1,4 @@
 // src/routes/publicRoutes.jsx
-import Login from '../pages/Login';
+import Login from '../pages/Login'
 
-export const publicRoutes = [
-  { path: '/', element: <Login /> },
-];
+export const publicRoutes = [{ path: '/', element: <Login /> }]

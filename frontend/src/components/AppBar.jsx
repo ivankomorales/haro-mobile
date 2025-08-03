@@ -1,4 +1,4 @@
-// components/AppBar.jsx
+// src/components/AppBar.jsx
 export default function AppBar({ title, left, right, extra, progress }) {
   return (
     <div
@@ -9,19 +9,22 @@ export default function AppBar({ title, left, right, extra, progress }) {
         shadow-sm
       "
     >
-      
       <div className="max-w-[95%] mx-auto px-4 flex items-center justify-between h-14">
         {/* Left icon (e.g. X, ←, ☰) */}
         <div className="flex w-10 justify-start">{left}</div>
 
-        {/* Spacer to keep layout consistent */}
-        <div className="flex-1" />
+        {/* Spacer + Title */}
+        <div className="flex-1 relative">
+          <h1 className="absolute left-1/2 -translate-x-1/2 text-base font-semibold truncate max-w-[60%] text-center">
+            {title}
+          </h1>
+        </div>
 
         {/* Extra actions (e.g., split button) */}
         {extra && <div className="mr-19">{extra}</div>}
 
         {/* Right icon (e.g. avatar, settings) */}
-        <div className="flex w-10 justify-end">{right}</div>
+        <div className="flex items-center gap-2 justify-end">{right}</div>
       </div>
 
       {/* Optional progress bar */}

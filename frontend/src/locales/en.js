@@ -95,7 +95,7 @@ export const en = {
       deliveryDate: 'Delivery Date',
       submit: 'Create Order',
       confirm: 'Confirm Order',
-      status: 'Status',
+      status: 'Status', // DUPLICATE
       deposit: 'Deposit',
       notes: 'Notes',
       details: 'Order Details',
@@ -290,6 +290,12 @@ export const en = {
   },
 
   // ─────────────── SplitAction ──────────────────────
+  splitAction: {
+    new: '+ New',
+    order: 'Order',
+    user: 'User',
+    glaze: 'Glaze',
+  },
 
   // ─────────────── AUTHCONTEXT ──────────────────────
   auth: {
@@ -305,5 +311,13 @@ export const en = {
     emailRequired: 'Email is required.',
     missingFields: 'Please fill in all fields.',
     passwordRequired: 'Password is required.',
+  },
+  // ─────────────── STATUS ──────────────────────
+  status: { // First Capital for Status as Backend uses them like that
+    New: 'New',
+    Pending: 'Pending',
+    Completed: 'Completed',
+    Cancelled: 'Cancelled',
+    InProgress: 'In Progress',
   },
 }

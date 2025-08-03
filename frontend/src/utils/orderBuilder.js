@@ -1,6 +1,6 @@
 // src/utils/orderBuilder.js
 
-// Helpers to split name & parse phone
+// Helpers to split full name and parse phone number
 export function splitName(fullName = '') {
   const parts = fullName.trim().split(/\s+/)
   const name = parts[0] || ''
@@ -9,7 +9,7 @@ export function splitName(fullName = '') {
 }
 
 export function parsePhone(fullPhone = '') {
-  // Example: "+52XXXXXXXXXX", "XXXXXXXXXX"
+  // Example formats: "+52XXXXXXXXXX" or "XXXXXXXXXX"
   const match = fullPhone.match(/^(\+\d{1,3})?(\d{10})$/)
   if (!match) return { countryCode: '+52', phone: '' }
   const countryCode = match[1] || '+52'
@@ -19,7 +19,7 @@ export function parsePhone(fullPhone = '') {
 
 /**
  * Generates initial form values from a draft (location.state).
- * Does not set everything — only the fields that are present in the draft.
+ * Only sets the fields that exist in the draft object.
  */
 export function prefillFormFromDraft(draft = {}) {
   const name = draft.customer?.name || ''
@@ -48,8 +48,9 @@ export function prefillFormFromDraft(draft = {}) {
 }
 
 /**
- * Validates the base form (NewOrder). Returns an `errors` object with i18n keys.
- * If there are no errors => errors = {}
+ * Validates the basic order form (NewOrder).
+ * Returns an `errors` object with i18n-compatible error keys.
+ * If no errors are found, returns an empty object.
  */
 export function validateBaseForm(formData) {
   const errors = {}
@@ -59,7 +60,7 @@ export function validateBaseForm(formData) {
   if (!formData.status) errors.status = 'validation.requiredFields'
   if (!formData.orderDate) errors.orderDate = 'errors.order.missingDate'
 
-  // Fechas
+  // Validate delivery date is not before the order date
   if (
     formData.deliverDate &&
     formData.orderDate &&
@@ -68,12 +69,12 @@ export function validateBaseForm(formData) {
     errors.deliverDate = 'validation.invalidDeliveryDate'
   }
 
-  // Phone Optional, 10 digits
+  // Phone (optional) — must be 10 digits if present
   if (formData.phone && !/^\d{10}$/.test(formData.phone)) {
     errors.phone = 'errors.user.invalidPhone'
   }
 
-  // Email optional / has to be valid
+  // Email (optional) — must be valid format if present
   if (
     formData.email &&
     !/^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$/.test(formData.email)
@@ -81,7 +82,7 @@ export function validateBaseForm(formData) {
     errors.email = 'errors.user.invalidEmail'
   }
 
-  // Shipping (only if applies)
+  // Shipping validation (only if shipping is required)
   if (formData.shipping) {
     const hasAnyAddressError = (formData.addresses || []).some((addr) => {
       return !addr.address || !addr.city || !addr.zip || !addr.phone
@@ -95,8 +96,8 @@ export function validateBaseForm(formData) {
 }
 
 /**
- * Builds the baseOrder object from the form data.
- * `opts` allows merging the pending social input if provided.
+ * Builds the base order object from form data.
+ * `opts` allows merging a pending social media input (e.g., a typed handle).
  */
 export function buildBaseOrder(formData, opts = {}) {
   const { socialInput = '', currentSocialType = 'instagram' } = opts

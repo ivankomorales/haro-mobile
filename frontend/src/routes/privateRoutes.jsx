@@ -9,7 +9,7 @@ import OrderDetails from '../pages/orders/OrderDetails'
 import AddUser from '../pages/users/AddUser'
 import AddGlaze from '../pages/glazes/AddGlaze'
 import Dashboard from '../pages/Dashboard'
-import UserProfile from '../pages/UserProfile'
+import UserProfile from '../pages/users/UserProfile'
 
 export const privateRoutes = [
   { path: '/home', element: <Home /> },

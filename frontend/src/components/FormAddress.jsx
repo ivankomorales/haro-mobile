@@ -1,5 +1,17 @@
 import AddressInput from './AddressInput'
 
+/**
+ * FormAddress Component
+ *
+ * Displays a list of address input sections (shipping addresses), with support for adding,
+ * removing, and updating multiple address entries.
+ *
+ * Features:
+ * - Renders one or more `AddressInput` components dynamically.
+ * - "Add Address" button to append a new address entry.
+ * - Individual error handling per address block.
+ * - Fully customizable labels via props for i18n support.
+ */
 export default function FormAddress({
   addresses,
   onAdd,
@@ -8,7 +20,7 @@ export default function FormAddress({
   errors = [],
   // i18n TEXTS
   shippingAddress = 'Shipping Address',
-  addButton = '+ Add Address'
+  addButton = '+ Add Address',
 }) {
   return (
     <div className="p-4 border rounded bg-gray-50 dark:bg-neutral-800 dark:border-neutral-700">

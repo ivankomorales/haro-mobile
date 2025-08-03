@@ -28,7 +28,7 @@ export default function Sidebar() {
       className="hidden md:flex flex-col w-56 h-screen px-4 py-6
                  bg-white dark:bg-neutral-900 border-r dark:border-neutral-800"
     >
-      <div className="mb-6 text-lg font-bold text-gray-800 dark:text-gray-100">
+      <div className="mb-6 text-center text-lg font-bold text-gray-800 dark:text-gray-100">
         Haro Mobile
       </div>
 
@@ -38,21 +38,21 @@ export default function Sidebar() {
           className={linkClass('/home')}
         >
           <House className="w-5 h-5" />
-          Inicio
+          Home
         </button>
         <button
           onClick={() => handleNav('/orders')}
           className={linkClass('/orders')}
         >
           <ClipboardList className="w-5 h-5" />
-          Pedidos
+          Orders
         </button>
         <button
           onClick={() => handleNav('/profile')}
           className={linkClass('/profile')}
         >
           <UserRound className="w-5 h-5" />
-          Usuarios
+          Users
         </button>
       </nav>
     </div>

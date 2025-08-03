@@ -1,4 +1,7 @@
 // utils/productBuilder.js
+
+// Builds a formatted product payload for create or edit operations.
+// The `mode` parameter can be 'create' (default) or 'editDB' to preserve existing data.
 export function buildProductListPayload(product, mode = 'create') {
   const payload = {
     type: product.type,
@@ -19,11 +22,13 @@ export function buildProductListPayload(product, mode = 'create') {
   }
 
   if (mode === 'editDB') {
-    // Preserva imágenes que ya estén subidas (URL)
-    payload.images = product.images?.filter((img) =>
-      typeof img === 'string' && img.startsWith('http')
-    ) || []
-    // Conserva _id si es necesario para PUT
+    // Preserve images that are already uploaded (via URL)
+    payload.images =
+      product.images?.filter(
+        (img) => typeof img === 'string' && img.startsWith('http')
+      ) || []
+
+    // Include _id if available, needed for PUT/update operations
     if (product._id) payload._id = product._id
   }
 

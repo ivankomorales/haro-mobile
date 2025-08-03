@@ -1,6 +1,12 @@
 // src/components/ConfirmModal.jsx
 import { Dialog, DialogPanel, DialogTitle, Description } from '@headlessui/react'
 
+
+//A reusable confirmation modal using Headless UI.
+
+//- Displays a dialog with a title, message, and two action buttons: Confirm and Cancel.
+//- Supports full customization of texts and actions via props.
+//- Ideal for confirming destructive or important user actions (e.g. cancel, delete).
 export default function ConfirmModal({
   open,
   onClose,

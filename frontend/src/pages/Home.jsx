@@ -1,14 +1,25 @@
 import { useEffect, useState } from 'react'
 import { getRecentOrders, getPendingCount } from '../api/orders'
 import { useNavigate } from 'react-router-dom'
-import { useMediaQuery } from 'react-responsive'
 import { getMessage as t } from '../utils/getMessage'
+import { useLayout } from '../context/LayoutContext'
 
 export default function Home() {
   const [lastUpdated, setLastUpdated] = useState(null)
   const [recentOrders, setRecentOrders] = useState([])
   const [pendingCount, setPendingCount] = useState(0)
   const navigate = useNavigate()
+  const { setTitle, setShowSplitButton } = useLayout()
+
+  useEffect(() => {
+    setTitle(t('home.title'))
+    setShowSplitButton(true)
+
+    return () => {
+      setTitle('Haro Mobile')
+      setShowSplitButton(true)
+    }
+  }, [])
 
   useEffect(() => {
     async function fetchData() {
@@ -35,7 +46,8 @@ export default function Home() {
         text-gray-800 dark:text-gray-100
       "
     >
-      <h1 className="text-xl font-semibold mb-4">{t('home.title')}</h1>
+      {/* Optional h1 for accessibility */}
+      {/*<h1 className="text-xl font-semibold mb-4">{t('home.title')}</h1>*/}
 
       <div
         className="
@@ -78,7 +90,7 @@ export default function Home() {
             >
               <div>
                 <strong className="block text-sm">
-                  {order.customer?.name}{' '}{order.customer?.lastName}
+                  {order.customer?.name} {order.customer?.lastName}
                 </strong>
                 <span className="text-xs text-gray-500">
                   {order.orderDate
@@ -102,7 +114,8 @@ export default function Home() {
                     rounded
                   "
                 >
-                  {order.status}
+                  {t(`status.${order.status}`)} {/* TODO */}{' '}
+                  {/* Valid if status keys are capitalized */}
                 </span>
               </div>
             </li>

@@ -4,6 +4,7 @@ import { getOrders } from '../../api/orders'
 import { useNavigate } from 'react-router-dom'
 import { getMessage as t } from '../../utils/getMessage'
 import FormInput from '../../components/FormInput'
+import { useLayout } from '../../context/LayoutContext'
 
 export default function Orders() {
   const [orders, setOrders] = useState([])
@@ -12,6 +13,18 @@ export default function Orders() {
   const navigate = useNavigate()
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('All')
+  const { setTitle, setShowSplitButton } = useLayout()
+
+  useEffect(() => {
+    setTitle('Pedidos')
+    setShowSplitButton(true)
+
+    // Opcional: restaurar a valores por defecto al salir
+    return () => {
+      setTitle('Haro Mobile')
+      setShowSplitButton(true)
+    }
+  }, [])
 
   useEffect(() => {
     async function fetchOrders() {
@@ -46,7 +59,8 @@ export default function Orders() {
 
   return (
     <div className="min-h-screen p-4 bg-white dark:bg-neutral-900 text-black dark:text-white">
-      <h1 className="text-xl font-semibold mb-4">{t('labels.orders.title')}</h1>
+      {/* Optional h1 for accessibility */}
+      {/*<h1 className="text-xl font-semibold mb-4">{t('labels.orders.title')}</h1>*/}
       {/* Search and Filter */}
       <div className="flex flex-col sm:flex-row gap-2 mb-4">
         <FormInput

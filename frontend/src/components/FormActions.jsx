@@ -3,6 +3,17 @@ import ConfirmModal from './ConfirmModal'
 import { useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 
+/**
+ * FormActions Component
+ *
+ * Displays form action buttons for **Submit** and **Cancel**, with a confirmation modal
+ * that prevents accidental cancellation of unsaved work.
+ *
+ * Features:
+ * - Cancel button opens a confirmation dialog before navigating away.
+ * - Fully customizable button and modal texts.
+ * - Supports dynamic redirect paths and state preservation using React Router.
+ */
 export default function FormActions({
   onSubmit,
   cancelRedirect = '/orders', // By default sent back to orders, we can prompt to send back to where we were
