@@ -1,10 +1,19 @@
 const express = require("express");
 const router = express.Router();
+
+// Controller
 const { createUser } = require("../controllers/userController");
-const { verifyToken } = require("../middleware/auth"); // <-- renombrado aquí
-const checkRole = require("../middleware/checkRole"); // <-- opcional: renombra archivo a inglés si gustas
+
+// Middlewares
+const { verifyToken } = require("../middleware/auth");
+const checkRole = require("../middleware/checkRole"); // Optional: rename file to match English naming
 const { body } = require("express-validator");
 
+//
+// 🟠 POST ROUTES
+//
+
+// Create a new user (admin only)
 router.post(
   "/",
   verifyToken,

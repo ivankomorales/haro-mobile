@@ -42,7 +42,7 @@ export default function Orders() {
             >
               <div className="flex justify-between items-center">
                 <div>
-                  <p className="text-sm font-semibold">{order.customer?.name}</p>
+                  <p className="text-sm font-semibold">{order.customer?.name}{''}{order.customer?.lastName}</p>
                   <p className="text-xs text-gray-500">
                     {new Date(order.orderDate).toLocaleDateString()}
                   </p>

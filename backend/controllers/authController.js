@@ -4,7 +4,9 @@ const ApiError = require("../utils/ApiError");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 
-// Login
+// ---------------------------------------------
+// 🟠 LOGIN (POST /api/auth/login)
+// ---------------------------------------------
 const login = async (req, res, next) => {
   const { email, password } = req.body;
 
@@ -29,6 +31,7 @@ const login = async (req, res, next) => {
       });
       return next(new ApiError("Incorrect password", 401));
     }
+
     const token = jwt.sign(
       { id: user._id, role: user.role },
       process.env.JWT_SECRET,
@@ -42,13 +45,18 @@ const login = async (req, res, next) => {
       req,
     });
 
-    res.json({ token, user: { name: user.name, role: user.role } });
+    res.json({
+      token,
+      user: { name: user.name, role: user.role },
+    });
   } catch (err) {
     next(err);
   }
-}; //end login
+}; // end login
 
-// Logout
+// ---------------------------------------------
+// 🔴 LOGOUT (Optional, POST /api/auth/logout)
+// ---------------------------------------------
 const logout = async (req, res, next) => {
   try {
     await logEvent({
@@ -64,7 +72,9 @@ const logout = async (req, res, next) => {
   }
 }; // end logout
 
-// Update Password
+// ---------------------------------------------
+// 🔵 UPDATE PASSWORD (PUT /api/users/:id/password)
+// ---------------------------------------------
 const updatePassword = async (req, res, next) => {
   try {
     const targetUserId = req.params.id;
@@ -83,9 +93,7 @@ const updatePassword = async (req, res, next) => {
     const targetUser = await User.findById(targetUserId);
     if (!targetUser) return next(new ApiError("Target user not found", 404));
 
-    const actingUser = req.user; // comes from verifyToken
-
-    // If not admin or authenticated user > out
+    const actingUser = req.user; // from verifyToken middleware
     const isSelf = actingUser._id.toString() === targetUserId;
     const isAdmin = actingUser.role === "admin";
 
@@ -93,7 +101,6 @@ const updatePassword = async (req, res, next) => {
       return next(new ApiError("Not authorized to change this password", 403));
     }
 
-    // Validate password wether admin or user is performing action
     const validPassword = await bcrypt.compare(
       currentPassword,
       actingUser.password
@@ -102,12 +109,10 @@ const updatePassword = async (req, res, next) => {
       return next(new ApiError("Incorrect password", 401));
     }
 
-    // Change password
     const hashed = await bcrypt.hash(newPassword, 10);
     targetUser.password = hashed;
     await targetUser.save();
 
-    //Log Event
     await logEvent({
       event: "password_updated",
       objectId: targetUser._id,
@@ -123,6 +128,9 @@ const updatePassword = async (req, res, next) => {
   }
 }; // end updatePassword
 
+// ---------------------------------------------
+// 📦 EXPORT CONTROLLER METHODS
+// ---------------------------------------------
 module.exports = {
   login,
   logout,

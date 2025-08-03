@@ -4,6 +4,8 @@ import { ChevronLeft } from 'lucide-react'
 import FormInput from '../../components/FormInput'
 import { useCreateUser } from '../../hooks/useCreateUser'
 import FormActions from '../../components/FormActions'
+import { getMessage as t } from '../../utils/getMessage'
+import { showSuccess, showError } from '../../utils/toastUtils'
 
 export default function AddUser() {
   const navigate = useNavigate()
@@ -18,26 +20,20 @@ export default function AddUser() {
     role: 'employee',
   })
 
-  const [error, setError] = useState(null)
-  const [success, setSuccess] = useState(null)
   const [loading, setLoading] = useState(false)
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value })
-    setError(null)
-    setSuccess(null)
   }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     setLoading(true)
-    setError(null)
-    setSuccess(null)
 
     try {
       await create(formData) // ✅ this handles validation and logout
 
-      setSuccess('User created successfully!')
+      showSuccess('success.user.created')
       setFormData({
         name: '',
         lastName: '',
@@ -47,7 +43,7 @@ export default function AddUser() {
         role: 'employee',
       })
     } catch (err) {
-      setError(err.message)
+      showError(err.message)
     } finally {
       setLoading(false)
     }
@@ -60,16 +56,16 @@ export default function AddUser() {
         className="mb-4 flex items-center text-sm text-blue-600 dark:text-blue-400 hover:underline "
       >
         <ChevronLeft className="h-5 w-5 mr-1" />
-        Volver
+        {t('user.back')}
       </button>
 
       <h1 className="text-xl font-semibold mb-6 text-center">
-        Crear nuevo usuario
+        {t('user.title')}
       </h1>
 
       <form onSubmit={handleSubmit} className="max-w-md mx-auto space-y-6">
         <FormInput
-          label="Nombre"
+          label={t('user.name')}
           name="name"
           value={formData.name}
           onChange={handleChange}
@@ -77,7 +73,7 @@ export default function AddUser() {
         />
 
         <FormInput
-          label="Apellido"
+          label={t('user.lastName')}
           name="lastName"
           value={formData.lastName}
           onChange={handleChange}
@@ -85,7 +81,7 @@ export default function AddUser() {
         />
 
         <FormInput
-          label="Correo electrónico"
+          label={t('user.email')}
           name="email"
           type="email"
           value={formData.email}
@@ -94,7 +90,7 @@ export default function AddUser() {
         />
 
         <FormInput
-          label="Contraseña"
+          label={t('user.password')}
           name="password"
           type="password"
           value={formData.password}
@@ -105,7 +101,7 @@ export default function AddUser() {
         />
 
         <FormInput
-          label="Confirmar contraseña"
+          label={t('user.confirmPassword')}
           name="confirmPassword"
           type="password"
           value={formData.confirmPassword}
@@ -122,15 +118,12 @@ export default function AddUser() {
             onChange={handleChange}
             className="w-full p-2 border rounded dark:bg-neutral-800 dark:border-gray-600"
           >
-            <option value="employee">Empleado</option>
-            <option value="admin">Administrador</option>
+            <option value="employee">{t('user.employee')}</option>
+            <option value="admin">{t('user.admin')}</option>
           </select>
         </div>
 
-        {error && <div className="text-red-500 text-sm">{error}</div>}
-        {success && <div className="text-green-600 text-sm">{success}</div>}
-
-        <FormActions />
+        <FormActions onSubmit={handleSubmit} />
       </form>
     </div>
   )

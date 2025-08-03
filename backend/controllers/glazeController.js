@@ -2,8 +2,11 @@ const Glaze = require("../models/Glaze");
 const ApiError = require("../utils/ApiError");
 const { logEvent } = require("../utils/audit");
 
-// TODO i18n TEXTS
-// Create
+// TODO: i18n TEXTS
+
+// ---------------------------------------------
+// 🟠 CREATE GLAZE (POST /api/glazes)
+// ---------------------------------------------
 const createGlaze = async (req, res, next) => {
   const { name, colorHex, code, image } = req.body;
 
@@ -35,7 +38,9 @@ const createGlaze = async (req, res, next) => {
   }
 }; // end createGlaze
 
-// Read one
+// ---------------------------------------------
+// 🟢 GET ONE GLAZE (GET /api/glazes/:id)
+// ---------------------------------------------
 const getGlazeById = async (req, res, next) => {
   try {
     const glaze = await Glaze.findById(req.params.id);
@@ -48,11 +53,14 @@ const getGlazeById = async (req, res, next) => {
   }
 }; // end getGlazeById
 
-// Read all (Including inactive filter)
+// ---------------------------------------------
+// 🟢 GET ALL GLAZES (GET /api/glazes)
+// ---------------------------------------------
 const getGlazes = async (req, res, next) => {
   try {
     const includeInactive = req.query.includeInactive === "true";
     const filter = includeInactive ? {} : { isActive: true };
+
     const glazes = await Glaze.find(filter).sort("name");
     res.json(glazes);
   } catch (err) {
@@ -60,13 +68,16 @@ const getGlazes = async (req, res, next) => {
   }
 }; // end getGlazes
 
-// Update
+// ---------------------------------------------
+// 🔵 UPDATE GLAZE (PUT /api/glazes/:id)
+// ---------------------------------------------
 const updateGlaze = async (req, res, next) => {
   try {
     const glaze = await Glaze.findById(req.params.id);
     if (!glaze) {
       return next(new ApiError("Glaze not found", 404));
     }
+
     const changes = [];
 
     if (req.body.name && req.body.name !== glaze.name) {
@@ -102,13 +113,16 @@ const updateGlaze = async (req, res, next) => {
   }
 }; // end updateGlaze
 
-// Soft Delete
+// ---------------------------------------------
+// 🟣 DEACTIVATE GLAZE (PATCH /api/glazes/:id/deactivate)
+// ---------------------------------------------
 const deactivateGlaze = async (req, res, next) => {
   try {
     const glaze = await Glaze.findById(req.params.id);
     if (!glaze) {
       return next(new ApiError("Glaze not found", 404));
     }
+
     if (!glaze.isActive) {
       return next(new ApiError("Glaze is already inactive", 400));
     }
@@ -130,6 +144,9 @@ const deactivateGlaze = async (req, res, next) => {
   }
 }; // end deactivateGlaze
 
+// ---------------------------------------------
+// 📦 EXPORT CONTROLLER METHODS
+// ---------------------------------------------
 module.exports = {
   createGlaze,
   getGlazeById,

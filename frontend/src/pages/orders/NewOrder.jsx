@@ -209,13 +209,16 @@ export default function NewOrder() {
     }
   } // end handleBaseSubmit
 
+  const handleChangeAndClearError = (e) => {
+    const { name, value } = e.target
+    setFormData((prev) => ({ ...prev, [name]: value }))
+    setErrors((prev) => ({ ...prev, [name]: null }))
+  }
+
   return (
     <div className="min-h-screen pb-24 bg-white dark:bg-neutral-900 dark:text-gray-100">
       <form
-        onSubmit={(e) => {
-          e.preventDefault()
-          handleContinue()
-        }}
+        onSubmit={handleBaseSubmit}
         className="max-w-2xl mx-auto px-4 pt-6 space-y-6"
       >
         <h1 className="text-center mb-8 text-xl font-semibold">
@@ -228,10 +231,7 @@ export default function NewOrder() {
             label="First Name"
             name="name"
             value={formData.name}
-            onChange={(e) => {
-              handleChange(e)
-              setErrors((prev) => ({ ...prev, name: null }))
-            }}
+            onChange={handleChangeAndClearError}
             error={errors.name}
             errorFormatter={t}
           />
@@ -239,10 +239,7 @@ export default function NewOrder() {
             label="Last Name"
             name="lastName"
             value={formData.lastName}
-            onChange={(e) => {
-              handleChange(e)
-              setErrors((prev) => ({ ...prev, lastName: null }))
-            }}
+            onChange={handleChangeAndClearError}
             error={errors.lastName}
             errorFormatter={t}
           />
@@ -251,7 +248,7 @@ export default function NewOrder() {
         {/* More info */}
         <div className="rounded border p-4 dark:border-neutral-700">
           <p className="mb-3 text-sm font-medium text-gray-800 dark:text-gray-200">
-            More details
+            More details //TODO
           </p>
 
           {/* Phone & email */}
@@ -274,10 +271,7 @@ export default function NewOrder() {
                 pattern="\d{10}"
                 maxLength={10}
                 value={formData.phone}
-                onChange={(e) => {
-                  handleChange(e)
-                  setErrors((prev) => ({ ...prev, phone: null }))
-                }}
+                onChange={handleChangeAndClearError}
                 error={errors.phone}
                 errorFormatter={t}
               />
@@ -288,19 +282,16 @@ export default function NewOrder() {
               name="email"
               type="email"
               value={formData.email}
-              onChange={(e) => {
-                handleChange(e)
-                setErrors((prev) => ({ ...prev, email: null }))
-              }}
+              onChange={handleChangeAndClearError}
               error={errors.email}
               errorFormatter={t}
             />
           </div>
 
           {/* Social media */}
-          <div className="mt-4">
+          <div className="mt-4 w-36">
             <label className="block mb-1 text-sm font-medium text-gray-800 dark:text-gray-200">
-              Social Media
+              Social Media //TODO
             </label>
 
             <div className="flex gap-2 mb-2">
@@ -351,7 +342,7 @@ export default function NewOrder() {
                 type="button"
                 onClick={addOrUpdateSocial}
                 className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 dark:bg-neutral-700 dark:hover:bg-neutral-600 shrink-0"
-                title="Add/Update"
+                title="Add/Update" //TODO
               >
                 <Plus size={16} />
               </button>
@@ -408,10 +399,7 @@ export default function NewOrder() {
             label="Order date"
             placeholder={t('forms.shipping.dateFormat')}
             value={formData.orderDate}
-            onChange={(e) => {
-              handleChange(e)
-              setErrors((prev) => ({ ...prev, orderDate: null }))
-            }}
+            onChange={handleChangeAndClearError}
             error={errors.orderDate}
             errorFormatter={t}
             icon="calendar"
@@ -424,10 +412,7 @@ export default function NewOrder() {
             label="Delivery date"
             placeholder={t('forms.shipping.dateFormat')}
             value={formData.deliverDate}
-            onChange={(e) => {
-              handleChange(e)
-              setErrors((prev) => ({ ...prev, deliverDate: null }))
-            }}
+            onChange={handleChangeAndClearError}
             error={errors.deliverDate}
             errorFormatter={t}
             icon="calendar"
@@ -439,7 +424,7 @@ export default function NewOrder() {
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <div>
             <label className="block mb-1 text-sm font-medium text-gray-800 dark:text-gray-200">
-              {t('labels.order.status')} 
+              {t('labels.order.status')}
             </label>
             <select
               name="status"
@@ -457,14 +442,11 @@ export default function NewOrder() {
 
           <div>
             <FormInput
-              label={t('labels.order.deposit')} 
+              label={t('labels.order.deposit')}
               name="deposit"
               type="number"
               value={formData.deposit}
-              onChange={(e) => {
-                handleChange(e)
-                setErrors((prev) => ({ ...prev, deposit: null }))
-              }}
+              onChange={handleChangeAndClearError}
               prefix="$"
               min={0}
               step="0.00"
@@ -510,13 +492,10 @@ export default function NewOrder() {
 
         {/* Notes */}
         <FormInput
-          label={t('labels.order.notes')} 
+          label={t('labels.order.notes')}
           name="notes"
           value={formData.notes}
-          onChange={(e) => {
-            handleChange(e)
-            setErrors((prev) => ({ ...prev, notes: null }))
-          }}
+          onChange={handleChangeAndClearError}
           maxLength={200}
           error={errors.notes}
           errorFormatter={t}
@@ -530,14 +509,14 @@ export default function NewOrder() {
           onSubmit={handleBaseSubmit}
           submitButtonText={
             isEditBase
-              ? t('formActions.saveChanges')
-              : t('labels.order.addProduct')
+              ? t('formActions.saveChanges') //TODO
+              : t('labels.order.addProduct') //TODO
           }
-          cancelButtonText={t('formActions.cancel')}
-          confirmTitle={t('formActions.confirmTitle')}
-          confirmMessage={t('formActions.confirmMessage')}
-          confirmText={t('formActions.confirmText')}
-          cancelText={t('formActions.cancelText')}
+          cancelButtonText={t('formActions.cancel')} //TODO
+          confirmTitle={t('formActions.confirmTitle')} //TODO
+          confirmMessage={t('formActions.confirmMessage')} //TODO
+          confirmText={t('formActions.confirmText')} //TODO
+          cancelText={t('formActions.cancelText')} //TODO
           // Cancel: en edición vuelve a OrderConfirmation; en flujo normal, al origen
           cancelRedirect={
             isEditBase ? returnTo || '/orders/confirmation' : originPath

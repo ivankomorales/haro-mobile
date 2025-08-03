@@ -4,8 +4,11 @@ const { logEvent } = require("../utils/audit");
 const bcrypt = require("bcryptjs");
 const { validationResult } = require("express-validator");
 
-// TODO i18n TEXTS
-// POST /api/users (admin only)
+// TODO: i18n TEXTS
+
+// ---------------------------------------------
+// 🟠 CREATE USER (POST /api/users)
+// ---------------------------------------------
 const createUser = async (req, res, next) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
@@ -21,6 +24,7 @@ const createUser = async (req, res, next) => {
     }
 
     const hash = await bcrypt.hash(password, 10);
+
     const newUser = new User({
       name,
       lastName,
@@ -35,9 +39,7 @@ const createUser = async (req, res, next) => {
     await logEvent({
       event: "user_created",
       objectId: newUser._id,
-      description: `User ${newUser.name} ${newUser.lastName || ""} (${
-        newUser.email
-      }) created by ${req.user.name || "System"}`,
+      description: `User ${newUser.name} ${newUser.lastName || ""} (${newUser.email}) created by ${req.user.name || "System"}`,
       req,
     });
 
@@ -47,30 +49,9 @@ const createUser = async (req, res, next) => {
   }
 }; // end createUser
 
-// DELETE /users/:id (Soft Delete)
-const deleteUser = async (req, res, next) => {
-  try {
-    const user = await User.findById(req.params.id);
-    if (!user) return next(new ApiError("User not found", 404));
-
-    user.isActive = false;
-    await user.save();
-
-    // Log Event
-    await logEvent({
-      event: "user_deactivated",
-      objectId: user._id,
-      description: `${req.user.name} deactivated user ${user.name}`,
-      req,
-    });
-
-    res.json({ message: "User deactivated" });
-  } catch (err) {
-    next(new ApiError("Error deleting user", 500, err.message));
-  }
-}; // end ddeleteUser
-
-// GET /users
+// ---------------------------------------------
+// 🟢 GET ALL USERS (GET /api/users)
+// ---------------------------------------------
 const getUsers = async (req, res, next) => {
   try {
     const users = await User.find().sort();
@@ -78,9 +59,11 @@ const getUsers = async (req, res, next) => {
   } catch (err) {
     next(new ApiError("Error retrieving users", 500));
   }
-};
+}; // end getUsers
 
-// GET /users/:id
+// ---------------------------------------------
+// 🟢 GET USER BY ID (GET /api/users/:id)
+// ---------------------------------------------
 const getUserById = async (req, res, next) => {
   try {
     const user = await User.findById(req.params.id);
@@ -89,9 +72,11 @@ const getUserById = async (req, res, next) => {
   } catch (err) {
     next(new ApiError("Error retrieving user", 500));
   }
-};
+}; // end getUserById
 
-// PUT /users/:id
+// ---------------------------------------------
+// 🔵 UPDATE USER (PUT /api/users/:id)
+// ---------------------------------------------
 const updateUser = async (req, res, next) => {
   try {
     const user = await User.findById(req.params.id);
@@ -136,8 +121,40 @@ const updateUser = async (req, res, next) => {
   } catch (err) {
     next(new ApiError("Error updating user", 500));
   }
-};
+}; // end updateUser
 
+// ---------------------------------------------
+// 🔴 DELETE USER (DELETE /api/users/:id)
+// ---------------------------------------------
+const deleteUser = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.params.id);
+    if (!user) return next(new ApiError("User not found", 404));
+
+    user.isActive = false;
+    await user.save();
+
+    // Log Event
+    await logEvent({
+      event: "user_deactivated",
+      objectId: user._id,
+      description: `${req.user.name} deactivated user ${user.name}`,
+      req,
+    });
+
+    res.json({ message: "User deactivated" });
+  } catch (err) {
+    next(new ApiError("Error deleting user", 500, err.message));
+  }
+}; // end deleteUser
+
+// ---------------------------------------------
+// 📦 EXPORT CONTROLLER METHODS
+// ---------------------------------------------
 module.exports = {
   createUser,
+  getUsers,
+  getUserById,
+  updateUser,
+  deleteUser,
 };

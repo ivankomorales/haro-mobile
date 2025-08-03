@@ -2,9 +2,12 @@ const Customer = require("../models/Customer");
 const ApiError = require("../utils/ApiError");
 const { logEvent } = require("../utils/audit");
 
-// TODO: Improve customer deduplication logic
-// Current version allows creating customers with only a name.
-// Future versions should enforce at least one unique identifier: email, Instagram, or phone.
+//
+// 🧩 HELPER: FIND OR CREATE CUSTOMER
+//
+// Used during order creation.
+// If no email or social media is found, creates a new customer by name.
+// TODO: Improve deduplication logic. In the future, enforce at least one unique identifier.
 const findOrCreateCustomer = async (customerData, req) => {
   if (!customerData || !customerData.name) {
     throw new ApiError("Customer name is required", 400);
@@ -12,16 +15,19 @@ const findOrCreateCustomer = async (customerData, req) => {
 
   let customer = null;
 
+  // Try by email
   if (customerData.email) {
     customer = await Customer.findOne({ email: customerData.email });
   }
 
+  // Try by Instagram
   if (!customer && customerData.socialMedia?.instagram) {
     customer = await Customer.findOne({
       "socialMedia.instagram": customerData.socialMedia.instagram,
     });
   }
 
+  // Try by name (+ optional lastName)
   if (!customer && customerData.name) {
     customer = await Customer.findOne({
       name: customerData.name,
@@ -29,7 +35,7 @@ const findOrCreateCustomer = async (customerData, req) => {
     });
   }
 
-  // Si no hay email ni instagram, simplemente crea uno nuevo
+  // If not found, create new
   if (!customer) {
     customer = new Customer(customerData);
     await customer.save();
@@ -43,9 +49,11 @@ const findOrCreateCustomer = async (customerData, req) => {
   }
 
   return customer;
-};
+}; // end findOrCreateCustomer
 
-// GET /api/customers
+// ---------------------------------------------
+// 🟢 GET ALL CUSTOMERS (GET /api/customers)
+// ---------------------------------------------
 const getCustomers = async (req, res, next) => {
   try {
     const customers = await Customer.find().sort("name");
@@ -53,9 +61,11 @@ const getCustomers = async (req, res, next) => {
   } catch (err) {
     next(err);
   }
-};
+}; // end getCustomers
 
-// GET /api/customers/:id
+// ---------------------------------------------
+// 🟢 GET CUSTOMER BY ID (GET /api/customers/:id)
+// ---------------------------------------------
 const getCustomerById = async (req, res, next) => {
   try {
     const customer = await Customer.findById(req.params.id);
@@ -66,9 +76,11 @@ const getCustomerById = async (req, res, next) => {
   } catch (err) {
     next(err);
   }
-};
+}; // end getCustomerById
 
-// PUT /api/customers/:id
+// ---------------------------------------------
+// 🔵 UPDATE CUSTOMER (PUT /api/customers/:id)
+// ---------------------------------------------
 const updateCustomer = async (req, res, next) => {
   try {
     const customer = await Customer.findById(req.params.id);
@@ -82,6 +94,7 @@ const updateCustomer = async (req, res, next) => {
 
     const changes = [];
 
+    // Update top-level fields
     ["name", "email", "phone", "notes"].forEach((field) => {
       if (req.body[field]?.trim() && req.body[field] !== customer[field]) {
         changes.push(`${field}: ${customer[field]} → ${req.body[field]}`);
@@ -89,25 +102,25 @@ const updateCustomer = async (req, res, next) => {
       }
     });
 
+    // Update social media
     if (req.body.socialMedia) {
       const platforms = ["instagram", "facebook", "tiktok"];
       platforms.forEach((platform) => {
-        if (
-          req.body.socialMedia[platform]?.trim() &&
-          req.body.socialMedia[platform] !== customer.socialMedia?.[platform]
-        ) {
+        const newValue = req.body.socialMedia[platform]?.trim();
+        const oldValue = customer.socialMedia?.[platform];
+
+        if (newValue && newValue !== oldValue) {
           changes.push(
-            `socialMedia.${platform}: ${
-              customer.socialMedia?.[platform] || "null"
-            } → ${req.body.socialMedia[platform]}`
+            `socialMedia.${platform}: ${oldValue || "null"} → ${newValue}`
           );
-          customer.socialMedia[platform] = req.body.socialMedia[platform];
+          customer.socialMedia[platform] = newValue;
         }
       });
     }
 
     await customer.save();
 
+    // Log changes
     if (changes.length > 0) {
       await logEvent({
         event: "customer_updated",
@@ -123,7 +136,9 @@ const updateCustomer = async (req, res, next) => {
   }
 }; // end updateCustomer
 
-// DELETE /api/customers/:id (soft delete in future?)
+// ---------------------------------------------
+// 🔴 DELETE CUSTOMER (DELETE /api/customers/:id)
+// ---------------------------------------------
 const deleteCustomer = async (req, res, next) => {
   try {
     const customer = await Customer.findById(req.params.id);
@@ -144,12 +159,15 @@ const deleteCustomer = async (req, res, next) => {
   } catch (err) {
     next(err);
   }
-};
+}; // end deleteCustomer
 
+// ---------------------------------------------
+// 📦 EXPORT CONTROLLER METHODS
+// ---------------------------------------------
 module.exports = {
   getCustomers,
   getCustomerById,
   updateCustomer,
   deleteCustomer,
-  findOrCreateCustomer, // for external use
+  findOrCreateCustomer, // for external use (orders)
 };

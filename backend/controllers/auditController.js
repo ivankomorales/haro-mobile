@@ -1,10 +1,13 @@
 const AuditLog = require("../models/AuditLog");
 
+// ---------------------------------------------
+// 🟢 GET AUDIT LOGS (GET /api/audit)
+// ---------------------------------------------
 const getAuditLogs = async (req, res, next) => {
   try {
     const logs = await AuditLog.find()
-      .sort({ timestamp: -1 })
-      .limit(100) // We can paginate in the future
+      .sort({ timestamp: -1 }) // Latest first
+      .limit(100) // TODO: Add pagination or filters later
       .populate("objectId")
       .populate("performedBy", "name email");
 
@@ -13,6 +16,11 @@ const getAuditLogs = async (req, res, next) => {
     err.message = `Error retrieving audit logs: ${err.message}`;
     next(err);
   }
-};
+}; // end getAuditLogs
 
-module.exports = { getAuditLogs };
+// ---------------------------------------------
+// 📦 EXPORT CONTROLLER METHODS
+// ---------------------------------------------
+module.exports = {
+  getAuditLogs,
+};

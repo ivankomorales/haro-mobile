@@ -70,7 +70,7 @@ export const en = {
     user: {
       created: 'User created successfully.',
     },
-  },
+  },     
 
   // ─── AUTH ────────────────────────────────────────────────
   auth: {
@@ -239,6 +239,8 @@ export const en = {
     exitFlowCancel: 'No, stay',
   },
 
+
+  // NEW ORGANIZATION
   // ─── LOADING STATES ──────────────────────────────────────
   loading: {
     generic: 'Loading...',
@@ -275,6 +277,11 @@ export const en = {
     status: 'Status',
   },
 
+  // ─────────────────── NEW_ORDER ─────────────────────────
+
+
+
+  
   // ───────────────────── ORDER ───────────────────────────
   order: {
     deposit: 'Deposit',
@@ -282,4 +289,25 @@ export const en = {
     total: 'Total',
     shippingRequired: 'Shipping Required *',
   },
+
+  // ───────────────────── USER ────────────────────────────
+  user: {
+    title: 'Create User',
+    back: 'Back',
+    name: 'Name',
+    lastName: 'Last Name',
+    email: 'Email',
+    password: 'Password',
+    confirmPassword: 'Confirm Password',
+    employee: 'Employee',
+    admin:'Admin',
+
+  },
+
+  // ─────────────── SplitAction ──────────────────────
+
+
+
+  // 
+  
 }
