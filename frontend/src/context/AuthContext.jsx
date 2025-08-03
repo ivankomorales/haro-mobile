@@ -1,20 +1,27 @@
+// src/context/AuthContext.jsx
 import { createContext, useState, useContext, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getUserFromToken } from '../utils/jwt'
-import { showError } from '../utils/toastUtils'
+import { showError, showSuccess } from '../utils/toastUtils'
 
 const AuthContext = createContext()
 
 export function AuthProvider({ children }) {
   const [token, setToken] = useState(localStorage.getItem('token'))
   const [user, setUser] = useState(null)
+  const [loading, setLoading] = useState(true)
   const navigate = useNavigate()
 
   useEffect(() => {
     if (token) {
       const decoded = getUserFromToken(token)
-      setUser(decoded)
+      if (decoded) {
+        setUser(decoded)
+      } else {
+        logout(true) // sesión expirada
+      }
     }
+    setLoading(false)
   }, [token])
 
   const login = async (email, password) => {
@@ -25,25 +32,37 @@ export function AuthProvider({ children }) {
         body: JSON.stringify({ email, password }),
       })
 
-      if (!res.ok) throw new Error('Invalid credentials')
+      if (!res.ok) throw new Error('auth.loginFailed')
+
       const data = await res.json()
+
+      if (!data.token) throw new Error('auth.invalidToken')
+
       localStorage.setItem('token', data.token)
       setToken(data.token)
-      setUser({}) // We can decode token here if we need more data
+
+      const decoded = getUserFromToken(data.token)
+      setUser(decoded)
+
       navigate('/home')
     } catch (err) {
-      const message = err?.message?.includes('credentials')
-        ? 'auth.LoginFailed'
-        : 'auth.ServerError'
-      showError(message)
+      const messageKey = err?.message?.startsWith('auth.')
+        ? err.message
+        : 'auth.serverError'
+
+      showError(messageKey)
     }
   }
 
-  const logout = () => {
+  const logout = (expired = false) => {
     localStorage.removeItem('token')
     setToken(null)
     setUser(null)
-    showSuccess('auth.LoggedOut')
+    if (expired) {
+      showError('auth.sessionExpired')
+    } else {
+      showSuccess('auth.loggedOut')
+    }
     navigate('/')
   }
 
@@ -54,7 +73,9 @@ export function AuthProvider({ children }) {
         token,
         login,
         logout,
+        isLoggedIn: Boolean(user),
         isAdmin: user?.role === 'admin',
+        loading,
       }}
     >
       {children}

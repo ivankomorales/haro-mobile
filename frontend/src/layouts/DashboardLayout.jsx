@@ -24,7 +24,7 @@ export default function DashboardLayout() {
         {!hideBars && (
           <AppBar
             title="Haro Mobile"
-            extra={isDesktop && isAdmin ? <SplitActionButton /> : null}
+            extra={isDesktop ? <SplitActionButton /> : null}
             right={
               <div className="mr-4">
                 <div className="w-10 h-10 rounded-full overflow-hidden">

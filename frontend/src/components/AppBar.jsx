@@ -1,5 +1,5 @@
 // components/AppBar.jsx
-export default function AppBar({ left, right, extra, progress }) {
+export default function AppBar({ title, left, right, extra, progress }) {
   return (
     <div
       className="
@@ -9,6 +9,7 @@ export default function AppBar({ left, right, extra, progress }) {
         shadow-sm
       "
     >
+      
       <div className="max-w-[95%] mx-auto px-4 flex items-center justify-between h-14">
         {/* Left icon (e.g. X, ←, ☰) */}
         <div className="flex w-10 justify-start">{left}</div>

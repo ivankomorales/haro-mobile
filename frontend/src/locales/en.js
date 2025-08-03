@@ -70,16 +70,6 @@ export const en = {
     user: {
       created: 'User created successfully.',
     },
-  },     
-
-  // ─── AUTH ────────────────────────────────────────────────
-  auth: {
-    emailRequired: 'Email is required.',
-    loginFailed: 'Incorrect email or password.',
-    loggedOut: 'You have been logged out.',
-    missingFields: 'Please fill in all fields.',
-    passwordRequired: 'Password is required.',
-    serverError: 'An unexpected error occurred. Please try again later.',
   },
 
   // ─── LABELS ──────────────────────────────────────────────
@@ -239,7 +229,6 @@ export const en = {
     exitFlowCancel: 'No, stay',
   },
 
-
   // NEW ORGANIZATION
   // ─── LOADING STATES ──────────────────────────────────────
   loading: {
@@ -279,9 +268,6 @@ export const en = {
 
   // ─────────────────── NEW_ORDER ─────────────────────────
 
-
-
-  
   // ───────────────────── ORDER ───────────────────────────
   order: {
     deposit: 'Deposit',
@@ -300,14 +286,24 @@ export const en = {
     password: 'Password',
     confirmPassword: 'Confirm Password',
     employee: 'Employee',
-    admin:'Admin',
-
+    admin: 'Admin',
   },
 
   // ─────────────── SplitAction ──────────────────────
 
-
-
-  // 
-  
+  // ─────────────── AUTHCONTEXT ──────────────────────
+  auth: {
+    loginFailed: 'Invalid email or password.',
+    serverError: 'Server error. Please try again later.',
+    sessionExpired: 'Your session has expired. Please log in again.',
+    loggedOut: 'You have been logged out successfully.',
+    invalidToken: 'Invalid login response. Please contact support.',
+    validationError: 'Validation failed.',
+    requestError: 'Request failed',
+    unknownError: 'Server response could not be processed',
+    //OLD ONES
+    emailRequired: 'Email is required.',
+    missingFields: 'Please fill in all fields.',
+    passwordRequired: 'Password is required.',
+  },
 }

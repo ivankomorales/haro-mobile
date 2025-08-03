@@ -6,18 +6,14 @@ const { logEvent } = require("../utils/audit");
 
 // TODO: i18n TEXTS
 
-// -------------------------------
-// CREATE ORDER (POST /api/orders)
-// -------------------------------
+// ---------------------------------------------
+// 🟠 CREATE ORDER (POST /api/orders)
+// ---------------------------------------------
 const createOrder = async (req, res, next) => {
   try {
-    // Step 1: Get userId (who is creating the order)
     const userId = req.user.id;
-
-    // Step 2: Get or create the customer
     const customer = await findOrCreateCustomer(req.body.customer, req);
 
-    // Step 3: Generate OrderID (e.g. ORD-0001)
     const counter = await Counter.findByIdAndUpdate(
       { _id: "order" },
       { $inc: { seq: 1 } },
@@ -25,25 +21,17 @@ const createOrder = async (req, res, next) => {
     );
     const orderID = `ORD-${String(counter.seq).padStart(4, "0")}`;
 
-    // Step 4: Build the order payload
     const allowedFields = [
-      "status",
-      "deposit",
-      "notes",
-      "products",
-      "shipping",
-      "orderDate",
-      "deliverDate",
+      "status", "deposit", "notes", "products",
+      "shipping", "orderDate", "deliverDate",
     ];
     const orderData = {};
-
     for (const field of allowedFields) {
       if (req.body[field] !== undefined) {
         orderData[field] = req.body[field];
       }
     }
 
-    // Step 5: Create and save the order
     const newOrder = new Order({
       ...orderData,
       userId,
@@ -53,7 +41,6 @@ const createOrder = async (req, res, next) => {
 
     const saved = await newOrder.save();
 
-    // Log event
     await logEvent({
       event: "order_created",
       objectId: saved._id,
@@ -63,11 +50,9 @@ const createOrder = async (req, res, next) => {
 
     res.status(201).json(saved);
   } catch (err) {
-    console.error("❌ Error creating order:");
-    console.error(err);
+    console.error("❌ Error creating order:", err);
 
     if (err.name === "ValidationError") {
-      console.error("🧩 Mongoose ValidationError details:");
       for (const field in err.errors) {
         console.error(`→ ${field}: ${err.errors[field].message}`);
       }
@@ -78,15 +63,14 @@ const createOrder = async (req, res, next) => {
   }
 }; // end createOrder
 
-// ----------------------------
-// GET ALL ORDERS (GET /api/orders)
-// ----------------------------
+// ---------------------------------------------
+// 🟢 GET ALL ORDERS (GET /api/orders)
+// ---------------------------------------------
 const getOrders = async (req, res, next) => {
   try {
     const status = req.query.status?.toLowerCase();
     let filter = {};
 
-    // Filter by status
     if (status === "pending") {
       filter.status = { $in: ["New", "Pending", "In Progress"] };
     } else if (status) {
@@ -94,7 +78,6 @@ const getOrders = async (req, res, next) => {
       filter.status = normalized;
     }
 
-    // Filter by date range
     const orderDateFilter = {};
     if (req.query.from) {
       orderDateFilter.$gte = new Date(req.query.from);
@@ -108,13 +91,11 @@ const getOrders = async (req, res, next) => {
       filter.orderDate = orderDateFilter;
     }
 
-    // Count only if requested
     if (req.query.countOnly === "true") {
       const count = await Order.countDocuments(filter);
       return res.json({ count });
     }
 
-    // Fetch orders
     const sortOrder = req.query.sort === "asc" ? 1 : -1;
     const limit = parseInt(req.query.limit) || 0;
 
@@ -129,9 +110,9 @@ const getOrders = async (req, res, next) => {
   }
 }; // end getOrders
 
-// ------------------------------
-// GET ORDER BY ID (GET /:id)
-// ------------------------------
+// ---------------------------------------------
+// 🟢 GET ORDER BY ID (GET /api/orders/:id)
+// ---------------------------------------------
 const getOrderById = async (req, res, next) => {
   try {
     const order = await Order.findById(req.params.id)
@@ -149,41 +130,37 @@ const getOrderById = async (req, res, next) => {
   }
 }; // end getOrderById
 
-// -----------------------------------------
-// GET ORDERS BY USER (GET /user/:userId)
-// -----------------------------------------
+// ---------------------------------------------
+// 🟢 GET ORDERS BY USER (GET /api/orders/user/:userId)
+// ---------------------------------------------
 const getOrdersByUser = async (req, res) => {
   try {
     const userId = req.params.userId;
-
     const orders = await Order.find({ userId });
-
     res.json(orders);
   } catch (error) {
     console.error("Error getting orders by user:", error);
     res.status(500).json({ message: "Server error" });
   }
-};
+}; // end getOrdersByUser
 
 // ---------------------------------------------
-// GET ORDERS BY STATUS (GET /status/:status)
+// 🟢 GET ORDERS BY STATUS (GET /api/orders/status/:status)
 // ---------------------------------------------
 const getOrdersByStatus = async (req, res) => {
   try {
     const status = req.params.status;
-
     const orders = await Order.find({ status });
-
     res.json(orders);
   } catch (error) {
     console.error("Error getting orders by status:", error);
     res.status(500).json({ message: "Server error" });
   }
-};
+}; // end getOrdersByStatus
 
-// ------------------------------------
-// UPDATE ORDER (PUT /api/orders/:id)
-// ------------------------------------
+// ---------------------------------------------
+// 🔵 UPDATE ORDER (PUT /api/orders/:id)
+// ---------------------------------------------
 const updateOrder = async (req, res, next) => {
   try {
     const order = await Order.findById(req.params.id);
@@ -193,13 +170,8 @@ const updateOrder = async (req, res, next) => {
 
     const originalStatus = order.status;
     const allowedFields = [
-      "status",
-      "deposit",
-      "notes",
-      "products",
-      "shipping",
-      "orderDate",
-      "deliverDate",
+      "status", "deposit", "notes", "products",
+      "shipping", "orderDate", "deliverDate",
     ];
 
     for (const key of allowedFields) {
@@ -210,7 +182,6 @@ const updateOrder = async (req, res, next) => {
 
     await order.save();
 
-    // Log changes
     const changes = [];
     if (req.body.status && req.body.status !== originalStatus) {
       changes.push(`status: ${originalStatus} → ${req.body.status}`);
@@ -231,9 +202,9 @@ const updateOrder = async (req, res, next) => {
   }
 }; // end updateOrder
 
-// ---------------------------------------------------
-// UPDATE ORDER STATUS ONLY (PATCH /:id/status)
-// ---------------------------------------------------
+// ---------------------------------------------
+// 🟣 UPDATE ORDER STATUS ONLY (PATCH /api/orders/:id/status)
+// ---------------------------------------------
 const updateOrderStatus = async (req, res) => {
   try {
     const { status } = req.body;
@@ -260,9 +231,36 @@ const updateOrderStatus = async (req, res) => {
   }
 }; // end updateOrderStatus
 
-// --------------------------------------------
-// ADD ORDER NOTE (POST /:id/notes)
-// --------------------------------------------
+// ---------------------------------------------
+// 🟣 BULK STATUS UPDATE (PATCH /api/orders/bulk-status)
+// ---------------------------------------------
+const updateManyOrderStatus = async (req, res) => {
+  try {
+    const updates = req.body;
+
+    if (!Array.isArray(updates) || updates.length === 0) {
+      return res.status(400).json({ message: "No updates provided" });
+    }
+
+    const bulkOps = updates.map(({ _id, status }) => ({
+      updateOne: {
+        filter: { _id },
+        update: { status },
+      },
+    }));
+
+    const result = await Order.bulkWrite(bulkOps);
+
+    res.json({ message: "Bulk status update complete", result });
+  } catch (error) {
+    console.error("Error in bulk status update:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+}; // end updateManyOrderStatus
+
+// ---------------------------------------------
+// 🟣 ADD ORDER NOTE (PATCH /api/orders/:id/notes)
+// ---------------------------------------------
 const addOrderNote = async (req, res) => {
   try {
     const orderId = req.params.id;
@@ -277,11 +275,9 @@ const addOrderNote = async (req, res) => {
       return res.status(404).json({ message: "Order not found" });
     }
 
-    // If notes is a string, replace it; if it's an array, push to it
-    order.notes = note; // Adjust if needed
+    order.notes = note;
 
     await order.save();
-
     res.json(order);
   } catch (error) {
     console.error("Error adding note:", error);
@@ -289,9 +285,9 @@ const addOrderNote = async (req, res) => {
   }
 }; // end addOrderNote
 
-// -------------------------------------------
-// CANCEL ORDER (DELETE /api/orders/:id)
-// -------------------------------------------
+// ---------------------------------------------
+// 🔴 CANCEL ORDER (DELETE /api/orders/:id)
+// ---------------------------------------------
 const cancelOrder = async (req, res, next) => {
   try {
     const order = await Order.findById(req.params.id);
@@ -302,7 +298,6 @@ const cancelOrder = async (req, res, next) => {
     order.status = "Cancelled";
     await order.save();
 
-    // Log event
     await logEvent({
       event: "order_cancelled",
       objectId: order._id,
@@ -316,17 +311,18 @@ const cancelOrder = async (req, res, next) => {
   }
 }; // end cancelOrder
 
-// --------------------------
-// EXPORT CONTROLLER METHODS
-// --------------------------
+// ---------------------------------------------
+// 📦 EXPORT CONTROLLER METHODS
+// ---------------------------------------------
 module.exports = {
   createOrder,
   getOrders,
   getOrderById,
-  updateOrder,
-  cancelOrder,
-  updateOrderStatus,
   getOrdersByUser,
   getOrdersByStatus,
+  updateOrder,
+  updateOrderStatus,
+  updateManyOrderStatus,
   addOrderNote,
+  cancelOrder,
 };

@@ -10,6 +10,7 @@ const {
   getOrdersByStatus,
   updateOrder,
   updateOrderStatus,
+  updateManyOrderStatus,
   addOrderNote,
   cancelOrder,
 } = require("../controllers/orderController");
@@ -48,9 +49,6 @@ router.get("/status/:status", requireAdmin, getOrdersByStatus);
 // Create a new order
 router.post("/", validateOrder, handleValidationErrors, createOrder);
 
-// Add a note to an order
-router.post("/:id/notes", verifyOwnershipOrAdmin, addOrderNote);
-
 //
 // 🔵 PUT ROUTES
 //
@@ -70,6 +68,12 @@ router.put(
 
 // Update only the order status
 router.patch("/:id/status", verifyOwnershipOrAdmin, updateOrderStatus);
+
+// Update status on multiple orders
+router.patch("/bulk/status", verifyToken, updateManyOrderStatus);
+
+// Add a note to an order
+router.post("/:id/notes", verifyOwnershipOrAdmin, addOrderNote);
 
 //
 // 🔴 DELETE ROUTES

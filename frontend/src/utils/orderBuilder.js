@@ -1,4 +1,4 @@
-// src/utils/orderForm.js
+// src/utils/orderBuilder.js
 
 // Helpers to split name & parse phone
 export function splitName(fullName = '') {

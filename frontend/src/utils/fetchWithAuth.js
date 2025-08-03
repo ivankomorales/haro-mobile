@@ -1,10 +1,11 @@
 export default async function fetchWithAuth(
   url,
   options = {},
-  navigate = null
+  { navigate = null, logout = null } = {}
 ) {
   const token = localStorage.getItem('token')
-
+  const UNKNOWN_ERROR_KEY = 'auth.unknownError'
+  // Set Content-Type to JSON unless the body is FormData (let browser handle it automatically)
   const headers = {
     ...(options.body instanceof FormData
       ? {}
@@ -25,21 +26,28 @@ export default async function fetchWithAuth(
     try {
       data = await res.json()
     } catch {
-      // fallback if body isn't JSON
       try {
         const raw = await clone.text()
-        data = { message: raw }
+        data = {
+          message: raw.startsWith('<') ? UNKNOWN_ERROR_KEY : raw,
+        }
       } catch {
-        data = { message: 'Unknown error' }
+        data = { message: UNKNOWN_ERROR_KEY }
       }
+    }
+
+    // Ensure data is always an object
+    if (!data || typeof data !== 'object') {
+      data = { message: UNKNOWN_ERROR_KEY }
     }
 
     if (!res.ok) {
       console.error('[fetchWithAuth] Server error:', res.status, data)
 
       if (res.status === 401 || res.status === 403) {
-        if (navigate) navigate('/login')
-        throw new Error('Unauthorized: token expired or invalid')
+        if (logout) logout(true)
+        else if (navigate) navigate('/login')
+        throw new Error('auth.sessionExpired')
       }
 
       if (res.status === 422 || res.status === 400) {
@@ -47,11 +55,11 @@ export default async function fetchWithAuth(
           .map((e, i) => `${e.param || `[field ${i + 1}]`}: ${e.msg}`)
           .join(' | ')
         throw new Error(
-          `${data.message || 'Validation failed'}: ${fieldErrors}`
+          `${data.message || 'auth.validationError'}: ${fieldErrors}`
         )
       }
 
-      throw new Error(data.message || 'Request failed')
+      throw new Error(data.message || 'auth.requestError')
     }
 
     return data
