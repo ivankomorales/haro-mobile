@@ -1,6 +1,4 @@
 // src/utils/fetchWithAuth.js
-import { isTokenExpired } from './jwt'
-
 export default async function fetchWithAuth(
   url,
   options = {},
@@ -11,12 +9,12 @@ export default async function fetchWithAuth(
   // Set Content-Type to JSON unless the body is FormData (let browser handle it automatically)
 
   // Detect expired token before fetch
-  if (!token || isTokenExpired(token)) {
-    console.warn('[fetchWithAuth] Token missing or expired')
-    if (logout) logout(true)
-    else if (navigate) navigate('/login')
-    throw new Error('auth.sessionExpired')
-  }
+  // if (!token || isTokenExpired(token)) {
+  //   console.warn('[fetchWithAuth] Token missing or expired')
+  //   if (logout) logout(true)
+  //   else if (navigate) navigate('/login')
+  //   throw new Error('auth.sessionExpired')
+  // }
 
   const headers = {
     ...(options.body instanceof FormData

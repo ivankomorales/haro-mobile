@@ -1,18 +1,11 @@
 // src/context/AuthContext.jsx
-import { createContext, useState, useContext, useEffect } from 'react'
+import { createContext, useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getUserFromToken, isTokenExpired } from '../utils/jwt'
 import { showError, showSuccess } from '../utils/toastUtils'
 
-const AuthContext = createContext({
-  // user: null,
-  // token: null,
-  // login: () => {},
-  // logout: () => {},
-  // isLoggedIn: false,
-  // isAdmin: false,
-  // loading: false,
-})
+// No default export ❌
+export const AuthContext = createContext(null)
 
 export function AuthProvider({ children }) {
   const [token, setToken] = useState(null)
@@ -23,16 +16,22 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     const storedToken = localStorage.getItem('token')
 
-    if (storedToken) {
-      const decoded = getUserFromToken(storedToken)
-      const expired = isTokenExpired(storedToken)
+    if (!storedToken) {
+      setLoading(false)
+      return
+    }
 
-      if (decoded && !expired) {
-        setUser(decoded)
-        setToken(storedToken)
-      } else {
-        logout(true) // true = expired session
-      }
+    const expired = isTokenExpired(storedToken)
+    const decoded = getUserFromToken(storedToken)
+
+    if (decoded && !expired) {
+      setUser(decoded)
+      setToken(storedToken)
+    } else {
+      console.warn('[Auth] Token inválido o expirado en hot reload.')
+      setUser(null)
+      setToken(null)
+      logout(true) // true = expired session
     }
 
     setLoading(false)
@@ -47,24 +46,19 @@ export function AuthProvider({ children }) {
       })
 
       if (!res.ok) throw new Error('auth.loginFailed')
-
       const data = await res.json()
-
       if (!data.token) throw new Error('auth.invalidToken')
 
       localStorage.setItem('token', data.token)
       setToken(data.token)
-
       const decoded = getUserFromToken(data.token)
       setUser(decoded)
-
       navigate('/home')
     } catch (err) {
-      const messageKey = err?.message?.startsWith('auth.')
+      const key = err.message?.startsWith('auth.')
         ? err.message
         : 'auth.serverError'
-
-      showError(messageKey)
+      showError(key)
     }
   }
 
@@ -72,12 +66,9 @@ export function AuthProvider({ children }) {
     localStorage.removeItem('token')
     setToken(null)
     setUser(null)
-
-    if (expired) {
-      showError('auth.sessionExpired')
-    } else {
-      showSuccess('auth.loggedOut')
-    }
+    expired
+      ? showError('auth.sessionExpired')
+      : showSuccess('auth.loggedOut')
     navigate('/', { replace: true })
   }
 
@@ -97,5 +88,3 @@ export function AuthProvider({ children }) {
     </AuthContext.Provider>
   )
 }
-
-export const useAuth = () => useContext(AuthContext)

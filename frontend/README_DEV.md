@@ -245,7 +245,7 @@ This allows the entire app to:
 
 - Use useNavigate() from React Router
 
-- Access useAuth() from context
+- Access UseAuth() from context
 
 - Be wrapped in development warnings from React
 
@@ -578,3 +578,5 @@ Add IconBase wrapper if needed.
 Complete validation for shipping.required field.
 
 Ensure full dark mode support across all components.
+
+### 2025/08/04

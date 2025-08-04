@@ -102,7 +102,7 @@ export const en = {
       status: 'Status', // DUPLICATE, REMOVE
       deposit: 'Deposit', // REMOVE
       notes: 'Notes', // REMOVE
-      details: 'Order Details',
+      details: 'Order DetailsREMOVE',
     },
     product: {
       // Nombres de campos que se ven en el formulario
@@ -124,15 +124,15 @@ export const en = {
       select: 'Select glaze',
       search: 'Search glaze',
     },
-    product: {
+    product: { 
       // {t('forms.product.')}
       title: 'Add Product REMOVE',
       figure: 'FigureREMOVE', // Figures that go inside the Cups, or Plates
       types: {
         cup: 'CupREMOVE',
-        handmadeCup: 'Handmade Cup',
-        plate: 'Plate',
-        figurine: 'Figurine',
+        handmadeCup: 'Handmade Cup REMOVE',
+        plate: 'Plate REMOVE',
+        figurine: 'Figurine REMOVE',
       },
       placeholders: {
         type: 'Type',
@@ -142,12 +142,12 @@ export const en = {
         description: 'Short description (optional)',
         images: 'Add images',
       },
-      help: {
+      help: { // REMOVE
         quantity: 'Minimum: 1',
         price: 'Use numbers only',
         glaze: 'Interior glaze is optional for plates', // To remove, no make sense
       },
-      buttons: {
+      buttons: { // REMOVE
         add: 'Add',
         confirm: 'Confirm',
         addProduct: 'Add ProductREMOVE',
@@ -155,7 +155,7 @@ export const en = {
         shipping: 'Requires shipping?', // REMOVE
         save: 'Save Product',
       },
-      // Textos del UI que no encajan en labels/errores
+      // Textos del UI que no encajan en labels/errores TO REMOVE
       sections: {
         glaze: 'Glaze', // Duplicated
         addedProducts: 'Added products:',
@@ -298,6 +298,7 @@ export const en = {
     title: 'Add Glaze',
     name: 'Name',
     code: 'Code (optional)',
+    
   },
   // ORDERS DONE BELOW
   // AddProduct DONE BELOW
