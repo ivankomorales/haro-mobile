@@ -2,7 +2,7 @@
 // Access these messages via utils/getMessage.js using dot notation keys
 
 export const en = {
-  // ─── ERRORS & VALIDATION ────────────────────────────────
+  // ─── ERRORS & VALIDATION ──────────────────────────────── (KEEP THESE)
   errors: {
     address: {
       missingAddress: 'Address is required',
@@ -48,7 +48,7 @@ export const en = {
     instagramFormat: 'Instagram must start with @',
     invalidDeliveryDate: 'Delivery date cannot be earlier than order date',
     missingShippingAddress: 'Please add at least one shipping address',
-    requiredFields: 'Please complete all required fields',
+    requiredFields: 'Please fill all required fields',
     positiveNumber: 'Value must be greater than 0',
   },
 
@@ -59,20 +59,23 @@ export const en = {
       loaded: 'Glazes loaded successfully.',
     },
     image: {
-      uploaded: 'Images uploaded successfully.',
+      uploaded: 'Images uploaded successfully!',
     },
     order: {
+      baseCreated: 'Base order (draft) created.',
       created: 'Order created successfully.',
+      updated: 'Order updated!',
+      socialAdded: 'Social media added',
     },
     product: {
-      added: 'Product added to order.',
+      added: 'Product added successfully!',
     },
     user: {
       created: 'User created successfully.',
     },
   },
 
-  // ─── LABELS ──────────────────────────────────────────────
+  // ─── LABELS ────────────────────────────────────────────── TO REMOVE
   labels: {
     common: {
       noResults: 'No results',
@@ -90,7 +93,8 @@ export const en = {
       interior: 'Interior:', // etiqueta para interior
       exterior: 'Exterior:', // etiqueta para exterior
     },
-    order: { // TO REMOVE
+    order: {
+      // TO REMOVE
       addProduct: 'Add Product',
       deliveryDate: 'Delivery Date',
       submit: 'Create Order',
@@ -99,7 +103,6 @@ export const en = {
       deposit: 'Deposit', // REMOVE
       notes: 'Notes', // REMOVE
       details: 'Order Details',
-      
     },
     product: {
       // Nombres de campos que se ven en el formulario
@@ -115,7 +118,7 @@ export const en = {
     },
   },
 
-  // ───────────────────── FORMS ───────────────────────────
+  // ───────────────────── FORMS ─────────────────────────── TO REMOVE
   forms: {
     glaze: {
       select: 'Select glaze',
@@ -123,10 +126,10 @@ export const en = {
     },
     product: {
       // {t('forms.product.')}
-      title: 'Add Product',
-      figure: 'Figure', // Figures that go inside the Cups, or Plates
+      title: 'Add Product REMOVE',
+      figure: 'FigureREMOVE', // Figures that go inside the Cups, or Plates
       types: {
-        cup: 'Cup',
+        cup: 'CupREMOVE',
         handmadeCup: 'Handmade Cup',
         plate: 'Plate',
         figurine: 'Figurine',
@@ -147,7 +150,7 @@ export const en = {
       buttons: {
         add: 'Add',
         confirm: 'Confirm',
-        addProduct: 'Add Product',
+        addProduct: 'Add ProductREMOVE',
         proceed: 'Proceed',
         shipping: 'Requires shipping?', // REMOVE
         save: 'Save Product',
@@ -180,16 +183,16 @@ export const en = {
     },
   },
 
-  // ─── FORM ACTIONS & CONFIRM MODALS (FOOTER ONLY)───────────────────────
-  formActions: {
-    cancel: 'Cancel', // REMOVE
-    submitDefault: 'Submit',
-    confirmTitle: 'Cancel?', // REMOVE
-    confirmMessage: 'You will lose unsaved changes if you exit now.', // REMOVE
-    confirmText: 'Yes, exit', // REMOVE
-    cancelText: 'No, stay', // REMOVE
-    saveChanges: 'Save Changes',
-  },
+  // ─── FORM ACTIONS & CONFIRM MODALS (FOOTER ONLY)─────────────────────── TO REMOVE
+  // formActions: {
+  //   cancel: 'Cancel', // REMOVE
+  //   submitDefault: 'Submit',
+  //   confirmTitle: 'Cancel?', // REMOVE
+  //   confirmMessage: 'You will lose unsaved changes if you exit now.', // REMOVE
+  //   confirmText: 'Yes, exit', // REMOVE
+  //   cancelText: 'No, stay', // REMOVE
+  //   saveChanges: 'Save Changes',
+  // },
   formActionsUser: {
     cancel: 'Cancel',
     submitDefault: 'Create User',
@@ -230,11 +233,11 @@ export const en = {
     exitFlowCancel: 'No, stay',
   },
 
-  // NEW ORGANIZATION
+  // NEW ORGANIZATION (DO NOT REMOVE THE BELOW)
   // ─── LOADING STATES ──────────────────────────────────────
   loading: {
     generic: 'Loading...',
-    image: 'Uploading image...',
+    image: 'Uploading images...',
     orderCreate: 'Creating order...',
     user: 'Registering user...',
     order: 'Loading order...',
@@ -291,19 +294,23 @@ export const en = {
   // PAGES
   // GLAZES
   // AddGlaze
+  glaze: {
+    title: 'Add Glaze',
+    name: 'Name',
+    code: 'Code (optional)',
+  },
+  // ORDERS DONE BELOW
+  // AddProduct DONE BELOW
 
-  // ORDERS
-  // AddProduct
+  // EditOrder FUSED WITH ORDER
 
-  // EditOrder
+  // NewOrder  FUSED WITH ORDER
 
-  // NewOrder
+  // OrderConfirmation  FUSED WITH ORDER
 
-  // OrderConfirmation
+  // OrderDetails  FUSED WITH ORDER
 
-  // OrderDetails
-
-  // Orders
+  // Orders  FUSED WITH ORDER
 
   // USERS
   // AddUser
@@ -329,21 +336,24 @@ export const en = {
     status: 'Status',
   },
 
-  // ───────────────────── ORDER ───────────────────────────
+  // ───────────────────── ORDERS ───────────────────────────
   order: {
-    title: 'New Order',
+    title: 'Orders',
     deposit: 'Deposit',
     subtotal: 'Subtotal',
     total: 'Total',
 
+    confirm: 'Confirm Order',
     moreInfo: 'More info',
     social: 'Social Media',
     editLabel: 'Edit',
+
     addAddress: '+ Add Address',
     address: 'Address',
     city: 'City',
     zip: 'ZIP code',
     phone: 'Phone (shipping)',
+
     remove: 'Remove',
     newTitle: 'New Order',
     editTitle: 'Edit Order',
@@ -356,6 +366,37 @@ export const en = {
     datePlaceholder: 'DD/MM/YYYY',
   },
 
+  // AddProduct
+  product: {
+    title: 'Add Product',
+    edit: 'Edit Product',
+    type: 'Type',
+    select: 'Select a product',
+    description: 'Description', // Consider using a general i18n
+
+    qty: 'Quantity',
+    price: 'Price',
+    pricePrefix: '$',
+    added: 'Product added',
+
+    glazeTitle: 'Glaze',
+    glazeInt: 'Interior',
+    glazeExt: 'Exterior',
+    glazeSearch: 'Search Glaze', //Consider using a general search: 'Type in to search'
+    glazeNone: 'No glaze (Transparent)',
+    glazeNoResult: 'No results', // Consider using a general noResults: 'No results'
+
+    images: 'Images',
+
+    addButton: 'Add Product',
+    added: 'Added products',
+
+    figure: 'Figure',
+    cup: 'Cup',
+    handmadeCup: 'Handmade Cup',
+    plate: 'Plate',
+    figurine: 'Figurine',
+  },
   // ─────────────── SplitAction ──────────────────────
   splitAction: {
     new: '+ New',
@@ -374,13 +415,30 @@ export const en = {
     InProgress: 'In Progress',
   },
 
+  // FORMACTIONS abv. fa
+  // Consider simplifying like keeping only formActions, formActionsCreate and formActionsEdit 3/8/2025 -Ivan
   formActions: {
     saveChanges: 'Save changes',
-    cancel: 'Cancel',
-    confirmTitle: 'Cancel creating order?',
+    cancel: 'Cancel', //Duplicated on BUTTONS
+    confirmTitle: 'Are you sure?',
+    confirmMessage: 'All data will be lost. Continue?',
+    confirmText: 'Yes, exit',
+    cancelText: 'No, stay',
+  },
+
+  formActionsCreate: {
+    confirmTitle: 'Cancel creating?',
     confirmMessage: 'All data will be lost.',
-    confirmText: 'Yes, discard',
-    cancelText: 'No, go back',
+  },
+
+  formActionsEdit: {
+    confirmTitle: 'Cancel editing?',
+    confirmMessage: 'Unsaved changes will be lost.',
+  },
+
+  formActionsConfirm: {
+    confirmTitle: 'Warning!',
+    confirmMessage: 'Cancelling now will erase all your progress.',
   },
 
   validation: {
@@ -392,5 +450,16 @@ export const en = {
     facebookFormat: 'Facebook username must start with "/"',
     incompleteAddressBeforeAdding:
       'Complete the current address before adding another one',
+  },
+
+  // BUTTONS
+  button: {
+    confirm: 'Confirm',
+    save: 'Save',
+    cancel: 'Cancel',
+    ok: 'OK',
+
+    addProduct: 'Add Product',
+    addGlaze: 'Add Glaze',
   },
 }

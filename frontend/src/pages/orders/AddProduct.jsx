@@ -8,7 +8,12 @@ import { uploadToCloudinary } from '../../utils/uploadToCloudinary'
 import ImageUploader from '../../components/ImageUploader'
 import FormActions from '../../components/FormActions'
 import { getMessage as t } from '../../utils/getMessage'
-import { showError } from '../../utils/toastUtils'
+import {
+  showLoading,
+  dismissToast,
+  showError,
+  showSuccess,
+} from '../../utils/toastUtils'
 import { useRequireState } from '../../utils/useRequireState'
 
 export default function AddProduct() {
@@ -137,6 +142,7 @@ export default function AddProduct() {
       }
 
       setProducts((prev) => [...prev, newProduct])
+      showSuccess('success.product.added')
 
       // Reset form
       setFormData({
@@ -179,6 +185,8 @@ export default function AddProduct() {
 
   // Confirm $ navigate to OrderConfirmation (uploading images first)
   const handleSubmitAll = async () => {
+    const toastId = showLoading('loading.image')
+
     try {
       let updatedProducts
       let finalProducts
@@ -226,6 +234,9 @@ export default function AddProduct() {
         finalProducts = updatedProducts
       }
 
+      // Success
+      dismissToast(toastId)
+      showSuccess('success.image.uploaded')
       const fullOrder = {
         ...baseOrder,
         products: finalProducts,
@@ -239,6 +250,7 @@ export default function AddProduct() {
       })
     } catch (err) {
       console.error('Error uploading images before submit:', err)
+      dismissToast(toastId)
       showError(t('errors.image.uploadFailed'))
     }
   }
@@ -247,34 +259,30 @@ export default function AddProduct() {
     <div className="min-h-screen pb-24 bg-white dark:bg-neutral-900 dark:text-gray-100">
       <div className="max-w-xl mx-auto px-4 py-4 space-y-6">
         <h1 className="text-center mb-8 text-xl font-semibold">
-          {isEdit ? t('titles.editProduct') : t('titles.addProduct')}
+          {isEdit ? t('product.edit') : t('product.title')}
         </h1>
 
         <div className="space-y-4">
           <FormInput
             as="select"
             name="type"
-            label={t('forms.product.placeholders.type')}
+            label={t('product.type')}
             value={formData.type}
             onChange={handleChange}
             error={errors.type}
             errorFormatter={t}
             required
           >
-            <option value="">{t('forms.product.placeholders.select')}</option>
-            <option value="cup">{t('forms.product.types.cup')}</option>
-            <option value="handmadeCup">
-              {t('forms.product.types.handmadeCup')}
-            </option>
-            <option value="plate">{t('forms.product.types.plate')}</option>
-            <option value="figurine">
-              {t('forms.product.types.figurine')}
-            </option>
+            <option value="">{t('product.select')}</option>
+            <option value="cup">{t('product.cup')}</option>
+            <option value="handmadeCup">{t('product.handmadeCup')}</option>
+            <option value="plate">{t('product.plate')}</option>
+            <option value="figurine">{t('product.figurine')}</option>
           </FormInput>
 
           <div className="flex justify-between items-center">
             <div>
-              <label className="text-sm">{t('labels.product.quantity')}:</label>
+              <label className="text-sm">{t('product.qty')}:</label>
               <div className="flex items-center gap-4">
                 <button
                   type="button"
@@ -306,9 +314,9 @@ export default function AddProduct() {
 
             <div className="ml-auto">
               <FormInput
-                label={t('labels.product.price')}
+                label={t('product.price')}
                 floating={false}
-                prefix={t('forms.product.placeholders.price')}
+                prefix={t('product.pricePrefix')}
                 name="price"
                 type="number"
                 min="0"
@@ -324,34 +332,34 @@ export default function AddProduct() {
           {formData.type !== 'figurine' && (
             <details className="bg-neutral-100 dark:bg-neutral-800 rounded p-4">
               <summary className="cursor-pointer font-medium text-sm dark:text-white">
-                {t('labels.glaze.title')}
+                {t('product.glazeTitle')}
               </summary>
               <div className="mt-4 space-y-2">
                 {formData.type !== 'plate' && (
                   <GlazeSelect
-                    label={t('labels.glaze.interior')}
+                    label={t('product.glazeInt')}
                     glazes={glazes}
                     selected={formData.glazeInterior}
                     onChange={(value) =>
                       setFormData((prev) => ({ ...prev, glazeInterior: value }))
                     }
-                    placeholderText={t('forms.glaze.search')}
-                    noneText={t('labels.glaze.none')}
-                    noResultsText={t('labels.glaze.noResults')}
-                    ariaLabelText={t('labels.glaze.title')}
+                    placeholderText={t('product.glazeSearch')} //Consider using a general i18n word
+                    noneText={t('product.glazeNone')}
+                    noResultsText={t('product.glazeNoResult')}
+                    ariaLabelText={t('product.glazeTitle')} //Consider using a general i18n word
                   />
                 )}
                 <GlazeSelect
-                  label={t('labels.glaze.exterior')}
+                  label={t('product.glazeExt')}
                   glazes={glazes}
                   selected={formData.glazeExterior}
                   onChange={(value) =>
                     setFormData((prev) => ({ ...prev, glazeExterior: value }))
                   }
-                  placeholderText={t('forms.glaze.search')}
-                  noneText={t('labels.glaze.none')}
+                  placeholderText={t('product.glazeSearch')}
+                  noneText={t('product.glazeNone')}
                   noResultsText={t('labels.glaze.noResults')}
-                  ariaLabelText={t('labels.glaze.title')}
+                  ariaLabelText={t('product.glazeTitle')}
                 />
               </div>
             </details>
@@ -360,14 +368,14 @@ export default function AddProduct() {
           {/* Imágenes */}
           <ImageUploader
             multiple={true}
-            label={t('labels.product.images')}
+            label={t('product.images')}
             value={formData.images}
             onChange={(imgs) => setFormData({ ...formData, images: imgs })}
             inputRef={fileInputRef}
           />
 
           <FormInput
-            label={t('labels.product.description')}
+            label={t('product.description')}
             name="description"
             value={formData.description}
             onChange={handleChange}
@@ -389,14 +397,14 @@ export default function AddProduct() {
                 : 'bg-gray-300 text-gray-500 cursor-not-allowed'
             }`}
           >
-            + {t('forms.product.buttons.addProduct')}
+            + {t('product.addButton')}
           </button>
         )}
 
         {products.length > 0 && (
           <>
             <h2 className="text-sm font-semibold mt-6 mb-2 text-gray-600 dark:text-gray-200">
-              {t('forms.product.sections.addedProducts')}
+              {t('product.added')}
             </h2>
             <ul className="space-y-2 text-sm text-gray-800 dark:text-white">
               {products.map((p, i) => (
@@ -406,7 +414,8 @@ export default function AddProduct() {
                 >
                   <div className="flex-1 truncate">
                     <div className="flex-1 truncate">
-                      {t(`forms.product.types.${p.type}`)} — {p.quantity} {t('forms.product.figure')}
+                      {t(`product.${p.type}`)} — {p.quantity}{' '}
+                      {t('product.figure')}
                       {p.quantity > 1 ? 's' : ''} — ${p.price}
                     </div>
                   </div>
@@ -426,16 +435,20 @@ export default function AddProduct() {
         <FormActions
           onSubmit={handleSubmitAll}
           // Texto botón derecho (siguiente/persistir)
-          submitButtonText={
-            isEdit
-              ? t('forms.product.buttons.save')
-              : t('forms.product.buttons.confirm')
-          }
+          submitButtonText={isEdit ? t('button.save') : t('button.confirm')}
           // Texto botón izquierdo (cancelar)
           cancelButtonText={t('formActions.cancel')}
           // Confirm modal al cancelar
-          confirmTitle={t('formActions.confirmTitle')}
-          confirmMessage={t('formActions.confirmMessage')}
+          confirmTitle={
+            isEdit
+              ? t('formActionsEdit.confirmTitle')
+              : t('formActionsCreate.confirmTitle')
+          }
+          confirmMessage={
+            isEdit
+              ? t('formActionsEdit.confirmMessage')
+              : t('formActionsCreate.confirmMessage')
+          }
           confirmText={t('formActions.confirmText')}
           cancelText={t('formActions.cancelText')}
           cancelRedirect={isEdit ? '/orders/confirmation' : originPath}

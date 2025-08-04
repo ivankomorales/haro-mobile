@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { toast } from 'react-hot-toast'
+import { showSuccess, showError } from '../../utils/toastUtils'
 import { getOrderById, updateOrderById } from '../../api/orders'
 import { getMessage as t } from '../../utils/getMessage'
-import { validateBaseForm } from '../../utils/orderForm'
+//import { validateBaseForm } from '../../utils/orderForm'
 import { useLayout } from '../../context/LayoutContext'
 import FormInput from '../../components/FormInput'
 import FormActions from '../../components/FormActions'
@@ -59,7 +59,7 @@ export default function EditOrder() {
           notes: order.notes || '',
         })
       } catch (err) {
-        toast.error(t('error.loadingOrder'))
+        showError('error.loadingOrder')
         navigate('/orders')
       }
     }
@@ -86,18 +86,18 @@ export default function EditOrder() {
     const errs = validateBaseForm(formData)
     if (Object.keys(errs).length > 0) {
       setErrors(errs)
-      toast.error(t('validation.requiredFields'))
-      if (errs.deliverDate) toast.error(t('validation.invalidDeliveryDate'))
-      if (errs.addresses) toast.error(t('validation.incompleteShipping'))
+      showError('validation.requiredFields')
+      if (errs.deliverDate) showError('validation.invalidDeliveryDate')
+      if (errs.addresses) showError('validation.incompleteShipping')
       return
     }
 
     try {
       await updateOrderById(id, formData)
-      toast.success(t('success.orderUpdated'))
+      showSuccess('success.orderUpdated')
       navigate(`/orders/${id}`)
     } catch (err) {
-      toast.error(t('error.updatingOrder'))
+      showError('error.updatingOrder')
     }
   }
 

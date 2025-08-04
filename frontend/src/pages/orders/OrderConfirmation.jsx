@@ -18,7 +18,6 @@ export default function OrderConfirmation() {
   const navigate = useNavigate()
   const order = location.state || null
 
-
   //TODO create function and move to UTILS
   const groupedProducts = order.products.reduce((acc, p) => {
     if (!acc[p.type]) acc[p.type] = []
@@ -31,7 +30,7 @@ export default function OrderConfirmation() {
     items.forEach((item, i) => {
       labeledProducts.push({
         ...item,
-        label: `${t(`forms.product.types.${type}`)} ${i + 1}`,
+        label: `${t(`product.${type}`)} ${i + 1}`,
       })
     })
   })
@@ -151,7 +150,7 @@ export default function OrderConfirmation() {
     <div className="min-h-screen bg-white dark:bg-neutral-900 flex flex-col items-center px-4 py-6">
       {/* Header */}
       <h1 className="text-xl font-semibold text-black dark:text-white mb-4">
-        {t('labels.order.confirm') || 'Confirm Order'}
+        {t('order.confirm') || 'Confirm Order'}
       </h1>
 
       {/* Card with details (your component) */}
@@ -181,7 +180,7 @@ export default function OrderConfirmation() {
               : t('labels.order.submit') || 'Create Order'
           }
           cancelButtonText={t('formActions.cancel')}
-          confirmTitle={t('formActions.confirmTitle')}
+          confirmTitle={t('formActionsConfirm.confirmTitle')}
           confirmMessage={t('formActions.confirmMessage')}
           confirmText={t('formActions.confirmText')}
           cancelText={t('formActions.cancelText')}

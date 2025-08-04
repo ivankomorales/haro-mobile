@@ -1,28 +1,42 @@
 // src/context/AuthContext.jsx
 import { createContext, useState, useContext, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { getUserFromToken } from '../utils/jwt'
+import { getUserFromToken, isTokenExpired } from '../utils/jwt'
 import { showError, showSuccess } from '../utils/toastUtils'
 
-const AuthContext = createContext()
+const AuthContext = createContext({
+  // user: null,
+  // token: null,
+  // login: () => {},
+  // logout: () => {},
+  // isLoggedIn: false,
+  // isAdmin: false,
+  // loading: false,
+})
 
 export function AuthProvider({ children }) {
-  const [token, setToken] = useState(localStorage.getItem('token'))
+  const [token, setToken] = useState(null)
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
   const navigate = useNavigate()
 
   useEffect(() => {
-    if (token) {
-      const decoded = getUserFromToken(token)
-      if (decoded) {
+    const storedToken = localStorage.getItem('token')
+
+    if (storedToken) {
+      const decoded = getUserFromToken(storedToken)
+      const expired = isTokenExpired(storedToken)
+
+      if (decoded && !expired) {
         setUser(decoded)
+        setToken(storedToken)
       } else {
-        logout(true) // sesión expirada
+        logout(true) // true = expired session
       }
     }
+
     setLoading(false)
-  }, [token])
+  }, [])
 
   const login = async (email, password) => {
     try {
@@ -58,12 +72,13 @@ export function AuthProvider({ children }) {
     localStorage.removeItem('token')
     setToken(null)
     setUser(null)
+
     if (expired) {
       showError('auth.sessionExpired')
     } else {
       showSuccess('auth.loggedOut')
     }
-    navigate('/')
+    navigate('/', { replace: true })
   }
 
   return (

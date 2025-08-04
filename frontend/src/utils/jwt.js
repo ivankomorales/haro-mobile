@@ -23,3 +23,14 @@ export function getUserFromToken() {
     return null
   }
 }
+
+export function isTokenExpired(token) {
+  try {
+    const user = getUserFromToken(token)
+    if (!user?.exp) return true
+    const now = Date.now() / 1000
+    return now > user.exp
+  } catch {
+    return true
+  }
+}

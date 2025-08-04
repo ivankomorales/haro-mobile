@@ -80,19 +80,18 @@ export default function OrderDetailsCard({
       {/* Payment */}
       <div className="text-sm text-center space-y-1">
         <hr className="border-gray-300 dark:border-neutral-700" />
-        <div className="flex items-center justify-center gap-8 text-sm">
-          <span>{subtotalLabel}</span>
-          <span className="font-medium">${subtotal}</span>
-        </div>
-        <div className="flex items-center justify-center gap-8 text-sm">
-          <span>{advanceLabel}</span>
-          <span className="text-red-500">-${deposit}</span>
+
+        <div className="inline-grid grid-cols-2 gap-x-4 text-sm text-left">
+          <span className="text-right">{subtotalLabel}</span>
+          <span className="font-medium text-left">${subtotal}</span>
+
+          <span className="text-right">{advanceLabel}</span>
+          <span className="text-red-500 text-left">-${deposit}</span>
+
+          <span className="text-right text-lg font-bold">{totalLabel}</span>
+          <span className="text-lg font-bold text-left">${total}</span>
         </div>
 
-        <div className="flex items-center justify-center gap-8 text-lg font-bold">
-          <span>{totalLabel}</span>
-          <span>${total}</span>
-        </div>
         <hr className="border-gray-300 dark:border-neutral-700" />
       </div>
 

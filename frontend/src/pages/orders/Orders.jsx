@@ -16,7 +16,7 @@ export default function Orders() {
   const { setTitle, setShowSplitButton } = useLayout()
 
   useEffect(() => {
-    setTitle('Pedidos')
+    setTitle(t('order.title')) //    setTitle(t('home.title'))
     setShowSplitButton(true)
 
     // Opcional: restaurar a valores por defecto al salir

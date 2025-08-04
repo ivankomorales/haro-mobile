@@ -12,7 +12,7 @@ import {
   Switch,
 } from '@headlessui/react'
 import { Instagram, Facebook, Plus } from 'lucide-react'
-import { toast } from 'react-hot-toast'
+import { showSuccess, showError } from '../../utils/toastUtils'
 import { getMessage as t } from '../../utils/getMessage'
 import {
   prefillFormFromDraft,
@@ -28,10 +28,12 @@ export default function NewOrder() {
 
   // Edit Mode Variables
   const isEditBase = location.state?.mode === 'editBase'
+  const existingProducts = location.state?.products || []
   const returnTo = location.state?.returnTo
+
   const originPath =
     location.state?.originPath ?? location.state?.from ?? '/orders'
-  const existingProducts = location.state?.products || []
+
   const [errors, setErrors] = useState({})
   const [formData, setFormData] = useState({
     // Basic data
@@ -60,14 +62,14 @@ export default function NewOrder() {
 
   // TITLE AND SPLITACTION BUTTON
   useEffect(() => {
-    setTitle(t('order.title'))
+    setTitle(isEditBase ? t('order.editTitle') : t('order.newTitle'))
     setShowSplitButton(true)
 
     return () => {
       setTitle('Haro Mobile')
       setShowSplitButton(true)
     }
-  }, [])
+  }, [isEditBase, setTitle, t])
 
   // Social media input states
   const [socialInput, setSocialInput] = useState('')
@@ -109,12 +111,12 @@ export default function NewOrder() {
 
     // Minimal validation
     if (currentSocialType === 'instagram' && !val.startsWith('@')) {
-      toast.error(t('validation.instagramFormat'))
+      showError('validation.instagramFormat')
       return
     }
     if (currentSocialType === 'facebook' && !val.startsWith('/')) {
       // We can use http for full address later
-      toast.error(t('validation.facebookFormat'))
+      showError('validation.facebookFormat')
       return
     }
 
@@ -126,6 +128,7 @@ export default function NewOrder() {
       },
     }))
     setSocialInput('')
+    showSuccess('success.order.socialAdded')
   }
 
   const removeSocial = (type) => {
@@ -148,7 +151,7 @@ export default function NewOrder() {
       last && (!last.address || !last.city || !last.zip || !last.phone)
 
     if (isIncomplete) {
-      toast.error(t('validation.incompleteAddressBeforeAdding'))
+      showError('validation.incompleteAddressBeforeAdding')
       return
     }
 
@@ -189,9 +192,9 @@ export default function NewOrder() {
     const errs = validateBaseForm(formData)
     if (Object.keys(errs).length > 0) {
       setErrors(errs)
-      toast.error(t('validation.requiredFields'))
-      if (errs.deliverDate) toast.error(t('validation.invalidDeliveryDate'))
-      if (errs.addresses) toast.error(t('validation.incompleteShipping'))
+      showError('validation.requiredFields')
+      if (errs.deliverDate) showError('validation.invalidDeliveryDate')
+      if (errs.addresses) showError('validation.incompleteShipping')
       return
     }
 
@@ -207,19 +210,26 @@ export default function NewOrder() {
         products: existingProducts,
       }
 
+      // Success Edit
+      showSuccess('success.order.updated')
+
       navigate(returnTo || '/orders/confirmation', {
         state: updatedOrder,
         replace: true,
       })
-    } else {
-      navigate('/orders/new/products', {
-        state: {
-          ...baseOrder,
-          originPath,
-          from: '/orders/new',
-        },
-      })
+      return
     }
+
+    // SUccess Creation
+    showSuccess('success.order.baseCreated')
+
+    navigate('/orders/new/products', {
+      state: {
+        ...baseOrder,
+        originPath,
+        from: '/orders/new',
+      },
+    })
   } // end handleBaseSubmit
 
   const handleChangeAndClearError = (e) => {
@@ -532,16 +542,21 @@ export default function NewOrder() {
         <FormActions
           onSubmit={handleBaseSubmit}
           submitButtonText={
-            isEditBase
-              ? t('formActions.saveChanges') //TODO
-              : t('labels.order.addProduct') //TODO
+            isEditBase ? t('formActions.saveChanges') : t('button.addProduct')
           }
-          cancelButtonText={t('formActions.cancel')} //TODO
-          confirmTitle={t('formActions.confirmTitle')} //TODO
-          confirmMessage={t('formActions.confirmMessage')} //TODO
-          confirmText={t('formActions.confirmText')} //TODO
-          cancelText={t('formActions.cancelText')} //TODO
-          // TODO REMOVE EDIT MODE AND LEAVE THIS INDEPENDENT
+          cancelButtonText={t('formActions.cancel')}
+          confirmTitle={
+            isEditBase
+              ? t('formActionsEdit.confirmTitle')
+              : t('formActionsCreate.confirmTitle')
+          }
+          confirmMessage={
+            isEditBase
+              ? t('formActionsEdit.confirmMessage')
+              : t('formActionsCreate.confirmMessage')
+          }
+          confirmText={t('formActions.confirmText')}
+          cancelText={t('formActions.cancelText')}
           cancelRedirect={
             isEditBase ? returnTo || '/orders/confirmation' : originPath
           }
