@@ -25,7 +25,7 @@ import { createContext, useContext, useState } from 'react'
 
 const LayoutContext = createContext()
 
-const DEFAULT_TITLE = 'Haro Mobile'
+const DEFAULT_TITLE = 'Haro Mobile' // TODO i18n
 const DEFAULT_SPLIT = true
 
 export function LayoutProvider({ children }) {

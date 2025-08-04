@@ -30,3 +30,10 @@ export async function getPendingCount() {
   const data = await fetchWithAuth('/api/orders?status=pending&countOnly=true')
   return data.count
 }
+
+export async function updateOrderById(id, updatedData) {
+  return await fetchWithAuth(`/api/orders/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(updatedData),
+  })
+}

@@ -90,15 +90,16 @@ export const en = {
       interior: 'Interior:', // etiqueta para interior
       exterior: 'Exterior:', // etiqueta para exterior
     },
-    order: {
+    order: { // TO REMOVE
       addProduct: 'Add Product',
       deliveryDate: 'Delivery Date',
       submit: 'Create Order',
       confirm: 'Confirm Order',
-      status: 'Status', // DUPLICATE
-      deposit: 'Deposit',
-      notes: 'Notes',
+      status: 'Status', // DUPLICATE, REMOVE
+      deposit: 'Deposit', // REMOVE
+      notes: 'Notes', // REMOVE
       details: 'Order Details',
+      
     },
     product: {
       // Nombres de campos que se ven en el formulario
@@ -148,7 +149,7 @@ export const en = {
         confirm: 'Confirm',
         addProduct: 'Add Product',
         proceed: 'Proceed',
-        shipping: 'Requires shipping?',
+        shipping: 'Requires shipping?', // REMOVE
         save: 'Save Product',
       },
       // Textos del UI que no encajan en labels/errores
@@ -181,12 +182,12 @@ export const en = {
 
   // ─── FORM ACTIONS & CONFIRM MODALS (FOOTER ONLY)───────────────────────
   formActions: {
-    cancel: 'Cancel',
+    cancel: 'Cancel', // REMOVE
     submitDefault: 'Submit',
-    confirmTitle: 'Cancel?',
-    confirmMessage: 'You will lose unsaved changes if you exit now.',
-    confirmText: 'Yes, exit',
-    cancelText: 'No, stay',
+    confirmTitle: 'Cancel?', // REMOVE
+    confirmMessage: 'You will lose unsaved changes if you exit now.', // REMOVE
+    confirmText: 'Yes, exit', // REMOVE
+    cancelText: 'No, stay', // REMOVE
     saveChanges: 'Save Changes',
   },
   formActionsUser: {
@@ -246,57 +247,32 @@ export const en = {
     welcome: 'Welcome to Haro Mobile!',
   },
 
-  // ─── TITLES ──────────────────────────────────────────────
+  // ─── TITLES ────────────────────────────────────────────── // TO REFACTOR
   titles: {
     // NEW/ EDIT ORDER
-    editOrder: 'Edit Order',
-    newOrder: 'New Order',
+    editOrder: 'Edit Order', // REMOVE
+    newOrder: 'New Order', // REMOVE
 
     // ADD/ EDIT PRODUCT
     editProduct: 'Edit Product',
     addProduct: 'Add Product',
   },
 
-  // ───────────────────── HOME ───────────────────────────
-  home: {
-    title: 'Home',
-    pendingTitle: 'Pending Orders',
-    updatedAt: 'Last updated:', //Última actualización:
-    recentTitle: 'Recent Orders',
-    status: 'Status',
-  },
+  // COMPONENTS
+  // AddressInput CHECKED
+  // AppBar
+  // BottomNavBar
+  // ConfirmModal
+  // FormActions
+  // FormAddress
+  // GlazeSelect
+  // ImageUploader
+  // OrderDetailsCard
+  // ScrollToTop
+  // Sidebar
+  // SplitActionButton
 
-  // ─────────────────── NEW_ORDER ─────────────────────────
-
-  // ───────────────────── ORDER ───────────────────────────
-  order: {
-    deposit: 'Deposit',
-    subtotal: 'Subtotal',
-    total: 'Total',
-    shippingRequired: 'Shipping Required *',
-  },
-
-  // ───────────────────── USER ────────────────────────────
-  user: {
-    title: 'Create User',
-    back: 'Back',
-    name: 'Name',
-    lastName: 'Last Name',
-    email: 'Email',
-    password: 'Password',
-    confirmPassword: 'Confirm Password',
-    employee: 'Employee',
-    admin: 'Admin',
-  },
-
-  // ─────────────── SplitAction ──────────────────────
-  splitAction: {
-    new: '+ New',
-    order: 'Order',
-    user: 'User',
-    glaze: 'Glaze',
-  },
-
+  // CONTEXT
   // ─────────────── AUTHCONTEXT ──────────────────────
   auth: {
     loginFailed: 'Invalid email or password.',
@@ -312,12 +288,109 @@ export const en = {
     missingFields: 'Please fill in all fields.',
     passwordRequired: 'Password is required.',
   },
+  // PAGES
+  // GLAZES
+  // AddGlaze
+
+  // ORDERS
+  // AddProduct
+
+  // EditOrder
+
+  // NewOrder
+
+  // OrderConfirmation
+
+  // OrderDetails
+
+  // Orders
+
+  // USERS
+  // AddUser
+  user: {
+    title: 'Create User',
+    back: 'Back',
+    name: 'Name',
+    lastName: 'Last Name',
+    email: 'Email',
+    password: 'Password',
+    confirmPassword: 'Confirm Password',
+    employee: 'Employee',
+    admin: 'Admin',
+  },
+  // UserProfile
+
+  // ───────────────────── HOME ───────────────────────────
+  home: {
+    title: 'Home',
+    pendingTitle: 'Pending Orders',
+    updatedAt: 'Last updated:', //Última actualización:
+    recentTitle: 'Recent Orders',
+    status: 'Status',
+  },
+
+  // ───────────────────── ORDER ───────────────────────────
+  order: {
+    title: 'New Order',
+    deposit: 'Deposit',
+    subtotal: 'Subtotal',
+    total: 'Total',
+
+    moreInfo: 'More info',
+    social: 'Social Media',
+    editLabel: 'Edit',
+    addAddress: '+ Add Address',
+    address: 'Address',
+    city: 'City',
+    zip: 'ZIP code',
+    phone: 'Phone (shipping)',
+    remove: 'Remove',
+    newTitle: 'New Order',
+    editTitle: 'Edit Order',
+    addProduct: 'Add product',
+    shippingRequired: 'Requires shipping',
+    shippingAddress: 'Shipping address',
+    status: 'Order status',
+
+    notes: 'Notes',
+    datePlaceholder: 'DD/MM/YYYY',
+  },
+
+  // ─────────────── SplitAction ──────────────────────
+  splitAction: {
+    new: '+ New',
+    order: 'Order',
+    user: 'User',
+    glaze: 'Glaze',
+  },
+
   // ─────────────── STATUS ──────────────────────
-  status: { // First Capital for Status as Backend uses them like that
+  status: {
+    // First Capital for Status as Backend uses them like that
     New: 'New',
     Pending: 'Pending',
     Completed: 'Completed',
     Cancelled: 'Cancelled',
     InProgress: 'In Progress',
+  },
+
+  formActions: {
+    saveChanges: 'Save changes',
+    cancel: 'Cancel',
+    confirmTitle: 'Cancel creating order?',
+    confirmMessage: 'All data will be lost.',
+    confirmText: 'Yes, discard',
+    cancelText: 'No, go back',
+  },
+
+  validation: {
+    requiredFields: 'Please fill all required fields.',
+    invalidDeliveryDate: 'The delivery date must be after the order date.',
+    incompleteShipping:
+      'Please complete all shipping address fields before adding a new one.',
+    instagramFormat: 'Instagram handle must start with "@"',
+    facebookFormat: 'Facebook username must start with "/"',
+    incompleteAddressBeforeAdding:
+      'Complete the current address before adding another one',
   },
 }

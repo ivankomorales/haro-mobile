@@ -1,5 +1,4 @@
 // src/hooks/useCreateUser.js
-
 import { createUser } from '../api/users'
 import { logout } from '../api/auth'
 

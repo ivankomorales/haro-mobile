@@ -21,6 +21,7 @@ export default function FormAddress({
   // i18n TEXTS
   shippingAddress = 'Shipping Address',
   addButton = '+ Add Address',
+  addressInputTexts = {},
 }) {
   return (
     <div className="p-4 border rounded bg-gray-50 dark:bg-neutral-800 dark:border-neutral-700">
@@ -45,6 +46,7 @@ export default function FormAddress({
           errors={errors[idx] || {}}
           onRemove={() => onRemove(idx)}
           onChange={(field, val) => onChange(idx, field, val)}
+          {...addressInputTexts}
         />
       ))}
     </div>

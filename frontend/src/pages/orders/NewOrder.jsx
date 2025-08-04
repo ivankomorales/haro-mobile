@@ -19,10 +19,12 @@ import {
   validateBaseForm,
   buildBaseOrder,
 } from '../../utils/orderBuilder'
+import { useLayout } from '../../context/LayoutContext'
 
 export default function NewOrder() {
   const navigate = useNavigate()
   const location = useLocation()
+  const { setTitle, setShowSplitButton } = useLayout()
 
   // Edit Mode Variables
   const isEditBase = location.state?.mode === 'editBase'
@@ -55,6 +57,17 @@ export default function NewOrder() {
     // Notes
     notes: '',
   })
+
+  // TITLE AND SPLITACTION BUTTON
+  useEffect(() => {
+    setTitle(t('order.title'))
+    setShowSplitButton(true)
+
+    return () => {
+      setTitle('Haro Mobile')
+      setShowSplitButton(true)
+    }
+  }, [])
 
   // Social media input states
   const [socialInput, setSocialInput] = useState('')
@@ -221,9 +234,10 @@ export default function NewOrder() {
         onSubmit={handleBaseSubmit}
         className="max-w-2xl mx-auto px-4 pt-6 space-y-6"
       >
-        <h1 className="text-center mb-8 text-xl font-semibold">
-          {isEditBase ? t('titles.editOrder') : t('titles.newOrder')}
-        </h1>
+        {/* Optional h1 for accessibility */}
+        {/*<h1 className="text-center mb-8 text-xl font-semibold">
+          {isEditBase ? t('order.editTitle') : t('order.newTitle')}
+        </h1>*/}
 
         {/* Name + Lastname */}
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -248,7 +262,7 @@ export default function NewOrder() {
         {/* More info */}
         <div className="rounded border p-4 dark:border-neutral-700">
           <p className="mb-3 text-sm font-medium text-gray-800 dark:text-gray-200">
-            More details //TODO
+            {t('order.moreInfo')}
           </p>
 
           {/* Phone & email */}
@@ -291,7 +305,7 @@ export default function NewOrder() {
           {/* Social media */}
           <div className="mt-4 w-36">
             <label className="block mb-1 text-sm font-medium text-gray-800 dark:text-gray-200">
-              Social Media //TODO
+              {t('order.social')}
             </label>
 
             <div className="flex gap-2 mb-2">
@@ -375,7 +389,7 @@ export default function NewOrder() {
                         }, 0)
                       }}
                     >
-                      Edit
+                      {t('order.editLabel')}
                     </button>
                     <button
                       type="button"
@@ -397,7 +411,7 @@ export default function NewOrder() {
             type="date"
             name="orderDate"
             label="Order date"
-            placeholder={t('forms.shipping.dateFormat')}
+            placeholder={t('order.datePlaceholder')}
             value={formData.orderDate}
             onChange={handleChangeAndClearError}
             error={errors.orderDate}
@@ -410,7 +424,7 @@ export default function NewOrder() {
             type="date"
             name="deliverDate"
             label="Delivery date"
-            placeholder={t('forms.shipping.dateFormat')}
+            placeholder={t('order.datePlaceholder')}
             value={formData.deliverDate}
             onChange={handleChangeAndClearError}
             error={errors.deliverDate}
@@ -424,7 +438,7 @@ export default function NewOrder() {
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <div>
             <label className="block mb-1 text-sm font-medium text-gray-800 dark:text-gray-200">
-              {t('labels.order.status')}
+              {t('order.status')}
             </label>
             <select
               name="status"
@@ -442,7 +456,7 @@ export default function NewOrder() {
 
           <div>
             <FormInput
-              label={t('labels.order.deposit')}
+              label={t('order.deposit')}
               name="deposit"
               type="number"
               value={formData.deposit}
@@ -462,7 +476,7 @@ export default function NewOrder() {
         {/* Shipping toggle */}
         <div className="flex flex-col items-center gap-2">
           <label className="text-sm font-medium text-gray-800 dark:text-gray-200">
-            {t('forms.product.buttons.shipping')}
+            {t('order.shippingRequired')} ?
           </label>
           <Switch
             checked={formData.shipping}
@@ -487,12 +501,22 @@ export default function NewOrder() {
             onRemove={removeAddress}
             onChange={updateAddress}
             errors={errors.addresses || []}
+            //
+            shippingAddress={t('order.shippingAddress')}
+            addButton={t('order.addAddress')}
+            addressInputTexts={{
+              address: t('order.address'),
+              city: t('order.city'),
+              zip: t('order.zip'),
+              phone: t('order.phone'),
+              remove: t('order.remove'),
+            }}
           />
         )}
 
         {/* Notes */}
         <FormInput
-          label={t('labels.order.notes')}
+          label={t('order.notes')}
           name="notes"
           value={formData.notes}
           onChange={handleChangeAndClearError}
@@ -517,7 +541,7 @@ export default function NewOrder() {
           confirmMessage={t('formActions.confirmMessage')} //TODO
           confirmText={t('formActions.confirmText')} //TODO
           cancelText={t('formActions.cancelText')} //TODO
-          // Cancel: en edición vuelve a OrderConfirmation; en flujo normal, al origen
+          // TODO REMOVE EDIT MODE AND LEAVE THIS INDEPENDENT
           cancelRedirect={
             isEditBase ? returnTo || '/orders/confirmation' : originPath
           }
