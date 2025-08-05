@@ -1,14 +1,23 @@
 import { useState, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import FormInput from '../../components/FormInput'
 import { useCreateGlaze } from '../../hooks/useCreateGlaze'
 import { uploadToCloudinary } from '../../utils/uploadToCloudinary'
 import ImageUploader from '../../components/ImageUploader'
 import { ChevronLeft } from 'lucide-react'
+import { getMessage as t } from '../../utils/getMessage'
+import FormActions from '../../components/FormActions'
+import { getOriginPath } from '../../utils/navigationUtils'
 
 export default function AddGlaze() {
   const navigate = useNavigate()
+  const location = useLocation()
+  const originPath = getOriginPath(
+    location.state?.originPath ?? location.state?.from
+  )
+
   const { create } = useCreateGlaze(navigate)
+
   const imageInputRef = useRef(null)
   const [formData, setFormData] = useState({
     name: '',
@@ -19,6 +28,7 @@ export default function AddGlaze() {
 
   const [error, setError] = useState(null)
   const [success, setSuccess] = useState(null)
+
   const [loading, setLoading] = useState(false)
 
   const handleChange = (e) => {
@@ -71,15 +81,18 @@ export default function AddGlaze() {
         className="mb-4 flex items-center text-sm text-blue-600 dark:text-blue-400 hover:underline "
       >
         <ChevronLeft className="h-5 w-5 mr-1" />
-        Volver
+        {t('button.back')}
       </button>
-      <h1 className="text-center mb-8 text-xl font-semibold">Nuevo Esmalte</h1>
+      {/* Optional Title */}
+      <h1 className="text-center mb-8 text-xl font-semibold">
+        {t('glaze.title')}
+      </h1>
 
       <form onSubmit={handleSubmit} className="max-w-md mx-auto space-y-6">
-        {/* Nombre + color */}
+        {/* Name + color */}
         <div className="flex items-center gap-4">
           <FormInput
-            label="Nombre"
+            label={t('glaze.name')}
             name="name"
             value={formData.name}
             onChange={handleChange}
@@ -100,15 +113,15 @@ export default function AddGlaze() {
           </div>
         </div>
 
-        {/* Código opcional */}
+        {/* Code optional */}
         <FormInput
-          label="Código (opcional)"
+          label={t('glaze.code')}
           name="code"
           value={formData.code}
           onChange={handleChange}
         />
 
-        {/* Imagen */}
+        {/* Image */}
         <ImageUploader
           multiple={false}
           value={formData.images}
@@ -118,13 +131,7 @@ export default function AddGlaze() {
         {error && <div className="text-red-500 text-sm">{error}</div>}
         {success && <div className="text-green-600 text-sm">{success}</div>}
 
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 disabled:opacity-50"
-        >
-          {loading ? 'Creando...' : 'Crear esmalte'}
-        </button>
+        <FormActions onSubmit={handleSubmit} cancelRedirect={originPath} />
       </form>
     </div>
   )

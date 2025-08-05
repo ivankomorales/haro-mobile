@@ -12,6 +12,7 @@ import {
   dismissToast,
 } from '../../utils/toastUtils'
 import { createOrder } from '../../api/orders'
+import { cleanAddresses } from '../../utils/orderBuilder'
 
 export default function OrderConfirmation() {
   const location = useLocation()
@@ -106,6 +107,7 @@ export default function OrderConfirmation() {
         decorations: p.decorations || {},
       }))
 
+      const cleanedAddresses = cleanAddresses(order.shipping?.addresses || [])
       const payload = {
         // baseOrder
         customer: {
@@ -121,8 +123,9 @@ export default function OrderConfirmation() {
         deposit: Number(order.deposit || 0),
         notes: order.notes || '',
         shipping: {
-          isRequired: !!order.shipping?.isRequired,
-          addresses: order.shipping?.addresses || [],
+          isRequired:
+            !!order.shipping?.isRequired && cleanedAddresses.length > 0,
+          addresses: cleanedAddresses,
         },
         products: cleanProducts,
         totals, // opcional si el backend lo recalcula
@@ -164,9 +167,9 @@ export default function OrderConfirmation() {
           subtotalLabel={t('order.subtotal')}
           advanceLabel={t('order.deposit')}
           totalLabel={t('order.total')}
-          figureLabel={t('forms.product.figure')}
-          glazeLabel={t('labels.glaze.title')}
-          descriptionLabel={t('labels.product.description')}
+          figureLabel={t('product.figure')}
+          glazeLabel={t('glaze.title')}
+          descriptionLabel={t('product.description')}
         />
       </div>
 

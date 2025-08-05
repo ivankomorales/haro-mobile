@@ -3,6 +3,7 @@ import { House, ClipboardList, UserRound } from 'lucide-react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { smartNavigate } from '../utils/smartNavigate'
 import { useConfirm } from '../context/ConfirmContext'
+import { getOriginPath } from '../utils/navigationUtils'
 
 export default function Sidebar() {
   const navigate = useNavigate()
@@ -12,7 +13,12 @@ export default function Sidebar() {
   const isActive = (route) => location.pathname.startsWith(route)
 
   const handleNav = (path) => {
-    smartNavigate(navigate, location.pathname, path, { confirm })
+    smartNavigate(navigate, location.pathname, path, {
+      confirm,
+      state: {
+        originPath: getOriginPath(location.pathname),
+      },
+    })
   }
 
   const linkClass = (route) =>

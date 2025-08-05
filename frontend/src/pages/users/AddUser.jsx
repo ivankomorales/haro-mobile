@@ -1,14 +1,19 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { ChevronLeft } from 'lucide-react'
 import FormInput from '../../components/FormInput'
 import { useCreateUser } from '../../hooks/useCreateUser'
 import FormActions from '../../components/FormActions'
 import { getMessage as t } from '../../utils/getMessage'
 import { showSuccess, showError } from '../../utils/toastUtils'
+import { getOriginPath } from '../../utils/navigationUtils'
 
 export default function AddUser() {
   const navigate = useNavigate()
+  const location = useLocation()
+  const originPath = getOriginPath(
+    location.state?.originPath ?? location.state?.from
+  )
   const { create } = useCreateUser(navigate)
 
   const [formData, setFormData] = useState({
@@ -21,6 +26,9 @@ export default function AddUser() {
   })
 
   const [loading, setLoading] = useState(false)
+
+  console.log('📦 location.state:', location.state)
+  console.log('📍 originPath (raw):', location.state?.originPath)
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value })
@@ -56,7 +64,7 @@ export default function AddUser() {
         className="mb-4 flex items-center text-sm text-blue-600 dark:text-blue-400 hover:underline "
       >
         <ChevronLeft className="h-5 w-5 mr-1" />
-        {t('user.back')}
+        {t('button.back')}
       </button>
 
       <h1 className="text-xl font-semibold mb-6 text-center">
@@ -123,7 +131,7 @@ export default function AddUser() {
           </select>
         </div>
 
-        <FormActions onSubmit={handleSubmit} />
+        <FormActions onSubmit={handleSubmit} cancelRedirect={originPath} />
       </form>
     </div>
   )

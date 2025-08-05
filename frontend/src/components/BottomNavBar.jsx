@@ -8,6 +8,7 @@ import {
 import { useNavigate, useLocation } from 'react-router-dom'
 import { smartNavigate } from '../utils/smartNavigate'
 import { useConfirm } from '../context/ConfirmContext'
+import { getOriginPath } from '../utils/navigationUtils'
 
 export default function BottomNavBar() {
   const navigate = useNavigate()
@@ -31,7 +32,10 @@ export default function BottomNavBar() {
         {/* Home */}
         <button
           onClick={() =>
-            smartNavigate(navigate, pathname, '/home', { confirm })
+            smartNavigate(navigate, pathname, '/home', {
+              confirm,
+              state: { originPath: getOriginPath(pathname) },
+            })
           }
           className="inline-flex flex-col items-center justify-center px-5 rounded-s-full group"
         >
@@ -56,7 +60,10 @@ export default function BottomNavBar() {
         {/* Orders */}
         <button
           onClick={() =>
-            smartNavigate(navigate, pathname, '/orders', { confirm })
+            smartNavigate(navigate, pathname, '/orders', {
+              confirm,
+              state: { originPath: getOriginPath(pathname) },
+            })
           }
           className="relative flex flex-col items-center justify-center px-5 group"
         >
@@ -82,7 +89,11 @@ export default function BottomNavBar() {
         <div className="flex items-center justify-center">
           <button
             onClick={() =>
-              navigate('/orders/new', { state: { originPath: location.pathname } })
+              navigate('/orders/new', {
+                state: {
+                  originPath: getOriginPath(location.pathname),
+                },
+              })
             }
             className="
               inline-flex items-center justify-center 
@@ -102,7 +113,10 @@ export default function BottomNavBar() {
         {/* Dashboard */}
         <button
           onClick={() =>
-            smartNavigate(navigate, pathname, '/dashboard', { confirm })
+            smartNavigate(navigate, pathname, '/dashboard', {
+              confirm,
+              state: { originPath: getOriginPath(pathname) },
+            })
           }
           className="inline-flex flex-col items-center justify-center px-5 group"
         >
@@ -127,7 +141,10 @@ export default function BottomNavBar() {
         {/* Profile */}
         <button
           onClick={() =>
-            smartNavigate(navigate, pathname, '/profile', { confirm })
+            smartNavigate(navigate, pathname, '/profile', {
+              confirm,
+              state: { originPath: getOriginPath(pathname) },
+            })
           }
           className="inline-flex flex-col items-center justify-center px-5 rounded-e-full group"
         >

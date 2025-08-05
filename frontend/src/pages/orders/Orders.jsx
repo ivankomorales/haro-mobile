@@ -5,6 +5,20 @@ import { useNavigate } from 'react-router-dom'
 import { getMessage as t } from '../../utils/getMessage'
 import FormInput from '../../components/FormInput'
 import { useLayout } from '../../context/LayoutContext'
+import OrderCard from '../../components/OrderCard'
+import {
+  STATUS_COLORS,
+  STATUS_TEXT_COLORS,
+  STATUS_LABELS
+} from '../../utils/orderStatusUtils'
+
+const statusKeyMap = {
+  New: 'new',
+  Pending: 'pending',
+  'In Progress': 'inProgress',
+  Completed: 'completed',
+  Cancelled: 'cancelled',
+}
 
 export default function Orders() {
   const [orders, setOrders] = useState([])
@@ -65,26 +79,27 @@ export default function Orders() {
       <div className="flex flex-col sm:flex-row gap-2 mb-4">
         <FormInput
           name="search"
-          label="Buscar"
+          label={t('button.search')}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           floating={false}
-          placeholder="Nombre, correo o ID"
+          placeholder={t('order.search')}
         />
 
         <FormInput
           as="select"
           name="statusFilter"
-          label="Estado"
+          label={t('status.label')}
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
           floating={false}
         >
-          <option value="All">Todos</option>
-          <option value="New">Nuevo</option>
-          <option value="Pending">Pendiente</option>
-          <option value="Completed">Completado</option>
-          <option value="Cancelled">Cancelado</option>
+          <option value="All">{t('status.all')}</option>
+          <option value="New">{t('status.new')}</option>
+          <option value="Pending">{t('status.pending')}</option>
+          <option value="In Progress">{t('status.inProgress')}</option>
+          <option value="Completed">{t('status.completed')}</option>
+          <option value="Cancelled">{t('status.cancelled')}</option>
         </FormInput>
       </div>
 
@@ -95,48 +110,27 @@ export default function Orders() {
       ) : (
         <ul className="space-y-3">
           {filteredOrders.map((order) => (
-            <li
+            <OrderCard
               key={order._id}
+              order={{
+                ...order,
+                statusLabel: t(
+                  `status.${STATUS_LABELS[order.status] || 'unknown'}`
+                ),
+              }}
+              selectable={true}
+              isSelected={selectedOrders.includes(order._id)}
+              onSelect={() => {
+                if (selectedOrders.includes(order._id)) {
+                  setSelectedOrders(
+                    selectedOrders.filter((id) => id !== order._id)
+                  )
+                } else {
+                  setSelectedOrders([...selectedOrders, order._id])
+                }
+              }}
               onClick={() => navigate(`/orders/${order._id}/details`)}
-              className="p-4 rounded-lg shadow bg-white dark:bg-neutral-800 cursor-pointer hover:bg-gray-50 dark:hover:bg-neutral-700 transition"
-            >
-              <div className="flex items-center gap-3">
-                {/* Checkbox */}
-                <input
-                  type="checkbox"
-                  checked={selectedOrders.includes(order._id)}
-                  onChange={(e) => {
-                    if (e.target.checked) {
-                      setSelectedOrders([...selectedOrders, order._id])
-                    } else {
-                      setSelectedOrders(
-                        selectedOrders.filter((id) => id !== order._id)
-                      )
-                    }
-                  }}
-                  onClick={(e) => e.stopPropagation()}
-                  className="w-5 h-5 accent-blue-500"
-                />
-
-                {/* Order details */}
-                <div className="flex justify-between items-center w-full">
-                  <div>
-                    <p className="text-sm font-semibold">
-                      {order.customer?.name} {order.customer?.lastName}
-                    </p>
-                    <p className="text-xs text-gray-500">
-                      {new Date(order.orderDate).toLocaleDateString()}
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-sm font-medium">{order.orderID}</p>
-                    <span className="px-2 py-0.5 text-xs rounded bg-yellow-300 text-gray-800">
-                      {order.status}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </li>
+            />
           ))}
         </ul>
       )}

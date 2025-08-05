@@ -35,13 +35,13 @@ export default function OrderDetails() {
     <div className="p-4 pb-20">
       <OrderDetailsCard
         order={order}
-        shippingRequired={t('order.shippingRequired')}
+        shippingRequired={t('order.shippingRequired')} 
         subtotalLabel={t('order.subtotal')}
         advanceLabel={t('order.deposit')}
         totalLabel={t('order.total')}
-        figureLabel={t('forms.product.figure')}
-        glazeLabel={t('labels.glaze.title')}
-        descriptionLabel={t('labels.product.description')}
+        figureLabel={t('product.figure')}
+        glazeLabel={t('glaze.title')}
+        descriptionLabel={t('product.description')}
       />
     </div>
   )

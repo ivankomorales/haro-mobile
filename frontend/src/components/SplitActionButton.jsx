@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { smartNavigate } from '../utils/smartNavigate'
 import { useConfirm } from '../context/ConfirmContext'
+import { getOriginPath } from '../utils/navigationUtils'
 
 /**
  * Reusable action button with dropdown support.
@@ -46,7 +47,7 @@ export default function SplitActionButton({
         <button
           onClick={() =>
             handleSelect('/orders/new', {
-              state: { originPath: location.pathname },
+              state: { originPath: getOriginPath(location.pathname) },
             })
           }
           className="bg-orange-600 text-white px-4 py-2 text-sm font-medium hover:bg-orange-700"
@@ -69,7 +70,7 @@ export default function SplitActionButton({
             <button
               onClick={() =>
                 handleSelect('/orders/new', {
-                  state: { originPath: location.pathname },
+                  state: { originPath: getOriginPath(location.pathname) },
                 })
               }
               className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-neutral-700"
@@ -79,7 +80,11 @@ export default function SplitActionButton({
           )}
           {show.user && (
             <button
-              onClick={() => handleSelect('/users/add')}
+              onClick={() =>
+                handleSelect('/users/add', {
+                  state: { originPath: getOriginPath(location.pathname) },
+                })
+              }
               className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-neutral-700"
             >
               {labels.user}
@@ -87,7 +92,11 @@ export default function SplitActionButton({
           )}
           {show.glaze && (
             <button
-              onClick={() => handleSelect('/glazes/add')}
+              onClick={() =>
+                handleSelect('/glazes/add', {
+                  state: { originPath: getOriginPath(location.pathname) },
+                })
+              }
               className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-neutral-700"
             >
               {labels.glaze}

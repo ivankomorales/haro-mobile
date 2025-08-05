@@ -20,19 +20,23 @@ import {
   buildBaseOrder,
 } from '../../utils/orderBuilder'
 import { useLayout } from '../../context/LayoutContext'
+import { getOriginPath } from '../../utils/navigationUtils'
 
 export default function NewOrder() {
   const navigate = useNavigate()
   const location = useLocation()
   const { setTitle, setShowSplitButton } = useLayout()
 
+  console.log('🧪 location.state:', location.state)
+
   // Edit Mode Variables
   const isEditBase = location.state?.mode === 'editBase'
   const existingProducts = location.state?.products || []
   const returnTo = location.state?.returnTo
 
-  const originPath =
-    location.state?.originPath ?? location.state?.from ?? '/orders'
+  const originPath = getOriginPath(
+    location.state?.originPath ?? location.state?.from
+  )
 
   const [errors, setErrors] = useState({})
   const [formData, setFormData] = useState({
@@ -318,9 +322,9 @@ export default function NewOrder() {
               {t('order.social')}
             </label>
 
-            <div className="flex gap-2 mb-2">
+            <div className="flex gap-1 mb-2">
               <Menu as="div" className="relative">
-                <MenuButton className="flex items-center justify-center w-6 h-10 border rounded dark:border-gray-600 dark:bg-neutral-800">
+                <MenuButton className="flex items-center justify-center w-10 h-10 border rounded dark:border-gray-600 dark:bg-neutral-800">
                   {(() => {
                     const Icon = getSocialIcon(currentSocialType)
                     return <Icon size={24} />
@@ -456,11 +460,11 @@ export default function NewOrder() {
               onChange={handleChange}
               className="w-full h-10 px-3 py-3 text-sm border rounded dark:bg-neutral-800 dark:text-white dark:border-gray-600"
             >
-              <option value="New">New</option>
-              <option value="Pending">Pending</option>
-              <option value="In Progress">In Progress</option>
-              <option value="Completed">Completed</option>
-              <option value="Cancelled">Cancelled</option>
+              <option value="New">{t('status.new')}</option>
+              <option value="Pending">{t('status.pending')}</option>
+              <option value="In Progress">{t('status.inProgress')}</option>
+              <option value="Completed">{t('status.completed')}</option>
+              <option value="Cancelled">{t('status.cancelled')}</option>
             </select>
           </div>
 
@@ -511,6 +515,7 @@ export default function NewOrder() {
             onRemove={removeAddress}
             onChange={updateAddress}
             errors={errors.addresses || []}
+            errorFormatter={t}
             //
             shippingAddress={t('order.shippingAddress')}
             addButton={t('order.addAddress')}
@@ -538,7 +543,7 @@ export default function NewOrder() {
           {formData.notes.length}/200
         </p>
 
-        {/* Actions */}
+        {/* Actions Buttons - Cancel Confirm */}
         <FormActions
           onSubmit={handleBaseSubmit}
           submitButtonText={

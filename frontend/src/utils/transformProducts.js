@@ -21,7 +21,7 @@ export function formatProductsWithLabels(products = [], t = (x) => x) {
   // For each group, assign numbered labels and normalize glazes
   Object.entries(grouped).forEach(([type, items]) => {
     items.forEach((item, i) => {
-      const label = `${t(`forms.product.types.${type}`)} ${i + 1}`
+      const label = `${t(`product.${type}`)} ${i + 1}`
 
       const glazes = {
         interior: item?.glazes?.interior || null,

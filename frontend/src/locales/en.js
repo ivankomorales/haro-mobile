@@ -86,13 +86,13 @@ export const en = {
       notes: 'Notes',
       phone: 'Phone',
     },
-    glaze: {
-      title: 'Glaze', // nombre genérico
-      none: 'No glaze', // opción "sin esmalte"
-      noResults: 'No results',
-      interior: 'Interior:', // etiqueta para interior
-      exterior: 'Exterior:', // etiqueta para exterior
-    },
+    // glaze: {
+    //   title: 'Glaze REMOVE', // nombre genérico
+    //   none: 'No glaze REMOVE', // opción "sin esmalte"
+    //   noResults: 'No results REMOVE',
+    //   interior: 'Interior: REMOVE', // etiqueta para interior
+    //   exterior: 'Exterior: REMOVE', // etiqueta para exterior
+    // },
     order: {
       // TO REMOVE
       addProduct: 'Add Product',
@@ -109,7 +109,7 @@ export const en = {
       type: 'Type',
       quantity: 'Quantity',
       price: 'Price',
-      description: 'Description',
+      description: 'Description REMOVE',
       images: 'Images',
     },
     orders: {
@@ -124,7 +124,7 @@ export const en = {
       select: 'Select glaze',
       search: 'Search glaze',
     },
-    product: { 
+    product: {
       // {t('forms.product.')}
       title: 'Add Product REMOVE',
       figure: 'FigureREMOVE', // Figures that go inside the Cups, or Plates
@@ -142,12 +142,14 @@ export const en = {
         description: 'Short description (optional)',
         images: 'Add images',
       },
-      help: { // REMOVE
+      help: {
+        // REMOVE
         quantity: 'Minimum: 1',
         price: 'Use numbers only',
         glaze: 'Interior glaze is optional for plates', // To remove, no make sense
       },
-      buttons: { // REMOVE
+      buttons: {
+        // REMOVE
         add: 'Add',
         confirm: 'Confirm',
         addProduct: 'Add ProductREMOVE',
@@ -173,7 +175,7 @@ export const en = {
       street: 'Street',
       city: 'City',
       zip: 'ZIP',
-      phone: 'Phone (shipping)',
+      phone: 'Phone (shippingREMOVE)',
       dateFormat: 'dd-mm-yyyy', // dd-mm-aaaa ES
     },
     payment: {
@@ -291,14 +293,13 @@ export const en = {
     missingFields: 'Please fill in all fields.',
     passwordRequired: 'Password is required.',
   },
-  // PAGES
+  //  ─────────────────────────── PAGES  ───────────────────────────
   // GLAZES
   // AddGlaze
   glaze: {
-    title: 'Add Glaze',
-    name: 'Name',
+    title: 'Glaze',
+    name: 'Glaze Name',
     code: 'Code (optional)',
-    
   },
   // ORDERS DONE BELOW
   // AddProduct DONE BELOW
@@ -317,7 +318,7 @@ export const en = {
   // AddUser
   user: {
     title: 'Create User',
-    back: 'Back',
+
     name: 'Name',
     lastName: 'Last Name',
     email: 'Email',
@@ -355,6 +356,12 @@ export const en = {
     zip: 'ZIP code',
     phone: 'Phone (shipping)',
 
+    // new: 'New',   // FOUND IN STATUS
+    // pending: 'Pending',
+    // inProgress: 'In Progress',
+    // completed: 'Completed',
+    // cancelled: 'Cancelled',
+
     remove: 'Remove',
     newTitle: 'New Order',
     editTitle: 'Edit Order',
@@ -365,6 +372,8 @@ export const en = {
 
     notes: 'Notes',
     datePlaceholder: 'DD/MM/YYYY',
+
+    search: 'Name, email, orderID',
   },
 
   // AddProduct
@@ -409,11 +418,13 @@ export const en = {
   // ─────────────── STATUS ──────────────────────
   status: {
     // First Capital for Status as Backend uses them like that
-    New: 'New',
-    Pending: 'Pending',
-    Completed: 'Completed',
-    Cancelled: 'Cancelled',
-    InProgress: 'In Progress',
+    label: 'Status',
+    all: 'All',
+    new: 'New',
+    pending: 'Pending',
+    inProgress: 'In Progress',
+    completed: 'Completed',
+    cancelled: 'Cancelled',
   },
 
   // FORMACTIONS abv. fa
@@ -451,6 +462,11 @@ export const en = {
     facebookFormat: 'Facebook username must start with "/"',
     incompleteAddressBeforeAdding:
       'Complete the current address before adding another one',
+    // New per-field validation
+    address: 'Address is required.',
+    city: 'City is required.',
+    zip: 'ZIP code is required.',
+    phone: 'Phone is required.',
   },
 
   // BUTTONS
@@ -459,8 +475,10 @@ export const en = {
     save: 'Save',
     cancel: 'Cancel',
     ok: 'OK',
+    search: 'Search', // Used as a Label as well
 
     addProduct: 'Add Product',
     addGlaze: 'Add Glaze',
+    back: 'Back',
   },
 }

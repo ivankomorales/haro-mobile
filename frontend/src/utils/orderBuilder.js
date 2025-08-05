@@ -1,6 +1,6 @@
 // src/utils/orderBuilder.js
 
-// Helpers to split full name and parse phone number
+// Helpers to split full name ,parse phone number and clean empty shipping addresses
 export function splitName(fullName = '') {
   const parts = fullName.trim().split(/\s+/)
   const name = parts[0] || ''
@@ -17,6 +17,12 @@ export function parsePhone(fullPhone = '') {
   return { countryCode, phone }
 }
 
+// Cleans empty shipping addresses to avoid creating an empty array
+export function cleanAddresses(addresses = []) {
+  return addresses.filter((addr) =>
+    Object.values(addr).some((val) => val !== '')
+  )
+}
 /**
  * Generates initial form values from a draft (location.state).
  * Only sets the fields that exist in the draft object.
@@ -84,11 +90,32 @@ export function validateBaseForm(formData) {
 
   // Shipping validation (only if shipping is required)
   if (formData.shipping) {
-    const hasAnyAddressError = (formData.addresses || []).some((addr) => {
-      return !addr.address || !addr.city || !addr.zip || !addr.phone
+    const addresses = formData.addresses || []
+    const addressErrors = []
+
+    addresses.forEach((addr, i) => {
+      const errs = {}
+
+      if (Object.values(addr).every((val) => !val || val.trim() === '')) {
+        // skip empty form
+        return
+      }
+
+      if (!addr.address?.trim()) errs.address = 'validation.address'
+      if (!addr.city?.trim()) errs.city = 'validation.city'
+      if (!addr.zip?.trim()) errs.zip = 'validation.zip'
+      if (!addr.phone?.trim()) errs.phone = 'validation.phone'
+
+      addressErrors[i] = errs
     })
-    if (hasAnyAddressError) {
-      errors.addresses = 'validation.incompleteShipping'
+
+    // At least one complete address required
+    const nonEmpty = addressErrors.filter((e) => Object.keys(e).length === 0)
+    if (nonEmpty.length === 0) {
+      errors.addresses =
+        addressErrors.length > 0 ? addressErrors : ['incomplete']
+    } else if (addressErrors.some((e) => Object.keys(e).length > 0)) {
+      errors.addresses = addressErrors
     }
   }
 
@@ -115,7 +142,7 @@ export function buildBaseOrder(formData, opts = {}) {
     notes: formData.notes,
     shipping: {
       isRequired: formData.shipping,
-      addresses: formData.shipping ? formData.addresses : [],
+      addresses: formData.shipping ? cleanAddresses(formData.addresses) : [],
     },
     customer: {
       name: formData.name,

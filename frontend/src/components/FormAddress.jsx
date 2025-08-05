@@ -18,6 +18,7 @@ export default function FormAddress({
   onRemove,
   onChange,
   errors = [],
+  errorFormatter,
   // i18n TEXTS
   shippingAddress = 'Shipping Address',
   addButton = '+ Add Address',
@@ -44,6 +45,7 @@ export default function FormAddress({
           index={idx}
           value={addr}
           errors={errors[idx] || {}}
+          errorFormatter={errorFormatter}
           onRemove={() => onRemove(idx)}
           onChange={(field, val) => onChange(idx, field, val)}
           {...addressInputTexts}

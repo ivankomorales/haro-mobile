@@ -9,6 +9,7 @@ export default function AddressInput({
   onChange,
   onRemove,
   errors = {},
+  errorFormatter,
   // i18n TEXTS
   address = 'Address',
   city = 'City',
@@ -25,6 +26,7 @@ export default function AddressInput({
           value={value.address}
           onChange={(e) => onChange('address', e.target.value)}
           error={errors.address}
+          errorFormatter={errorFormatter}
         />
         <FormInput
           label={city}
@@ -32,6 +34,7 @@ export default function AddressInput({
           value={value.city}
           onChange={(e) => onChange('city', e.target.value)}
           error={errors.city}
+          errorFormatter={errorFormatter}
         />
         <FormInput
           label={zip}
@@ -40,6 +43,7 @@ export default function AddressInput({
           value={value.zip}
           onChange={(e) => onChange('zip', e.target.value)}
           error={errors.zip}
+          errorFormatter={errorFormatter}
         />
         <FormInput
           label={phone}
@@ -50,6 +54,7 @@ export default function AddressInput({
           value={value.phone}
           onChange={(e) => onChange('phone', e.target.value)}
           error={errors.phone}
+          errorFormatter={errorFormatter}
         />
       </div>
 

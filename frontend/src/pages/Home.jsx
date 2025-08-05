@@ -3,6 +3,20 @@ import { getRecentOrders, getPendingCount } from '../api/orders'
 import { useNavigate } from 'react-router-dom'
 import { getMessage as t } from '../utils/getMessage'
 import { useLayout } from '../context/LayoutContext'
+import OrderCard from '../components/OrderCard'
+import {
+  STATUS_COLORS,
+  STATUS_TEXT_COLORS,
+  STATUS_LABELS
+} from '../utils/orderStatusUtils'
+
+const statusKeyMap = {
+  New: 'new',
+  Pending: 'pending',
+  'In Progress': 'inProgress',
+  Completed: 'completed',
+  Cancelled: 'cancelled',
+}
 
 export default function Home() {
   const [lastUpdated, setLastUpdated] = useState(null)
@@ -79,46 +93,16 @@ export default function Home() {
         <h3 className="mb-2 text-lg font-medium">{t('home.recentTitle')}</h3>
         <ul className="space-y-2">
           {recentOrders.map((order) => (
-            <li
+            <OrderCard
               key={order.orderID || order._id}
-              className="
-                flex justify-between items-center
-                p-3
-                bg-white dark:bg-neutral-800
-                rounded-lg shadow
-              "
-            >
-              <div>
-                <strong className="block text-sm">
-                  {order.customer?.name} {order.customer?.lastName}
-                </strong>
-                <span className="text-xs text-gray-500">
-                  {order.orderDate
-                    ? new Date(order.orderDate).toLocaleDateString('es-MX', {
-                        day: '2-digit',
-                        month: 'short',
-                        year: '2-digit',
-                      })
-                    : '-'}
-                </span>
-              </div>
-              <div className="text-right">
-                <div className="text-sm font-medium text-gray-700 dark:text-gray-200">
-                  {order.orderID || order._id}
-                </div>
-                <span
-                  className="
-                    px-2 py-0.5
-                    text-sm
-                    bg-yellow-300 text-gray-800
-                    rounded
-                  "
-                >
-                  {t(`status.${order.status}`)} {/* TODO */}{' '}
-                  {/* Valid if status keys are capitalized */}
-                </span>
-              </div>
-            </li>
+              order={{
+                ...order,
+                statusLabel: t(
+                  `status.${STATUS_LABELS[order.status] || 'unknown'}`
+                ),
+              }}
+              onClick={() => navigate(`/orders/${order._id}/details`)}
+            />
           ))}
         </ul>
       </section>

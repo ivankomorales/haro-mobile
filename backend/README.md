@@ -118,7 +118,7 @@ haro-mobile/
 {
   orderID: "ORD-0001",
   customer: ObjectId, // References Customer model
-  status: "Pending" | "In Progress" | "Completed" | "Cancelled",
+  status: "New" | "Pending" | "In Progress" | "Completed" | "Cancelled",
   deposit: Number,
   shipping: {
     isRequired: Boolean,

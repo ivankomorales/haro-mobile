@@ -15,11 +15,15 @@ import {
   showSuccess,
 } from '../../utils/toastUtils'
 import { useRequireState } from '../../utils/useRequireState'
+import { getOriginPath } from '../../utils/navigationUtils'
 
 export default function AddProduct() {
   const navigate = useNavigate()
   const location = useLocation()
-  const originPath = location.state?.originPath || '/home'
+  const originPath = getOriginPath(
+    location.state?.originPath ?? location.state?.from
+  )
+
   const baseOrder = location.state || {}
   const editIndex = location.state?.editIndex
   const isEdit = typeof editIndex === 'number'
@@ -185,7 +189,11 @@ export default function AddProduct() {
 
   // Confirm $ navigate to OrderConfirmation (uploading images first)
   const handleSubmitAll = async () => {
-    const toastId = showLoading('loading.image')
+    const shouldUploadImages = isEdit
+      ? formData.images?.length > 0
+      : products.some((p) => p.images && p.images.length > 0)
+
+    const toastId = shouldUploadImages ? showLoading('loading.image') : null
 
     try {
       let updatedProducts
@@ -235,8 +243,9 @@ export default function AddProduct() {
       }
 
       // Success
-      dismissToast(toastId)
-      showSuccess('success.image.uploaded')
+      if (toastId) dismissToast(toastId)
+      if (shouldUploadImages) showSuccess('success.image.uploaded')
+
       const fullOrder = {
         ...baseOrder,
         products: finalProducts,
