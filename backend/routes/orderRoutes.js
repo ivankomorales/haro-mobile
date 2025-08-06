@@ -83,6 +83,14 @@ router.post("/:id/notes", verifyOwnershipOrAdmin, addOrderNote);
 router.delete("/:id", requireAdmin, cancelOrder);
 
 //
-// EXPORT ROUTER
+// EXPORT ROUTES
 //
+
+const { exportOrdersToPDF } = require("../controllers/exportController");
+
+router.post("/export/pdf", requireAdmin, exportOrdersToPDF);
+// futuros: excel, word
+// router.post("/export/excel", requireAdmin, exportOrdersToExcel)
+// router.post("/export/word", requireAdmin, exportOrdersToWord)
+
 module.exports = router;

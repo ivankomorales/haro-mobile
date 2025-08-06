@@ -318,6 +318,7 @@ export const en = {
   // AddUser
   user: {
     title: 'Create User',
+    label: 'User',
 
     name: 'Name',
     lastName: 'Last Name',
@@ -341,6 +342,8 @@ export const en = {
   // ───────────────────── ORDERS ───────────────────────────
   order: {
     title: 'Orders',
+    label: 'Order',
+
     deposit: 'Deposit',
     subtotal: 'Subtotal',
     total: 'Total',
@@ -356,12 +359,6 @@ export const en = {
     zip: 'ZIP code',
     phone: 'Phone (shipping)',
 
-    // new: 'New',   // FOUND IN STATUS
-    // pending: 'Pending',
-    // inProgress: 'In Progress',
-    // completed: 'Completed',
-    // cancelled: 'Cancelled',
-
     remove: 'Remove',
     newTitle: 'New Order',
     editTitle: 'Edit Order',
@@ -374,6 +371,13 @@ export const en = {
     datePlaceholder: 'DD/MM/YYYY',
 
     search: 'Name, email, orderID',
+    details: 'Order Details',
+
+    exporting: 'Generando PDF...',
+    noneSelected: 'No has seleccionado ningún pedido.',
+    exportError: 'Error al exportar los pedidos.',
+    exportExcelPending: 'La exportación a Excel aún no está disponible.',
+    exportWordPending: 'La exportación a Word aún no está disponible.',
   },
 
   // AddProduct
@@ -476,9 +480,18 @@ export const en = {
     cancel: 'Cancel',
     ok: 'OK',
     search: 'Search', // Used as a Label as well
+    close: 'Close',
 
     addProduct: 'Add Product',
     addGlaze: 'Add Glaze',
     back: 'Back',
+
+    login: 'Log in',
+  },
+
+  // LOGIN
+  login: {
+    email: 'Email address',
+    password: 'Password',
   },
 }

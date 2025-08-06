@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useAuth } from '../hooks/useAuth'
 import FormInput from '../components/FormInput'
-import { getMessage } from '../utils/getMessage'
+import { getMessage as t } from '../utils/getMessage'
 
 
 export default function Login() {
@@ -38,7 +38,7 @@ export default function Login() {
         <h2 className="text-xl font-semibold text-center">Login</h2>
 
         <FormInput
-          label="Correo electrónico"
+          label={t('login.email')}
           name="email"
           type="email"
           value={email}
@@ -47,11 +47,11 @@ export default function Login() {
             setErrors((prev) => ({ ...prev, email: null }))
           }}
           error={errors.email}
-          errorFormatter={getMessage}
+          errorFormatter={t}
         />
 
         <FormInput
-          label="Contraseña"
+          label={t('login.password')}
           name="password"
           type="password"
           value={password}
@@ -61,13 +61,13 @@ export default function Login() {
           }}
           showToggle
           error={errors.password}
-          errorFormatter={getMessage}
+          errorFormatter={t}
         />
 
         {/* Mensaje de error general */}
         {errors.form && (
           <div className="text-red-500 text-sm text-center -mt-2">
-            {getMessage(errors.form)}
+            {t(errors.form)}
           </div>
         )}
 
@@ -75,7 +75,7 @@ export default function Login() {
           type="submit"
           className="p-3 font-medium text-white bg-black rounded-full dark:bg-amber-500 hover:bg-neutral-900 transition"
         >
-          Ingresar
+          {t('button.login')}
         </button>
       </form>
     </div>

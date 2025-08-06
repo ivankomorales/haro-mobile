@@ -1,6 +1,6 @@
 // src/pages/orders/Orders.jsx
 import { useEffect, useState } from 'react'
-import { getOrders } from '../../api/orders'
+import { getOrderById, getOrders } from '../../api/orders'
 import { useNavigate } from 'react-router-dom'
 import { getMessage as t } from '../../utils/getMessage'
 import FormInput from '../../components/FormInput'
@@ -9,25 +9,28 @@ import OrderCard from '../../components/OrderCard'
 import {
   STATUS_COLORS,
   STATUS_TEXT_COLORS,
-  STATUS_LABELS
+  STATUS_LABELS,
 } from '../../utils/orderStatusUtils'
-
-const statusKeyMap = {
-  New: 'new',
-  Pending: 'pending',
-  'In Progress': 'inProgress',
-  Completed: 'completed',
-  Cancelled: 'cancelled',
-}
+import OrderDetailsModal from '../../components/OrderDetailsModal'
+import { formatProductsWithLabels } from '../../utils/transformProducts'
+import { getAllGlazes } from '../../api/glazes'
+import OrderActionsBar from '../../components/OrderActionsBar'
+import StatusModal from '../../components/StatusModal'
 
 export default function Orders() {
   const [orders, setOrders] = useState([])
+  const [selectedOrder, setSelectedOrder] = useState(null)
   const [selectedOrders, setSelectedOrders] = useState([])
+
+  const [glazes, setGlazes] = useState([])
+
   const [loading, setLoading] = useState(true)
   const navigate = useNavigate()
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('All')
   const { setTitle, setShowSplitButton } = useLayout()
+
+  const [showStatusModal, setShowStatusModal] = useState(false)
 
   useEffect(() => {
     setTitle(t('order.title')) //    setTitle(t('home.title'))
@@ -53,6 +56,19 @@ export default function Orders() {
     }
 
     fetchOrders()
+  }, [])
+
+  useEffect(() => {
+    async function fetchGlazes() {
+      try {
+        const all = await getAllGlazes()
+        setGlazes(all)
+      } catch (err) {
+        console.error('Error loading glazes', err)
+      }
+    }
+
+    fetchGlazes()
   }, [])
 
   const filteredOrders = orders.filter((order) => {
@@ -102,7 +118,15 @@ export default function Orders() {
           <option value="Cancelled">{t('status.cancelled')}</option>
         </FormInput>
       </div>
-
+      {selectedOrders.length > 0 && (
+        <OrderActionsBar
+          selectedOrders={selectedOrders}
+          allVisibleOrders={filteredOrders}
+          onClearSelection={() => setSelectedOrders([])}
+          onSelectAll={(ids) => setSelectedOrders(ids)}
+          onBulkStatusChange={() => setShowStatusModal(true)}
+        />
+      )}
       {loading ? (
         <p>{t('loading.orders')}</p>
       ) : orders.length === 0 ? (
@@ -129,11 +153,29 @@ export default function Orders() {
                   setSelectedOrders([...selectedOrders, order._id])
                 }
               }}
-              onClick={() => navigate(`/orders/${order._id}/details`)}
+              onClick={() => {
+                const labeled = formatProductsWithLabels(order.products, t)
+                setSelectedOrder({ ...order, products: labeled })
+              }}
             />
           ))}
         </ul>
       )}
+      <OrderDetailsModal
+        open={!!selectedOrder}
+        order={selectedOrder}
+        glazes={glazes}
+        onClose={() => setSelectedOrder(null)}
+      />
+      <StatusModal
+        open={showStatusModal}
+        onClose={() => setShowStatusModal(false)}
+        onConfirm={(newStatus) => {
+          // Aquí haces la lógica real de actualización
+          console.log('Cambiar todos los seleccionados a:', newStatus)
+          // luego llamas tu función backend → PATCH /orders/bulk/status
+        }}
+      />
     </div>
   )
 }

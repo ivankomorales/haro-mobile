@@ -58,7 +58,7 @@ export default function AddUser() {
   }
 
   return (
-    <div className="pt-10 px-4 pb-20 min-h-screen bg-white dark:bg-neutral-900 text-gray-800 dark:text-gray-100 font-sans">
+    <div className="pt-10 px-4 pb-24 min-h-screen bg-white dark:bg-neutral-900 text-gray-800 dark:text-gray-100 font-sans">
       <button
         onClick={() => navigate(-1)}
         className="mb-4 flex items-center text-sm text-blue-600 dark:text-blue-400 hover:underline "

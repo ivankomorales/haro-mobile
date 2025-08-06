@@ -1,6 +1,6 @@
 import OrderDetailsCard from '../../components/OrderDetailsCard'
 import { getOrderById } from '../../api/orders'
-import { useParams } from 'react-router-dom'
+import { useParams, useNavigate, useLocation } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import { showError } from '../../utils/toastUtils'
 import { getMessage as t } from '../../utils/getMessage'
@@ -10,6 +10,9 @@ export default function OrderDetails() {
   const { id } = useParams()
   const [order, setOrder] = useState(null)
   const [loading, setLoading] = useState(true)
+  const navigate = useNavigate()
+  const location = useLocation()
+  const originPath = location.state?.originPath || '/orders'
 
   useEffect(() => {
     async function fetchOrder() {
@@ -32,10 +35,10 @@ export default function OrderDetails() {
   if (!order) return <p className="p-4">{t('errors.order.notFound')}</p>
 
   return (
-    <div className="p-4 pb-20">
+    <div className="p-4 pb-24">
       <OrderDetailsCard
         order={order}
-        shippingRequired={t('order.shippingRequired')} 
+        shippingRequired={t('order.shippingRequired')}
         subtotalLabel={t('order.subtotal')}
         advanceLabel={t('order.deposit')}
         totalLabel={t('order.total')}
@@ -43,6 +46,13 @@ export default function OrderDetails() {
         glazeLabel={t('glaze.title')}
         descriptionLabel={t('product.description')}
       />
+      <button
+        type="button"
+        onClick={() => navigate(originPath)}
+        className="w-full sm:w-auto sm:px-4 py-2 rounded bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-neutral-700 dark:text-gray-200 dark:hover:bg-neutral-600"
+      >
+        {t('button.Close')}
+      </button>
     </div>
   )
 }

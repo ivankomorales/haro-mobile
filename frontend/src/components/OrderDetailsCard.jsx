@@ -54,8 +54,6 @@ export default function OrderDetailsCard({
             {customer.name} {customer.lastName}
           </p>
 
-
-          
           {customer.phone && (
             <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
               <Phone className="w-4 h-4" /> {customer.phone}

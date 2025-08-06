@@ -136,7 +136,10 @@ export default function OrderConfirmation() {
       showSuccess(t('success.order.created')) // asegúrate camelCase en i18n
 
       if (saved?._id) {
-        navigate(`/orders/${saved._id}/details`, { replace: true })
+        navigate(`/orders/${saved._id}/details`, {
+          replace: true,
+          state: { originPath },
+        })
       } else {
         navigate('/orders', { replace: true })
       }

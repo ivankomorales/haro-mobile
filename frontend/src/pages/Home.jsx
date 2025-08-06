@@ -7,20 +7,14 @@ import OrderCard from '../components/OrderCard'
 import {
   STATUS_COLORS,
   STATUS_TEXT_COLORS,
-  STATUS_LABELS
+  STATUS_LABELS,
 } from '../utils/orderStatusUtils'
-
-const statusKeyMap = {
-  New: 'new',
-  Pending: 'pending',
-  'In Progress': 'inProgress',
-  Completed: 'completed',
-  Cancelled: 'cancelled',
-}
+import OrderDetailsModal from '../components/OrderDetailsModal'
 
 export default function Home() {
   const [lastUpdated, setLastUpdated] = useState(null)
   const [recentOrders, setRecentOrders] = useState([])
+  const [selectedOrder, setSelectedOrder] = useState(null)
   const [pendingCount, setPendingCount] = useState(0)
   const navigate = useNavigate()
   const { setTitle, setShowSplitButton } = useLayout()
@@ -54,7 +48,7 @@ export default function Home() {
     <div
       className="
         min-h-screen
-        p-4 pb-20
+        p-4 pb-24
         font-sans
         bg-white dark:bg-neutral-900
         text-gray-800 dark:text-gray-100
@@ -101,11 +95,16 @@ export default function Home() {
                   `status.${STATUS_LABELS[order.status] || 'unknown'}`
                 ),
               }}
-              onClick={() => navigate(`/orders/${order._id}/details`)}
+              onClick={() => setSelectedOrder(order)}
             />
           ))}
         </ul>
       </section>
+      <OrderDetailsModal
+        open={!!selectedOrder}
+        order={selectedOrder}
+        onClose={() => setSelectedOrder(null)}
+      />
     </div>
   )
 }

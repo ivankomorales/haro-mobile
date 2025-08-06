@@ -32,13 +32,17 @@ export default function OrderCard({
       onClick={onClick}
     >
       {selectable && (
-        <input
-          type="checkbox"
-          checked={isSelected}
-          onChange={onSelect}
-          onClick={(e) => e.stopPropagation()} // Evita que haga trigger del onClick del <li>
-          className="w-5 h-5 accent-blue-500"
-        />
+        <label
+          onClick={(e) => e.stopPropagation()}
+          className="p-2 cursor-pointer"
+        >
+          <input
+            type="checkbox"
+            checked={isSelected}
+            onChange={onSelect}
+            className="w-5 h-5 accent-blue-500"
+          />
+        </label>
       )}
 
       <div className="flex justify-between items-center w-full">
