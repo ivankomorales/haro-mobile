@@ -16,6 +16,13 @@ import { formatProductsWithLabels } from '../../utils/transformProducts'
 import { getAllGlazes } from '../../api/glazes'
 import OrderActionsBar from '../../components/OrderActionsBar'
 import StatusModal from '../../components/StatusModal'
+import { updateManyOrderStatus } from '../../api/orders'
+import {
+  showError,
+  showSuccess,
+  showLoading,
+  dismissToast,
+} from '../../utils/toastUtils'
 
 export default function Orders() {
   const [orders, setOrders] = useState([])
@@ -86,6 +93,31 @@ export default function Orders() {
 
     return matchesSearch && matchesStatus
   })
+
+  const handleBulkStatusUpdate = async (newStatus) => {
+    const toastId = showLoading('orders.updatingStatus')
+
+    try {
+      await updateManyOrderStatus(selectedOrders, newStatus)
+
+      // opcional: actualizar los pedidos localmente para reflejar el nuevo estado
+      const updated = orders.map((order) =>
+        selectedOrders.includes(order._id)
+          ? { ...order, status: newStatus }
+          : order
+      )
+
+      setOrders(updated)
+      setSelectedOrders([]) // limpiar selección
+
+      dismissToast(toastId)
+      showSuccess('orders.statusUpdated')
+    } catch (err) {
+      console.error(err)
+      dismissToast(toastId)
+      showError('orders.updateError')
+    }
+  }
 
   return (
     <div className="min-h-screen p-4 bg-white dark:bg-neutral-900 text-black dark:text-white">
@@ -171,9 +203,8 @@ export default function Orders() {
         open={showStatusModal}
         onClose={() => setShowStatusModal(false)}
         onConfirm={(newStatus) => {
-          // Aquí haces la lógica real de actualización
-          console.log('Cambiar todos los seleccionados a:', newStatus)
-          // luego llamas tu función backend → PATCH /orders/bulk/status
+          handleBulkStatusUpdate(newStatus)
+          setShowStatusModal(false)
         }}
       />
     </div>

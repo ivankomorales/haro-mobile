@@ -7,14 +7,16 @@ import {
 } from '@headlessui/react'
 import { Fragment, useState } from 'react'
 import { STATUS_LABELS } from '../utils/orderStatusUtils'
+import { getMessage as t } from '../utils/getMessage'
 
 export default function StatusModal({
   open,
   onClose,
   onConfirm,
   currentStatus = '',
-}) {
-  const [newStatus, setNewStatus] = useState(currentStatus || 'Pending')
+  // i18n TEXTS TODO
+ }) {
+  const [newStatus, setNewStatus] = useState(currentStatus || t('status.pending'))
 
   const handleConfirm = () => {
     onConfirm(newStatus)
@@ -33,7 +35,7 @@ export default function StatusModal({
           leaveFrom="opacity-100"
           leaveTo="opacity-0"
         >
-          <div className="fixed inset-0 bg-black bg-opacity-25 backdrop-blur-sm" />
+          <div className="fixed inset-0 bg-black/30 backdrop-blur-sm" />
         </TransitionChild>
 
         <div className="fixed inset-0 flex items-center justify-center p-4">
@@ -48,12 +50,12 @@ export default function StatusModal({
           >
             <DialogPanel className="w-full max-w-md transform overflow-hidden rounded-lg bg-white dark:bg-neutral-900 p-6 text-left align-middle shadow-xl transition-all">
               <DialogTitle className="text-lg font-medium text-gray-900 dark:text-white">
-                Cambiar estado
+                {t('statusModal.title')}
               </DialogTitle>
 
               <div className="mt-4">
                 <label className="block text-sm text-gray-700 dark:text-gray-300 mb-1">
-                  Nuevo estado
+                  {t('statusModal.subtitle')}
                 </label>
                 <select
                   value={newStatus}
@@ -62,7 +64,7 @@ export default function StatusModal({
                 >
                   {Object.keys(STATUS_LABELS).map((status) => (
                     <option key={status} value={status}>
-                      {STATUS_LABELS[status]}
+                      {t(`status.${STATUS_LABELS[status]}`)}
                     </option>
                   ))}
                 </select>
@@ -73,13 +75,13 @@ export default function StatusModal({
                   onClick={onClose}
                   className="px-4 py-2 text-sm bg-gray-200 dark:bg-neutral-700 text-gray-800 dark:text-white rounded hover:bg-gray-300 dark:hover:bg-neutral-600"
                 >
-                  Cancelar
+                  {t('button.cancel')}
                 </button>
                 <button
                   onClick={handleConfirm}
                   className="px-4 py-2 text-sm bg-emerald-600 text-white rounded hover:bg-emerald-700"
                 >
-                  Confirmar
+                  {t('button.confirm')}
                 </button>
               </div>
             </DialogPanel>

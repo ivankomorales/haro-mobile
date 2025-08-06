@@ -22,8 +22,13 @@ const createOrder = async (req, res, next) => {
     const orderID = `ORD-${String(counter.seq).padStart(4, "0")}`;
 
     const allowedFields = [
-      "status", "deposit", "notes", "products",
-      "shipping", "orderDate", "deliverDate",
+      "status",
+      "deposit",
+      "notes",
+      "products",
+      "shipping",
+      "orderDate",
+      "deliverDate",
     ];
     const orderData = {};
     for (const field of allowedFields) {
@@ -170,8 +175,13 @@ const updateOrder = async (req, res, next) => {
 
     const originalStatus = order.status;
     const allowedFields = [
-      "status", "deposit", "notes", "products",
-      "shipping", "orderDate", "deliverDate",
+      "status",
+      "deposit",
+      "notes",
+      "products",
+      "shipping",
+      "orderDate",
+      "deliverDate",
     ];
 
     for (const key of allowedFields) {
@@ -235,25 +245,28 @@ const updateOrderStatus = async (req, res) => {
 // 🟣 BULK STATUS UPDATE (PATCH /api/orders/bulk-status)
 // ---------------------------------------------
 const updateManyOrderStatus = async (req, res) => {
-  try {
-    const updates = req.body;
+  console.log("🟡 bulk status controller HIT");
+  console.log("📦 Body recibido:", req.body);
 
-    if (!Array.isArray(updates) || updates.length === 0) {
-      return res.status(400).json({ message: "No updates provided" });
+  try {
+    const { orderIds, newStatus } = req.body;
+
+    if (!Array.isArray(orderIds) || orderIds.length === 0 || !newStatus) {
+      return res.status(400).json({ message: "Missing orderIds or newStatus" });
     }
 
-    const bulkOps = updates.map(({ _id, status }) => ({
-      updateOne: {
-        filter: { _id },
-        update: { status },
-      },
-    }));
-
-    const result = await Order.bulkWrite(bulkOps);
+    const result = await Order.updateMany(
+      { _id: { $in: orderIds } },
+      { $set: { status: newStatus } }
+    );
 
     res.json({ message: "Bulk status update complete", result });
   } catch (error) {
-    console.error("Error in bulk status update:", error);
+    console.error(
+      "❌ Error in bulk status update:",
+      error.message,
+      error.stack
+    );
     res.status(500).json({ message: "Server error" });
   }
 }; // end updateManyOrderStatus

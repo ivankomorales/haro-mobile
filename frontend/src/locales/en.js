@@ -378,6 +378,10 @@ export const en = {
     exportError: 'Error al exportar los pedidos.',
     exportExcelPending: 'La exportación a Excel aún no está disponible.',
     exportWordPending: 'La exportación a Word aún no está disponible.',
+
+    updatingStatus: 'Actualizando estado...',
+    statusUpdated: 'Estados actualizados correctamente.',
+    updateError: 'No se pudo actualizar el estado.',
   },
 
   // AddProduct
@@ -493,5 +497,12 @@ export const en = {
   login: {
     email: 'Email address',
     password: 'Password',
+  },
+
+  // STATUSMODAL
+  statusModal: {
+    pending: 'Pending',
+    title: 'Change status',
+    subtitle: 'New status',
   },
 }

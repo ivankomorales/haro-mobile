@@ -37,3 +37,16 @@ export async function updateOrderById(id, updatedData) {
     body: JSON.stringify(updatedData),
   })
 }
+
+export async function updateManyOrderStatus(orderIds, newStatus) {
+  const data = await fetchWithAuth('/api/orders/bulk/status', {
+    method: 'PATCH',
+    body: JSON.stringify({ orderIds, newStatus }),
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  })
+
+  // ✅ If any error, fetchWithAuth throws exception
+  return data
+}

@@ -15,6 +15,8 @@ const {
   cancelOrder,
 } = require("../controllers/orderController");
 
+const { exportOrdersToPDF } = require("../controllers/exportController");
+
 // Middlewares
 const { verifyToken, requireAdmin } = require("../middleware/auth");
 const verifyOwnershipOrAdmin = require("../middleware/verifyOwnershipOrAdmin");
@@ -33,9 +35,6 @@ router.use(verifyToken);
 // Get all orders (with optional filters)
 router.get("/", getOrders);
 
-// Get single order by ID
-router.get("/:id", verifyOwnershipOrAdmin, getOrderById);
-
 // Get orders by user ID
 router.get("/user/:userId", verifyOwnershipOrAdmin, getOrdersByUser);
 
@@ -48,6 +47,9 @@ router.get("/status/:status", requireAdmin, getOrdersByStatus);
 
 // Create a new order
 router.post("/", validateOrder, handleValidationErrors, createOrder);
+
+// Add a note to an order
+router.post("/:id/notes", verifyOwnershipOrAdmin, addOrderNote);
 
 //
 // 🔵 PUT ROUTES
@@ -66,14 +68,11 @@ router.put(
 // 🟣 PATCH ROUTES
 //
 
+// Update status on multiple orders
+router.patch("/bulk/status", requireAdmin, updateManyOrderStatus);
+
 // Update only the order status
 router.patch("/:id/status", verifyOwnershipOrAdmin, updateOrderStatus);
-
-// Update status on multiple orders
-router.patch("/bulk/status", verifyToken, updateManyOrderStatus);
-
-// Add a note to an order
-router.post("/:id/notes", verifyOwnershipOrAdmin, addOrderNote);
 
 //
 // 🔴 DELETE ROUTES
@@ -83,14 +82,22 @@ router.post("/:id/notes", verifyOwnershipOrAdmin, addOrderNote);
 router.delete("/:id", requireAdmin, cancelOrder);
 
 //
-// EXPORT ROUTES
+// 📤 EXPORT ROUTES
 //
-
-const { exportOrdersToPDF } = require("../controllers/exportController");
 
 router.post("/export/pdf", requireAdmin, exportOrdersToPDF);
 // futuros: excel, word
 // router.post("/export/excel", requireAdmin, exportOrdersToExcel)
-// router.post("/export/word", requireAdmin, exportOrdersToWord)
+// router.post("/export/word", requireAdmin, exportOrdersToWord);
+
+//
+// 🧾 GET BY ID (keep at end to avoid collisions)
+//
+
+router.get("/:id", verifyOwnershipOrAdmin, getOrderById);
+
+//
+// EXPORT ROUTER
+//
 
 module.exports = router;
