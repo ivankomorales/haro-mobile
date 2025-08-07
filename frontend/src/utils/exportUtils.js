@@ -1,4 +1,3 @@
-import fetchWithAuth from './fetchWithAuth'
 import { showError, showLoading, dismissToast } from './toastUtils'
 
 export async function exportSelectedOrdersToPDF(orderIds) {
@@ -9,11 +8,12 @@ export async function exportSelectedOrdersToPDF(orderIds) {
   const toastId = showLoading('order.exporting')
 
   try {
-    const res = await fetchWithAuth('/api/orders/export/pdf', {
+    const res = await fetch('/api/orders/export/pdf', {
       method: 'POST',
       body: JSON.stringify({ orderIds }),
       headers: {
         'Content-Type': 'application/json',
+        Authorization: `Bearer ${localStorage.getItem('token')}`,
       },
     })
 
