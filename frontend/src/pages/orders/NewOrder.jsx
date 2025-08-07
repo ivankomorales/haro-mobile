@@ -254,9 +254,9 @@ export default function NewOrder() {
         </h1>*/}
 
         {/* Name + Lastname */}
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
           <FormInput
-            label="First Name"
+            label={t('order.name')}
             name="name"
             value={formData.name}
             onChange={handleChangeAndClearError}
@@ -264,7 +264,7 @@ export default function NewOrder() {
             errorFormatter={t}
           />
           <FormInput
-            label="Last Name"
+            label={t('order.lastName')}
             name="lastName"
             value={formData.lastName}
             onChange={handleChangeAndClearError}
@@ -293,7 +293,7 @@ export default function NewOrder() {
                 <option value="+54">+54</option>
               </select>
               <FormInput
-                label="Phone"
+                label={t('order.phone')}
                 name="phone"
                 type="tel"
                 pattern="\d{10}"
@@ -306,7 +306,7 @@ export default function NewOrder() {
             </div>
 
             <FormInput
-              label="Email"
+              label={t('order.email')}
               name="email"
               type="email"
               value={formData.email}
@@ -370,7 +370,7 @@ export default function NewOrder() {
                 type="button"
                 onClick={addOrUpdateSocial}
                 className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 dark:bg-neutral-700 dark:hover:bg-neutral-600 shrink-0"
-                title="Add/Update" //TODO
+                title={t('order.addUpdate')}
               >
                 <Plus size={16} />
               </button>
@@ -523,7 +523,7 @@ export default function NewOrder() {
               address: t('order.address'),
               city: t('order.city'),
               zip: t('order.zip'),
-              phone: t('order.phone'),
+              phone: t('order.phoneShipping'),
               remove: t('order.remove'),
             }}
           />

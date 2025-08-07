@@ -29,10 +29,10 @@ export const smartNavigate = (
   if (needsConfirmation && typeof confirm === 'function') {
     // Show confirmation modal before navigating away
     confirm(() => navigate(targetPath, options), {
-      title: messages.confirm.exitFlowTitle,
-      message: messages.confirm.exitFlowMessage,
-      confirmText: messages.confirm.exitFlowConfirm,
-      cancelText: messages.confirm.exitFlowCancel,
+      title: messages.formActionsCreate.confirmTitle,
+      message: messages.formActionsCreate.confirmMessage,
+      confirmText: messages.formActions.confirmText,
+      cancelText: messages.formActions.cancelText,
     })
   } else {
     // Navigate immediately

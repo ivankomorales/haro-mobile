@@ -133,6 +133,11 @@ export const en = {
     title: 'Orders',
     label: 'Order',
 
+    name: 'First Name',
+    lastName: 'Last Name',
+    phone: 'Phone',
+    email: 'Email',
+    addUpdate: 'Add/Update',
     deposit: 'Deposit',
     subtotal: 'Subtotal',
     total: 'Total',
@@ -146,7 +151,7 @@ export const en = {
     address: 'Address',
     city: 'City',
     zip: 'ZIP code',
-    phone: 'Phone (shipping)',
+    phoneShipping: 'Phone (shipping)',
 
     remove: 'Remove',
     newTitle: 'New Order',
