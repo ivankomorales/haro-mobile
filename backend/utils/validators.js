@@ -176,21 +176,58 @@ const validateOrder = [
     .isLength({ max: 300 })
     .trim(),
 
-  // Product: Images
+  // Product: Images (array of objects)
   body("products.*.images")
     .optional()
     .isArray()
     .withMessage("Images must be an array"),
 
-  body("products.*.images.*")
+  // Each image object
+  body("products.*.images.*.url")
+    .notEmpty()
+    .withMessage("Image url is required")
+    .isString()
+    .withMessage("Image url must be a string"),
+
+  body("products.*.images.*.alt")
     .optional()
     .isString()
-    .withMessage("Each image must be a string (URL or file name)"),
+    .withMessage("Image alt must be a string"),
+
+  body("products.*.images.*.publicId")
+    .optional()
+    .isString()
+    .withMessage("publicId must be a string"),
+
+  body("products.*.images.*.width")
+    .optional()
+    .isInt({ min: 1 })
+    .withMessage("width must be a positive integer"),
+
+  body("products.*.images.*.height")
+    .optional()
+    .isInt({ min: 1 })
+    .withMessage("height must be a positive integer"),
+
+  body("products.*.images.*.format")
+    .optional()
+    .isString()
+    .withMessage("format must be a string"),
+
+  body("products.*.images.*.bytes")
+    .optional()
+    .isInt({ min: 0 })
+    .withMessage("bytes must be a non-negative integer"),
+
+  body("products.*.images.*.primary")
+    .optional()
+    .isBoolean()
+    .withMessage("primary must be a boolean"),
 
   // Product: workflowStage
   body("products.*.workflowStage")
     .optional()
-    .isIn(["exported", "sculptedPainted", "urgent", "painting", "delivered"])
+    .isIn(["none", "exported", "sculpted_painted", "painting", "delivered"])
     .withMessage("Invalid workflow stage"),
 
   // Product: assignedShippingIndex
@@ -200,9 +237,10 @@ const validateOrder = [
     .withMessage("Assigned shipping index must be an integer")
     .toInt(),
 
+  // Order status
   body("status")
     .notEmpty()
-    .isIn(["New", "Pending", "In Progress", "Completed", "Cancelled"])
+    .isIn(["new", "pending", "inProgress", "completed", "cancelled"])
     .withMessage("Invalid order status"),
 
   body("deposit")

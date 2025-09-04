@@ -22,9 +22,16 @@ export async function exportSelectedOrdersToPDF(orderIds) {
     const blob = await res.blob()
     const url = window.URL.createObjectURL(blob)
 
+    let date_time = new Date()
+    let day = String(date_time.getDate()).padStart(2, '0')
+    let month = String(date_time.getMonth() + 1).padStart(2, '0') // +1 porque empieza en 0
+    let year = date_time.getFullYear()
+
+    let fecha = `${day}-${month}-${year}`
+
     const a = document.createElement('a')
     a.href = url
-    a.download = 'pedidos.pdf'
+    a.download = `pedidos-${fecha}.pdf`
     a.click()
     window.URL.revokeObjectURL(url)
 

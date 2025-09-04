@@ -25,7 +25,7 @@ export default function EditOrder() {
     deposit: '',
     shipping: { active: false, addresses: [] },
     socialMedia: { instagram: '', facebook: '' },
-    status: 'New',
+    status: 'new',
     notes: '',
   })
 
@@ -58,7 +58,7 @@ export default function EditOrder() {
             instagram: '',
             facebook: '',
           },
-          status: order.status || 'New',
+          status: order.status || 'new',
           notes: order.notes || '',
         })
       } catch (err) {
@@ -192,11 +192,11 @@ export default function EditOrder() {
         onChange={handleChange}
         as="select"
       >
-        <option value="New">{t('status.new')}</option>
-        <option value="Pending">{t('status.pending')}</option>
-        <option value="In Progress">{t('status.inProgress')}</option>
-        <option value="Completed">{t('status.completed')}</option>
-        <option value="Cancelled">{t('status.cancelled')}</option>
+        <option value="new">{t('status.new')}</option>
+        <option value="pending">{t('status.pending')}</option>
+        <option value="inProgress">{t('status.inProgress')}</option>
+        <option value="completed">{t('status.completed')}</option>
+        <option value="cancelled">{t('status.cancelled')}</option>
       </FormInput>
 
       <FormAddress

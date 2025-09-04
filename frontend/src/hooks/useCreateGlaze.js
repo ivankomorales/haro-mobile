@@ -10,7 +10,7 @@ export const useCreateGlaze = (navigate) => {
       })
       return res
     } catch (err) {
-      console.error('❌ Error completo:', err) // 👈 log aquí
+      console.error('❌ Error completo:', err)
       throw new Error(err.message || 'Failed to create glaze')
     }
   }

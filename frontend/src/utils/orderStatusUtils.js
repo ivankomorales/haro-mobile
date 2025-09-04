@@ -1,30 +1,36 @@
 // src/utils/orderStatusUtils.js
 
 // Utility to map backend statuses to i18n keys
+export const STATUS = {
+  NEW: 'new',
+  PENDING: 'pending',
+  IN_PROGRESS: 'inProgress',
+  COMPLETED: 'completed',
+  CANCELLED: 'cancelled',
+}
+
 export const STATUS_LABELS = {
-  New: 'new',
-  Pending: 'pending',
-  'In Progress': 'inProgress',
-  Completed: 'completed',
-  Cancelled: 'cancelled',
+  [STATUS.NEW]: 'New',
+  [STATUS.PENDING]: 'Pending',
+  [STATUS.IN_PROGRESS]: 'In Progress',
+  [STATUS.COMPLETED]: 'Completed',
+  [STATUS.CANCELLED]: 'Cancelled',
 }
 
-// Tailwind-compatible color classes (just background)
 export const STATUS_COLORS = {
-  New: 'bg-gray-300',
-  Pending: 'bg-yellow-300',
-  'In Progress': 'bg-blue-300',
-  Completed: 'bg-green-300',
-  Cancelled: 'bg-red-300',
+  [STATUS.NEW]: 'bg-gray-200',
+  [STATUS.PENDING]: 'bg-yellow-200',
+  [STATUS.IN_PROGRESS]: 'bg-blue-200',
+  [STATUS.COMPLETED]: 'bg-green-200',
+  [STATUS.CANCELLED]: 'bg-red-200',
 }
 
-// Optional: Text color variant (for dark mode tweaks)
 export const STATUS_TEXT_COLORS = {
-  New: 'text-gray-800',
-  Pending: 'text-yellow-800',
-  'In Progress': 'text-blue-800',
-  Completed: 'text-green-800',
-  Cancelled: 'text-red-800',
+  [STATUS.NEW]: 'text-gray-800',
+  [STATUS.PENDING]: 'text-yellow-900',
+  [STATUS.IN_PROGRESS]: 'text-blue-900',
+  [STATUS.COMPLETED]: 'text-green-900',
+  [STATUS.CANCELLED]: 'text-red-900',
 }
 
 // Optional: valid transitions

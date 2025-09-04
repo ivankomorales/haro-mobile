@@ -1,3 +1,4 @@
+// src/components/StatusModal.jsx
 import {
   Dialog,
   DialogTitle,
@@ -5,8 +6,7 @@ import {
   Transition,
   TransitionChild,
 } from '@headlessui/react'
-import { Fragment, useState } from 'react'
-import { STATUS_LABELS } from '../utils/orderStatusUtils'
+import { Fragment, useEffect, useMemo, useState } from 'react'
 import { getMessage as t } from '../utils/getMessage'
 
 export default function StatusModal({
@@ -15,13 +15,26 @@ export default function StatusModal({
   onConfirm,
   currentStatus = '',
   // i18n TEXTS TODO
- }) {
-  const [newStatus, setNewStatus] = useState(currentStatus || t('status.pending'))
+}) {
+  const [newStatus, setNewStatus] = useState(currentStatus || 'pending') //(t('status.pending'))
+
+  // Keep state in sync when modal opens or currentStatus changes
+  useEffect(() => {
+    if (open) setNewStatus(currentStatus || 'pending')
+  }, [open, currentStatus])
+
+  // Optional: stable order for options (avoid relying on object key order)
+  const STATUS_ORDER = useMemo(
+    () => ['new', 'pending', 'inProgress', 'completed', 'cancelled'],
+    []
+  )
 
   const handleConfirm = () => {
     onConfirm(newStatus)
     onClose()
   }
+
+  const isUnchanged = (currentStatus || 'pending') === newStatus
 
   return (
     <Transition appear show={open} as={Fragment}>
@@ -57,14 +70,17 @@ export default function StatusModal({
                 <label className="block text-sm text-gray-700 dark:text-gray-300 mb-1">
                   {t('statusModal.subtitle')}
                 </label>
+
+                {/* Keep value as canonical; display label via i18n using canonical key */}
                 <select
                   value={newStatus}
                   onChange={(e) => setNewStatus(e.target.value)}
                   className="w-full rounded border dark:border-neutral-600 bg-white dark:bg-neutral-800 text-sm text-gray-900 dark:text-white px-3 py-2"
                 >
-                  {Object.keys(STATUS_LABELS).map((status) => (
+                  {STATUS_ORDER.map((status) => (
                     <option key={status} value={status}>
-                      {t(`status.${STATUS_LABELS[status]}`)}
+                      {/* If you prefer English labels from STATUS_LABELS, use STATUS_LABELS[status] instead of t(...) */}
+                      {t(`status.${status}`)}
                     </option>
                   ))}
                 </select>
@@ -77,9 +93,16 @@ export default function StatusModal({
                 >
                   {t('button.cancel')}
                 </button>
+
                 <button
                   onClick={handleConfirm}
-                  className="px-4 py-2 text-sm bg-emerald-600 text-white rounded hover:bg-emerald-700"
+                  disabled={isUnchanged}
+                  className={`px-4 py-2 text-sm text-white rounded transition
+                    ${
+                      isUnchanged
+                        ? 'bg-emerald-600/60 cursor-not-allowed'
+                        : 'bg-emerald-600 hover:bg-emerald-700'
+                    }`}
                 >
                   {t('button.confirm')}
                 </button>

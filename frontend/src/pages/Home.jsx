@@ -1,9 +1,10 @@
+// src/pages/home/Home.jsx
 import { useEffect, useState } from 'react'
 import { getRecentOrders, getPendingCount } from '../api/orders'
 import { useNavigate } from 'react-router-dom'
 import { getMessage as t } from '../utils/getMessage'
 import { useLayout } from '../context/LayoutContext'
-import OrderCard from '../components/OrderCard'
+import { OrderCard } from '../components/OrderCard'
 import {
   STATUS_COLORS,
   STATUS_TEXT_COLORS,
@@ -16,6 +17,7 @@ export default function Home() {
   const [recentOrders, setRecentOrders] = useState([])
   const [selectedOrder, setSelectedOrder] = useState(null)
   const [pendingCount, setPendingCount] = useState(0)
+  const [glazes, setGlazes] = useState(null) // lazy: null = not loaded yet
   const navigate = useNavigate()
   const { setTitle, setShowSplitButton } = useLayout()
 
@@ -32,8 +34,10 @@ export default function Home() {
   useEffect(() => {
     async function fetchData() {
       try {
-        const recent = await getRecentOrders()
-        const pending = await getPendingCount()
+        const [recent, pending] = await Promise.all([
+          getRecentOrders(),
+          getPendingCount(),
+        ])
         setRecentOrders(recent)
         setPendingCount(pending)
         setLastUpdated(new Date())
@@ -79,7 +83,7 @@ export default function Home() {
                 month: 'short',
                 year: '2-digit',
               })
-            : t('loading.generic')}
+            : (t('home.loading') || 'Loading...')}
         </span>
       </div>
 
@@ -95,7 +99,19 @@ export default function Home() {
                   `status.${STATUS_LABELS[order.status] || 'unknown'}`
                 ),
               }}
-              onClick={() => setSelectedOrder(order)}
+              onClick={async () => {
+                // Lazy-load glazes only when user opens an order
+                if (!glazes) {
+                  try {
+                    const mod = await import('../api/glazes')
+                    const all = await mod.getAllGlazes()
+                    setGlazes(all)
+                  } catch (e) {
+                    console.error('Error loading glazes', e)
+                  }
+                }
+                setSelectedOrder(order)
+              }}
             />
           ))}
         </ul>
@@ -103,6 +119,7 @@ export default function Home() {
       <OrderDetailsModal
         open={!!selectedOrder}
         order={selectedOrder}
+        glazes={glazes || []} // empty until lazy-loaded
         onClose={() => setSelectedOrder(null)}
       />
     </div>

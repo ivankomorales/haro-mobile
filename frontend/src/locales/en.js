@@ -126,6 +126,7 @@ export const en = {
     updatedAt: 'Last updated:', //Última actualización:
     recentTitle: 'Recent Orders',
     status: 'Status',
+    loading: 'Loading',
   },
 
   // ───────────────────── ORDERS ───────────────────────────
@@ -146,7 +147,7 @@ export const en = {
     moreInfo: 'More info',
     social: 'Social Media',
     editLabel: 'Edit',
-
+    submit: 'Confirm',
     addAddress: '+ Add Address',
     address: 'Address',
     city: 'City',
@@ -167,7 +168,7 @@ export const en = {
     search: 'Name, email, orderID',
     details: 'Order Details',
 
-    exporting: 'Generando PDF...',
+    exporting: 'Generating PDF...',
     noneSelected: 'No has seleccionado ningún pedido.',
     exportError: 'Error al exportar los pedidos.',
     exportExcelPending: 'La exportación a Excel aún no está disponible.',
@@ -176,6 +177,8 @@ export const en = {
     updatingStatus: 'Actualizando estado...',
     statusUpdated: 'Estados actualizados correctamente.',
     updateError: 'No se pudo actualizar el estado.',
+    empty: 'No orders found',
+    loading: 'Loading orders',
   },
 
   // AddProduct
@@ -219,7 +222,7 @@ export const en = {
 
   // ─────────────── STATUS ──────────────────────
   status: {
-    // First Capital for Status as Backend uses them like that
+    // Backend uses lowercase for status with camelCase
     label: 'Status',
     all: 'All',
     new: 'New',
@@ -227,6 +230,7 @@ export const en = {
     inProgress: 'In Progress',
     completed: 'Completed',
     cancelled: 'Cancelled',
+    unknown: 'Unknown',
   },
 
   // FORMACTIONS abv. fa
@@ -279,8 +283,11 @@ export const en = {
 
   // STATUSMODAL
   statusModal: {
-    pending: 'Pending',
     title: 'Change status',
-    subtitle: 'New status',
+    subtitle: 'Select the new status', // ← clearer
+    // pending: 'Pending',            // ← remove this (misplaced)
+    current: 'Current', // ← add (future use)
+    multiple: 'Multiple statuses selected', // ← add (future use)
+    // noOtherStatuses: 'There are no other statuses available.', // ← optional
   },
 }

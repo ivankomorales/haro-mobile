@@ -3,7 +3,9 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "dev": "nodemon app.js"
+    "dev": "nodemon app.js",
+    "migrate:statuses:dry": "node scriptsTemp/migrate-statuses.cjs --dry-run",
+    "migrate:statuses": "node scriptsTemp/migrate-statuses.cjs"
   },
   "keywords": [],
   "author": "",

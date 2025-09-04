@@ -14,38 +14,41 @@ export function formatProductsWithLabels(
   t = (x) => x,
   glazes = []
 ) {
-  // Group products by type
+  const glazeMap = new Map(glazes.map((g) => [g._id, g]))
+
   const grouped = products.reduce((acc, p) => {
-    if (!acc[p.type]) acc[p.type] = []
-    acc[p.type].push(p)
+    ;(acc[p.type] ||= []).push(p)
     return acc
   }, {})
 
-  const resolveGlaze = (id) => glazes.find((g) => g._id === id) || null
-
   const labeled = []
 
-  // For each group, assign numbered labels and normalize glazes
   Object.entries(grouped).forEach(([type, items]) => {
     items.forEach((item, i) => {
       const label = `${t(`product.${type}`)} ${i + 1}`
 
-      const rawGlazes = item?.glazes || {}
-      const normalizedGlazes = {
-        interior:
-          typeof rawGlazes.interior === 'string'
-            ? resolveGlaze(rawGlazes.interior)
-            : rawGlazes.interior || null,
-        exterior:
-          typeof rawGlazes.exterior === 'string'
-            ? resolveGlaze(rawGlazes.exterior)
-            : rawGlazes.exterior || null,
-      }
+      const raw = item?.glazes || {}
+      const interior =
+        typeof raw.interior === 'string'
+          ? glazeMap.get(raw.interior) || raw.interior // <-- si no hay match, conserva el ID
+          : (raw.interior ?? null) // <-- si ya es objeto, consérvalo
+
+      const exterior =
+        typeof raw.exterior === 'string'
+          ? glazeMap.get(raw.exterior) || raw.exterior
+          : (raw.exterior ?? null)
 
       labeled.push({
         ...item,
         label,
-        glazes: normalizedGlazes,
+        // Opción 1: mantener glazes tal cual, pero sin perder información
+        glazes: { interior, exterior },
+
+        // Opción 2 (aún más segura): no tocar glazes y agregar resueltos aparte
+        // glazesResolved: {
+        //   interior: typeof interior === 'string' ? null : interior,
+        //   exterior: typeof exterior === 'string' ? null : exterior,
+        // },
       })
     })
   })

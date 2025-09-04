@@ -4,16 +4,16 @@ import {
   ComboboxInput,
   ComboboxOptions,
   ComboboxOption,
+  ComboboxButton,
 } from '@headlessui/react'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
+import { ChevronDown } from 'lucide-react'
 
-// TODO active deprecated
 export default function GlazeSelect({
   label,
   glazes = [],
-  selected,
-  onChange,
-  // i18n TEXTS
+  selected, // string id | object {_id,...} | ''
+  onChange, // (id: string | '') => void
   placeholderText = 'Buscar esmalte...',
   noneText = 'Sin esmalte',
   noResultsText = 'Sin resultados',
@@ -21,78 +21,81 @@ export default function GlazeSelect({
 }) {
   const [query, setQuery] = useState('')
 
-  const filteredGlazes =
-    query === ''
-      ? glazes
-      : glazes.filter((g) => g.name.toLowerCase().includes(query.toLowerCase()))
+  // Normalize external selected to an ID (or '')
+  const selectedId = useMemo(() => {
+    if (!selected) return ''
+    if (typeof selected === 'string') return selected
+    return selected?._id ?? ''
+  }, [selected])
 
-  const getDisplayName = (id) => {
-    const match = glazes.find((g) => g._id === id)
-    return match ? match.name : ''
-  }
+  const selectedGlaze = useMemo(
+    () => glazes.find((g) => g._id === selectedId),
+    [glazes, selectedId]
+  )
 
-  const getDisplayImage = (id) => {
-    const match = glazes.find((g) => g._id === id)
-    return match?.image || null
-  }
+  const filteredGlazes = useMemo(() => {
+    if (!query) return glazes
+    const q = query.toLowerCase()
+    return glazes.filter((g) => g.name.toLowerCase().includes(q))
+  }, [glazes, query])
 
   return (
     <div className="mb-4">
       <label className="block text-sm font-medium text-gray-700 dark:text-white mb-1">
         {label}
       </label>
-      <Combobox value={selected} onChange={onChange}>
+
+      {/* Headless UI Combobox works best when value is the primitive we compare (id) */}
+      <Combobox value={selectedId} onChange={(val) => onChange(val)}>
         <div className="relative">
           <div className="flex items-center gap-2 border p-2 rounded dark:bg-neutral-900 dark:border-gray-700">
-            {getDisplayImage(selected) ? (
+            {/* Thumbnail or color square */}
+            {selectedGlaze?.image ? (
               <img
-                src={getDisplayImage(selected)}
-                alt="glaze"
+                src={selectedGlaze.image}
+                alt={selectedGlaze.name}
+                title={selectedGlaze.name}
                 className="w-6 h-6 rounded"
               />
             ) : (
               <span
                 className="w-6 h-6 rounded border"
-                style={{
-                  backgroundColor:
-                    glazes.find((g) => g._id === selected)?.hex || '#fff',
-                }}
+                style={{ backgroundColor: selectedGlaze?.hex || '#fff' }}
+                title={selectedGlaze?.name || ''}
               />
             )}
 
             <ComboboxInput
               aria-label={ariaLabelText}
               className="flex-1 outline-none bg-transparent text-sm text-black dark:text-white"
+              // IMPORTANT: let HeadlessUI render the visible value via displayValue
+              displayValue={(id) =>
+                glazes.find((g) => g._id === id)?.name || ''
+              }
               onChange={(e) => setQuery(e.target.value)}
-              displayValue={getDisplayName}
               placeholder={placeholderText}
             />
+
+            <ComboboxButton className="ml-1 p-1 rounded ui-open:rotate-180 transition">
+              <ChevronDown size={16} />
+            </ComboboxButton>
           </div>
 
-          <ComboboxOptions className="absolute z-10 w-full mt-1 max-h-60 overflow-auto bg-white dark:bg-neutral-800 border border-gray-300 dark:border-gray-700 rounded shadow">
-            {/* Opción 'Sin esmalte' */}
+          <ComboboxOptions className="absolute z-50 w-full mt-1 max-h-60 overflow-auto bg-white dark:bg-neutral-800 border border-gray-300 dark:border-gray-700 rounded shadow">
+            {/* None option */}
             <ComboboxOption
               value=""
-              className={({ active }) =>
-                `cursor-pointer px-4 py-2 text-sm ${
-                  active ? 'bg-gray-100 dark:bg-neutral-700' : ''
-                }`
-              }
+              className="cursor-pointer px-4 py-2 text-sm ui-active:bg-gray-100 ui-active:dark:bg-neutral-700"
             >
               {noneText}
             </ComboboxOption>
 
-            {/* Lista de resultados */}
             {filteredGlazes.length > 0 ? (
               filteredGlazes.map((g) => (
                 <ComboboxOption
                   key={g._id}
-                  value={g._id}
-                  className={({ active }) =>
-                    `cursor-pointer px-4 py-2 text-sm flex items-center gap-2 ${
-                      active ? 'bg-gray-100 dark:bg-neutral-700' : ''
-                    }`
-                  }
+                  value={g._id} // we always return the id
+                  className="cursor-pointer px-4 py-2 text-sm flex items-center gap-2 ui-active:bg-gray-100 ui-active:dark:bg-neutral-700"
                 >
                   {g.image ? (
                     <img

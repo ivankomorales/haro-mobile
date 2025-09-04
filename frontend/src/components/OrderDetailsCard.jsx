@@ -1,9 +1,10 @@
 // src/components/OrderDetailsCard.jsx
 import { Phone, Mail, Globe, AlertCircle, SquarePen } from 'lucide-react'
-import { parseISO, format } from 'date-fns'
+import { format } from 'date-fns'
 
 export default function OrderDetailsCard({
   order = {},
+  glazes = [],
   onEditBase,
   onEditProducts,
   // i18n TEXTS
@@ -23,6 +24,16 @@ export default function OrderDetailsCard({
     products = [],
     shipping = {},
   } = order
+
+  // Build a map for quick lookup
+  const glazeMap = new Map((glazes || []).map((g) => [g._id, g]))
+  const resolveGlaze = (value) => {
+    if (!value) return null
+    if (typeof value === 'string') return glazeMap.get(value) || null
+    if (typeof value === 'object' && value._id)
+      return glazeMap.get(value._id) || value
+    return null
+  }
 
   // Billing
   const subtotal = products.reduce(
@@ -98,80 +109,82 @@ export default function OrderDetailsCard({
 
       {/* Products */}
       <div className="space-y-6">
-        {products.map((product, index) => (
-          <div
-            key={index}
-            className="relative p-3 rounded border border-gray-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 space-y-2"
-          >
-            <button
-              onClick={() => onEditProducts?.(index)}
-              className="absolute top-2 right-2 p-1 rounded hover:bg-gray-200 dark:hover:bg-neutral-700"
+        {products.map((product, index) => {
+          const gi = resolveGlaze(product.glazes?.interior)
+          const ge = resolveGlaze(product.glazes?.exterior)
+
+          return (
+            <div
+              key={index}
+              className="relative p-3 rounded border border-gray-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 space-y-2"
             >
-              <SquarePen className="w-4 h-4" />
-            </button>
+              <button
+                onClick={() => onEditProducts?.(index)}
+                className="absolute top-2 right-2 p-1 rounded hover:bg-gray-200 dark:hover:bg-neutral-700"
+              >
+                <SquarePen className="w-4 h-4" />
+              </button>
 
-            <p className="font-semibold">{product.label}</p>
-            <p className="text-sm">
-              {(() => {
-                const label =
-                  product.quantity === 1 ? figureLabel : `${figureLabel}s`
-                return `${product.quantity} ${label}`
-              })()}
-            </p>
-
-            {(product.glazes?.interior || product.glazes?.exterior) && (
-              <div className="flex items-center gap-2">
+              <p className="font-semibold">{product.label}</p>
+              <p className="text-sm">
                 {(() => {
-                  const count = [
-                    product.glazes?.interior,
-                    product.glazes?.exterior,
-                  ].filter(Boolean).length
-                  return (
-                    <p className="text-sm font-medium">
-                      {glazeLabel}
-                      {count > 1 ? 's' : ''}:
-                    </p>
-                  )
+                  const label =
+                    product.quantity === 1 ? figureLabel : `${figureLabel}s`
+                  return `${product.quantity} ${label}`
                 })()}
-                {product.glazes?.interior?.image && (
-                  <img
-                    src={product.glazes.interior.image}
-                    alt={product.glazes.interior.name}
-                    title={product.glazes.interior.name}
-                    className="w-6 h-6 rounded border"
-                  />
-                )}
-                {product.glazes?.exterior?.image && (
-                  <img
-                    src={product.glazes.exterior.image}
-                    alt={product.glazes.exterior.name}
-                    title={product.glazes.exterior.name}
-                    className="w-6 h-6 rounded border"
-                  />
-                )}
-              </div>
-            )}
-
-            {product.description && (
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                {descriptionLabel}: {product.description}
               </p>
-            )}
 
-            {product.images?.length > 0 && (
-              <div className="flex gap-2 overflow-x-auto scrollbar-hide mt-2">
-                {product.images.map((url, i) => (
-                  <img
-                    key={i}
-                    src={url}
-                    alt={`Imagen ${i + 1}`}
-                    className="w-24 h-20 object-cover rounded border flex-shrink-0"
-                  />
-                ))}
-              </div>
-            )}
-          </div>
-        ))}
+              {(gi || ge) && (
+                <div className="flex items-center gap-2">
+                  {(() => {
+                    const count = [gi, ge].filter(Boolean).length
+                    return (
+                      <p className="text-sm font-medium">
+                        {glazeLabel}
+                        {count > 1 ? 's' : ''}:
+                      </p>
+                    )
+                  })()}
+                  {gi?.image && (
+                    <img
+                      src={gi.image}
+                      alt={gi.name}
+                      title={gi.name}
+                      className="w-6 h-6 rounded border"
+                    />
+                  )}
+                  {ge?.image && (
+                    <img
+                      src={ge.image}
+                      alt={ge.name}
+                      title={ge.name}
+                      className="w-6 h-6 rounded border"
+                    />
+                  )}
+                </div>
+              )}
+
+              {product.description && (
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  {descriptionLabel}: {product.description}
+                </p>
+              )}
+
+              {product.images?.length > 0 && (
+                <div className="flex gap-2 overflow-x-auto scrollbar-hide mt-2">
+                  {product.images.map((image, i) => (
+                    <img
+                      key={i}
+                      src={typeof image === 'string' ? image : image.url}
+                      alt={typeof image === 'string' ? '' : image.alt || ''}
+                      className="h-20 w-20 rounded-md object-cover"
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          )
+        })}
       </div>
     </div>
   )

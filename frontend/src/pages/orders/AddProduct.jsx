@@ -76,12 +76,14 @@ export default function AddProduct() {
   useEffect(() => {
     if (isEdit && baseOrder.products && baseOrder.products[editIndex]) {
       const product = baseOrder.products[editIndex]
+      // helpers (top-level or inline)
+      const toId = (v) => (typeof v === 'object' && v?._id ? v._id : v || '')
       setFormData({
         type: product.type,
         quantity: product.quantity,
         price: product.price,
-        glazeInterior: product.glazes?.interior?._id || '',
-        glazeExterior: product.glazes?.exterior?._id || '',
+        glazeInterior: toId(product.glazes?.interior), // ✅ works with id or object
+        glazeExterior: toId(product.glazes?.exterior), // ✅
         description: product.description || '',
         images: product.images || [], // URLs en modo edición
       })
@@ -140,11 +142,21 @@ export default function AddProduct() {
       const newProduct = {
         ...formData,
         glazes: {
-          interior: interior || null,
-          exterior: exterior || null,
+          interior: interior?._id || null,
+          exterior: exterior?._id || null,
+          interiorName: interior?.name || '',
+          interiorHex: interior?.hex || '',
+          exteriorName: exterior?.name || '',
+          exteriorHex: exterior?.hex || '',
+          // optional:
+          // interiorImage: interior?.image || '',
+          // exteriorImage: exterior?.image || '',
         },
       }
-
+      console.log(
+        'A) handleAddProduct -> newProduct.glazes:',
+        newProduct.glazes
+      )
       setProducts((prev) => [...prev, newProduct])
       showSuccess('success.product.added')
 
@@ -188,61 +200,60 @@ export default function AddProduct() {
   }
 
   // Confirm $ navigate to OrderConfirmation (uploading images first)
+  // Confirm $ navigate to OrderConfirmation (uploading images first)
   const handleSubmitAll = async () => {
     const shouldUploadImages = isEdit
-      ? formData.images?.length > 0
+      ? formData.images && formData.images.length > 0
       : products.some((p) => p.images && p.images.length > 0)
 
     const toastId = shouldUploadImages ? showLoading('loading.image') : null
 
     try {
-      let updatedProducts
       let finalProducts
 
       if (isEdit) {
-        const urls = await Promise.all(
-          formData.images.map((file) =>
-            uploadToCloudinary(file, 'haromobile/products')
+        // Upload only new Files; keep existing URLs/objects
+        const uploads = await Promise.all(
+          (formData.images || []).map((item) =>
+            item instanceof File
+              ? uploadToCloudinary(item, 'haromobile/products')
+              : item
           )
         )
 
-        const editedProduct = {
+        const editedUiProduct = {
           ...formData,
-          glazes: {
-            interior:
-              glazes.find((g) => g._id === formData.glazeInterior) || null,
-            exterior:
-              glazes.find((g) => g._id === formData.glazeExterior) || null,
-          },
-          images: urls,
+          images: uploads,
         }
 
-        finalProducts = [...baseOrder.products]
-        finalProducts[editIndex] = editedProduct
+        const editedPayload = toProductPayload(editedUiProduct, glazes)
+
+        // ✅ Reemplazar SOLO el producto editado, no tocar los demás
+        finalProducts = (baseOrder.products || []).map((p, i) =>
+          i === editIndex ? editedPayload : p
+        )
       } else {
         if (products.length === 0) {
           showError(t('errors.order.missingProduct'))
           return
         }
 
-        updatedProducts = await Promise.all(
+        const updatedProducts = await Promise.all(
           products.map(async (product) => {
-            const urls = await Promise.all(
-              product.images.map((file) =>
-                uploadToCloudinary(file, 'haromobile/products')
+            const uploads = await Promise.all(
+              (product.images || []).map((item) =>
+                item instanceof File
+                  ? uploadToCloudinary(item, 'haromobile/products')
+                  : item
               )
             )
-            return {
-              ...product,
-              images: urls,
-            }
+            return { ...product, images: uploads }
           })
         )
 
-        finalProducts = updatedProducts
+        finalProducts = updatedProducts.map((p) => toProductPayload(p, glazes))
       }
 
-      // Success
       if (toastId) dismissToast(toastId)
       if (shouldUploadImages) showSuccess('success.image.uploaded')
 
@@ -259,8 +270,91 @@ export default function AddProduct() {
       })
     } catch (err) {
       console.error('Error uploading images before submit:', err)
-      dismissToast(toastId)
+      if (toastId) dismissToast(toastId)
       showError(t('errors.image.uploadFailed'))
+    }
+  }
+
+  // en handleSubmitAll
+
+  // Normalize anything (File, URL string, Cloudinary response, existing image object) into ImageSchema-like object
+  function normalizeImage(img) {
+    if (!img) return null
+
+    // Already normalized object with url
+    if (img && typeof img === 'object' && img.url) {
+      return {
+        url: img.url,
+        publicId: img.publicId || img.public_id,
+        width: img.width,
+        height: img.height,
+        format: img.format,
+        bytes: img.bytes,
+        alt: img.alt || '',
+        primary: !!img.primary,
+      }
+    }
+
+    // Cloudinary upload response
+    if (img && typeof img === 'object' && (img.secure_url || img.public_id)) {
+      return {
+        url: img.secure_url || img.url,
+        publicId: img.public_id || img.publicId,
+        width: img.width,
+        height: img.height,
+        format: img.format,
+        bytes: img.bytes,
+        alt: img.alt || '',
+        primary: !!img.primary,
+      }
+    }
+
+    // Legacy string URL
+    if (typeof img === 'string') {
+      return { url: img, alt: '', primary: false }
+    }
+
+    // Fallback (e.g., File preview) — we avoid persisting blob://
+    return null
+  }
+
+  // Given selected glaze _id, return { id, name, hex } or null
+  function getGlazeTriplet(glazeId, allGlazes) {
+    if (!glazeId) return null
+    const g = (allGlazes || []).find((x) => x._id === glazeId)
+    return g ? { id: g._id, name: g.name, hex: g.hex } : null
+  }
+
+  // Build final product payload that matches the new schema
+  function toProductPayload(p, allGlazes) {
+    const gi = getGlazeTriplet(p.glazeInterior, allGlazes)
+    const ge = getGlazeTriplet(p.glazeExterior, allGlazes)
+
+    return {
+      type: p.type,
+      quantity: Number(p.quantity),
+      price: Number(p.price), // whole pesos (integers)
+      description: (p.description || '').trim(),
+      glazes: {
+        interior: gi ? gi.id : null,
+        exterior: ge ? ge.id : null,
+        interiorName: gi ? gi.name : null,
+        interiorHex: gi ? gi.hex : null, // keep "#RRGGBB"
+        exteriorName: ge ? ge.name : null,
+        exteriorHex: ge ? ge.hex : null,
+      },
+      decorations: {
+        hasGold: !!(p.decorations && p.decorations.hasGold),
+        hasName: !!(p.decorations && p.decorations.hasName),
+        outerDrawing: !!(p.decorations && p.decorations.outerDrawing),
+        customText: (p.decorations && p.decorations.customText
+          ? p.decorations.customText
+          : ''
+        ).trim(),
+      },
+      images: (p.images || []).map(normalizeImage).filter(Boolean),
+      // Preserve _id only in edit mode (if present)
+      ...(p._id ? { _id: p._id } : {}),
     }
   }
 
@@ -329,9 +423,10 @@ export default function AddProduct() {
                 name="price"
                 type="number"
                 min="0"
+                step="1"
                 value={formData.price}
                 onChange={handleChange}
-                placeholder="0.00"
+                placeholder="0"
                 error={errors.price}
               />
             </div>

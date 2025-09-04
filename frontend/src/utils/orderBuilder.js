@@ -17,11 +17,30 @@ export function parsePhone(fullPhone = '') {
   return { countryCode, phone }
 }
 
-// Cleans empty shipping addresses to avoid creating an empty array
+// Normalize legacy/loose status values to lowercase enum
+const LEGACY_STATUS_MAP = {
+  New: 'new',
+  Pending: 'pending',
+  'In Progress': 'inProgress',
+  Completed: 'completed',
+  Cancelled: 'cancelled',
+}
+export function ensureStatus(s) {
+  if (!s) return 'new'
+  const mapped = LEGACY_STATUS_MAP[s]
+  if (mapped) return mapped
+  return String(s).toLowerCase()
+}
+
+// Keep only COMPLETE addresses (avoid half-filled entries)
 export function cleanAddresses(addresses = []) {
-  return addresses.filter((addr) =>
-    Object.values(addr).some((val) => val !== '')
-  )
+  return addresses.filter((addr) => {
+    const a = (addr?.address || '').trim()
+    const c = (addr?.city || '').trim()
+    const z = (addr?.zip || '').trim()
+    const p = (addr?.phone || '').trim()
+    return !!(a && c && z && p)
+  })
 }
 /**
  * Generates initial form values from a draft (location.state).
@@ -40,14 +59,19 @@ export function prefillFormFromDraft(draft = {}) {
     phone,
     email: draft.customer?.email || '',
     socialMedia: draft.customer?.socialMedia || { instagram: '', facebook: '' },
+
     // Dates & status
     orderDate: draft.orderDate || '',
     deliverDate: draft.deliverDate || '',
-    status: draft.status || 'New',
+    status: ensureStatus(draft.status),
+
+    // Payment
     deposit: draft.deposit ?? '',
+
     // Shipping
     shipping: Boolean(draft.shipping?.isRequired),
     addresses: draft.shipping?.addresses || [],
+
     // Notes
     notes: draft.notes || '',
   }
@@ -134,16 +158,34 @@ export function buildBaseOrder(formData, opts = {}) {
     socialMedia[currentSocialType] = socialInput.trim()
   }
 
+  // Normalize dates: if empty, omit field to let backend defaults kick in
+  const orderDate = formData.orderDate
+    ? new Date(formData.orderDate)
+    : undefined
+  const deliverDate = formData.deliverDate
+    ? new Date(formData.deliverDate)
+    : undefined
+
+  // Normalize status to new enum (lowercase)
+  const status = ensureStatus(formData.status)
+
+  // Clean addresses (only keep complete ones)
+  const addresses = formData.shipping ? cleanAddresses(formData.addresses) : []
+
   return {
-    orderDate: formData.orderDate,
-    deliverDate: formData.deliverDate,
-    status: formData.status,
+    orderDate,
+    deliverDate,
+    status,
     deposit: Number(formData.deposit || 0),
     notes: formData.notes,
+
     shipping: {
-      isRequired: formData.shipping,
-      addresses: formData.shipping ? cleanAddresses(formData.addresses) : [],
+      isRequired: !!formData.shipping,
+      addresses,
     },
+
+    // NOTE: This 'customer' is the base info. Your final create endpoint
+    // should findOrCreate a Customer and replace with its ObjectId server-side.
     customer: {
       name: formData.name,
       lastName: formData.lastName,

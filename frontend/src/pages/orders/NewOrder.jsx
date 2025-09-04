@@ -27,7 +27,7 @@ export default function NewOrder() {
   const location = useLocation()
   const { setTitle, setShowSplitButton } = useLayout()
 
-  console.log('🧪 location.state:', location.state)
+  //console.log('location.state:', location.state) //CONSOLE LOG LOCATION STATE
 
   // Edit Mode Variables
   const isEditBase = location.state?.mode === 'editBase'
@@ -54,7 +54,7 @@ export default function NewOrder() {
     // Dates and status
     orderDate: '',
     deliverDate: '',
-    status: 'New',
+    status: 'new',
     // Payment
     deposit: '',
     // Shipping
@@ -206,6 +206,10 @@ export default function NewOrder() {
       socialInput,
       currentSocialType,
     })
+
+    // sanitize dates (avoid sending empty string)
+    if (!baseOrder.deliverDate) delete baseOrder.deliverDate
+    if (!baseOrder.orderDate) delete baseOrder.orderDate
 
     if (isEditBase) {
       const updatedOrder = {
@@ -460,11 +464,11 @@ export default function NewOrder() {
               onChange={handleChange}
               className="w-full h-10 px-3 py-3 text-sm border rounded dark:bg-neutral-800 dark:text-white dark:border-gray-600"
             >
-              <option value="New">{t('status.new')}</option>
-              <option value="Pending">{t('status.pending')}</option>
-              <option value="In Progress">{t('status.inProgress')}</option>
-              <option value="Completed">{t('status.completed')}</option>
-              <option value="Cancelled">{t('status.cancelled')}</option>
+              <option value="new">{t('status.new')}</option>
+              <option value="pending">{t('status.pending')}</option>
+              <option value="inProgress">{t('status.inProgress')}</option>
+              <option value="completed">{t('status.completed')}</option>
+              <option value="cancelled">{t('status.cancelled')}</option>
             </select>
           </div>
 
@@ -477,8 +481,8 @@ export default function NewOrder() {
               onChange={handleChangeAndClearError}
               prefix="$"
               min={0}
-              step="0.00"
-              placeholder="0.00"
+              step="1"
+              placeholder="0"
               error={errors.deposit}
               errorFormatter={t}
               floating={false}

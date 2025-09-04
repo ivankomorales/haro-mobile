@@ -14,18 +14,62 @@ import {
 import { createOrder } from '../../api/orders'
 import { cleanAddresses } from '../../utils/orderBuilder'
 
+// --- helpers (JS) ---
+
+function normalizeImage(img) {
+  if (!img) return null
+  if (img && typeof img === 'object' && img.url) {
+    return {
+      url: img.url,
+      publicId: img.publicId || img.public_id,
+      width: img.width,
+      height: img.height,
+      format: img.format,
+      bytes: img.bytes,
+      alt: img.alt || '',
+      primary: !!img.primary,
+    }
+  }
+  if (img && typeof img === 'object' && (img.secure_url || img.public_id)) {
+    return {
+      url: img.secure_url || img.url,
+      publicId: img.public_id || img.publicId,
+      width: img.width,
+      height: img.height,
+      format: img.format,
+      bytes: img.bytes,
+      alt: img.alt || '',
+      primary: !!img.primary,
+    }
+  }
+  if (typeof img === 'string') return { url: img, alt: '', primary: false }
+  return null
+}
+
+function ensureStatus(s) {
+  const map = {
+    New: 'new',
+    Pending: 'pending',
+    'In Progress': 'inProgress',
+    Completed: 'completed',
+    Cancelled: 'cancelled',
+  }
+  if (!s) return 'new'
+  return map[s] || String(s).toLowerCase()
+}
+
 export default function OrderConfirmation() {
   const location = useLocation()
   const navigate = useNavigate()
   const order = location.state || null
+  const glazes = order?.glazes || []
 
-  //TODO create function and move to UTILS
-  const groupedProducts = order.products.reduce((acc, p) => {
+  // Group and label products for display only
+  const groupedProducts = (order?.products || []).reduce((acc, p) => {
     if (!acc[p.type]) acc[p.type] = []
     acc[p.type].push(p)
     return acc
   }, {})
-
   const labeledProducts = []
   Object.entries(groupedProducts).forEach(([type, items]) => {
     items.forEach((item, i) => {
@@ -36,7 +80,6 @@ export default function OrderConfirmation() {
     })
   })
 
-  // 1) Guard: Do not allow to enter without minimal data
   useRequireState(
     (st) =>
       st?.customer?.name &&
@@ -51,7 +94,7 @@ export default function OrderConfirmation() {
   const originPath = order.originPath ?? '/orders'
   const [submitting, setSubmitting] = useState(false)
 
-  // 2) Totals (sum only price; price already includes the quantity in your model)
+  // Subtotal = sum of line prices (NOT qty * price)
   const totals = useMemo(() => {
     const subtotal = (order.products || []).reduce((acc, p) => {
       const price = Number(p.price || 0)
@@ -62,7 +105,6 @@ export default function OrderConfirmation() {
     return { subtotal, deposit, remaining }
   }, [order.products, order.deposit])
 
-  // 3) Edit base data (customer/dates/shipping/notes)
   const handleEditBase = () => {
     navigate('/orders/new', {
       state: {
@@ -74,13 +116,11 @@ export default function OrderConfirmation() {
     })
   }
 
-  // 4) Edit products
   const handleEditProducts = (index) => {
     navigate('/orders/new/products', {
       state: {
-        ...order, // todos los datos del pedido
+        ...order,
         originPath,
-
         mode: 'editProducts',
         returnTo: '/orders/confirmation',
         editIndex: index,
@@ -88,28 +128,52 @@ export default function OrderConfirmation() {
     })
   }
 
-  // 5) Confirm order (API + toasts + redirect)
   const handleConfirm = async () => {
     try {
       setSubmitting(true)
-      showLoading(t('loading.orderCreate')) // "Creating order..."
+      showLoading(t('loading.orderCreate'))
 
-      const cleanProducts = order.products.map((p) => ({
-        type: p.type,
-        quantity: Number(p.quantity), // lo sigues guardando si te sirve
-        price: Number(p.price),
-        description: p.description || '',
-        glazes: {
-          interior: p.glazes?.interior?._id ?? null,
-          exterior: p.glazes?.exterior?._id ?? null,
-        },
-        images: (p.images || []).map((img) => String(img)), // deben ser URLs
-        decorations: p.decorations || {},
-      }))
+      // Build products compatible with new schema
+      const cleanProducts = (order.products || []).map((p) => {
+        const intId = p.glazes?.interior?._id || p.glazes?.interior || null
+        const extId = p.glazes?.exterior?._id || p.glazes?.exterior || null
+
+        const giName =
+          p.glazes?.interiorName || p.glazes?.interior?.name || null
+        const giHex = p.glazes?.interiorHex || p.glazes?.interior?.hex || null
+        const geName =
+          p.glazes?.exteriorName || p.glazes?.exterior?.name || null
+        const geHex = p.glazes?.exteriorHex || p.glazes?.exterior?.hex || null
+
+        return {
+          type: p.type,
+          quantity: Number(p.quantity || 0),
+          price: Number(p.price || 0), // line total
+          description: (p.description || '').trim(),
+          glazes: {
+            interior: intId,
+            exterior: extId,
+            interiorName: giName,
+            interiorHex: giHex,
+            exteriorName: geName,
+            exteriorHex: geHex,
+          },
+          decorations: {
+            hasGold: !!(p.decorations && p.decorations.hasGold),
+            hasName: !!(p.decorations && p.decorations.hasName),
+            outerDrawing: !!(p.decorations && p.decorations.outerDrawing),
+            customText: (p.decorations && p.decorations.customText
+              ? p.decorations.customText
+              : ''
+            ).trim(),
+          },
+          images: (p.images || []).map(normalizeImage).filter(Boolean),
+          ...(p._id ? { _id: p._id } : {}),
+        }
+      })
 
       const cleanedAddresses = cleanAddresses(order.shipping?.addresses || [])
       const payload = {
-        // baseOrder
         customer: {
           name: order.customer.name,
           lastName: order.customer.lastName,
@@ -117,9 +181,12 @@ export default function OrderConfirmation() {
           phone: order.customer.phone,
           socialMedia: order.customer.socialMedia,
         },
-        orderDate: order.orderDate || order.date || null,
-        deliverDate: order.deliverDate || null,
-        status: order.status || 'New',
+        // omit empty dates so backend default (+5 weeks) can apply
+        orderDate: order.orderDate ? new Date(order.orderDate) : undefined,
+        deliverDate: order.deliverDate
+          ? new Date(order.deliverDate)
+          : undefined,
+        status: ensureStatus(order.status),
         deposit: Number(order.deposit || 0),
         notes: order.notes || '',
         shipping: {
@@ -128,12 +195,14 @@ export default function OrderConfirmation() {
           addresses: cleanedAddresses,
         },
         products: cleanProducts,
-        totals, // opcional si el backend lo recalcula
+        // totals optional; backend can compute its own
       }
+
       console.log('Payload being sent to createOrder:', payload)
       const saved = await createOrder(payload)
+
       dismissToast()
-      showSuccess(t('success.order.created')) // asegúrate camelCase en i18n
+      showSuccess(t('success.order.created'))
 
       if (saved?._id) {
         navigate(`/orders/${saved._id}/details`, {
@@ -146,7 +215,7 @@ export default function OrderConfirmation() {
     } catch (err) {
       console.error('Failed to confirm order:', err)
       dismissToast()
-      showError(t('auth.serverError')) // camelCase en i18n
+      showError(t('auth.serverError'))
     } finally {
       setSubmitting(false)
     }
@@ -154,15 +223,14 @@ export default function OrderConfirmation() {
 
   return (
     <div className="min-h-screen bg-white dark:bg-neutral-900 flex flex-col items-center px-4 py-6">
-      {/* Header */}
       <h1 className="text-xl font-semibold text-black dark:text-white mb-4">
         {t('order.confirm') || 'Confirm Order'}
       </h1>
 
-      {/* Card with details (your component) */}
       <div className="w-full max-w-2xl">
         <OrderDetailsCard
           order={{ ...order, products: labeledProducts }}
+          glazes={glazes}
           t={t}
           onEditBase={handleEditBase}
           onEditProducts={handleEditProducts}
@@ -176,14 +244,13 @@ export default function OrderConfirmation() {
         />
       </div>
 
-      {/* Footer actions */}
       <div className="w-full max-w-2xl mt-6">
         <FormActions
           onSubmit={handleConfirm}
           submitButtonText={
             submitting
               ? t('loading.order')
-              : t('labels.order.submit') || 'Create Order'
+              : t('order.submit') || 'Create Order'
           }
           cancelButtonText={t('formActions.cancel')}
           confirmTitle={t('formActionsConfirm.confirmTitle')}

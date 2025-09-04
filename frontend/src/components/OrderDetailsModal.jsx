@@ -1,3 +1,4 @@
+// src/components/OrderDetailsModal.jsx
 import {
   Dialog,
   DialogPanel,
@@ -10,14 +11,35 @@ import OrderDetailsCard from './OrderDetailsCard'
 import { getMessage as t } from '../utils/getMessage'
 import { formatProductsWithLabels } from '../utils/transformProducts'
 
-export default function OrderDetailsModal({ open, order, onClose, i18n, glazes }) {
+// Ensure images are safe-to-display strings
+function imageToUrl(img) {
+  if (!img) return null
+  if (typeof img === 'string') return img
+  if (img.url) return img.url
+  if (img.secure_url) return img.secure_url
+  return null
+}
+
+export default function OrderDetailsModal({
+  open,
+  order,
+  onClose,
+  i18n,
+  glazes,
+}) {
   if (!order) return null
+
+  // Prepare products for display: labels + image URLs
+  const productsForDisplay = (order.products || []).map((p) => ({
+    ...p,
+    images: (p.images || []).map(imageToUrl).filter(Boolean),
+  }))
 
   const formattedOrder = {
     ...order,
-    products: formatProductsWithLabels(order.products, t, glazes),
+    products: formatProductsWithLabels(productsForDisplay, t, glazes),
   }
-  console.log(order.products[0].glazes)
+
   return (
     <Transition show={open} as={Fragment}>
       <Dialog as="div" className="relative z-50" onClose={onClose}>
@@ -46,13 +68,9 @@ export default function OrderDetailsModal({ open, order, onClose, i18n, glazes }
             leaveTo="opacity-0 scale-95"
           >
             <DialogPanel className="w-full max-w-3xl rounded-xl bg-white dark:bg-neutral-900 p-6 shadow-lg overflow-y-auto max-h-[90vh]">
-              {/* <DialogTitle className="text-lg font-semibold mb-4 text-gray-800 dark:text-gray-100">
-                {order.orderID ? `Order #${order.orderID}` : 'Order Details'}
-              </DialogTitle> */}
-
-              {/* Actual content */}
               <OrderDetailsCard
                 order={formattedOrder}
+                glazes={glazes}
                 shippingRequired={t('order.shippingRequired')}
                 subtotalLabel={t('order.subtotal')}
                 advanceLabel={t('order.deposit')}
@@ -62,7 +80,6 @@ export default function OrderDetailsModal({ open, order, onClose, i18n, glazes }
                 descriptionLabel={t('product.description')}
               />
 
-              {/* Close button */}
               <div className="mt-6 flex justify-end">
                 <button
                   onClick={onClose}

@@ -1,11 +1,11 @@
 // src/pages/orders/Orders.jsx
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { getOrderById, getOrders } from '../../api/orders'
 import { useNavigate } from 'react-router-dom'
 import { getMessage as t } from '../../utils/getMessage'
 import FormInput from '../../components/FormInput'
 import { useLayout } from '../../context/LayoutContext'
-import OrderCard from '../../components/OrderCard'
+import { OrderCard } from '../../components/OrderCard'
 import {
   STATUS_COLORS,
   STATUS_TEXT_COLORS,
@@ -13,7 +13,6 @@ import {
 } from '../../utils/orderStatusUtils'
 import OrderDetailsModal from '../../components/OrderDetailsModal'
 import { formatProductsWithLabels } from '../../utils/transformProducts'
-import { getAllGlazes } from '../../api/glazes'
 import OrderActionsBar from '../../components/OrderActionsBar'
 import StatusModal from '../../components/StatusModal'
 import { updateManyOrderStatus } from '../../api/orders'
@@ -28,13 +27,12 @@ export default function Orders() {
   const [orders, setOrders] = useState([])
   const [selectedOrder, setSelectedOrder] = useState(null)
   const [selectedOrders, setSelectedOrders] = useState([])
-
-  const [glazes, setGlazes] = useState([])
+  const [glazes, setGlazes] = useState(null) // lazy: null = not loaded yet
 
   const [loading, setLoading] = useState(true)
   const navigate = useNavigate()
   const [search, setSearch] = useState('')
-  const [statusFilter, setStatusFilter] = useState('All')
+  const [statusFilter, setStatusFilter] = useState('all')
   const { setTitle, setShowSplitButton } = useLayout()
 
   const [showStatusModal, setShowStatusModal] = useState(false)
@@ -65,37 +63,24 @@ export default function Orders() {
     fetchOrders()
   }, [])
 
-  useEffect(() => {
-    async function fetchGlazes() {
-      try {
-        const all = await getAllGlazes()
-        setGlazes(all)
-      } catch (err) {
-        console.error('Error loading glazes', err)
-      }
-    }
-
-    fetchGlazes()
-  }, [])
-
-  const filteredOrders = orders.filter((order) => {
-    const name =
-      `${order.customer?.name || ''} ${order.customer?.lastName || ''}`.toLowerCase()
-    const email = (order.customer?.email || '').toLowerCase()
-    const orderID = (order.orderID || '').toLowerCase()
+  const filteredOrders = useMemo(() => {
     const query = search.toLowerCase()
+    return orders.filter((order) => {
+      const name =
+        `${order.customer?.name || ''} ${order.customer?.lastName || ''}`.toLowerCase()
+      const email = (order.customer?.email || '').toLowerCase()
+      const orderID = (order.orderID || '').toLowerCase()
 
-    const matchesSearch =
-      name.includes(query) || email.includes(query) || orderID.includes(query)
-
-    const matchesStatus =
-      statusFilter === 'All' || order.status === statusFilter
-
-    return matchesSearch && matchesStatus
-  })
+      const matchesSearch =
+        name.includes(query) || email.includes(query) || orderID.includes(query)
+      const matchesStatus =
+        statusFilter === 'all' || order.status === statusFilter
+      return matchesSearch && matchesStatus
+    })
+  }, [orders, search, statusFilter])
 
   const handleBulkStatusUpdate = async (newStatus) => {
-    const toastId = showLoading('orders.updatingStatus')
+    const toastId = showLoading('order.updatingStatus')
 
     try {
       await updateManyOrderStatus(selectedOrders, newStatus)
@@ -111,13 +96,21 @@ export default function Orders() {
       setSelectedOrders([]) // limpiar selección
 
       dismissToast(toastId)
-      showSuccess('orders.statusUpdated')
+      showSuccess('order.statusUpdated')
     } catch (err) {
       console.error(err)
       dismissToast(toastId)
-      showError('orders.updateError')
+      showError('order.updateError')
     }
   }
+
+  const selectedStatuses = useMemo(() => {
+    const set = new Set()
+    for (const o of orders) {
+      if (selectedOrders.includes(o._id)) set.add(o.status)
+    }
+    return Array.from(set) // canonical values
+  }, [orders, selectedOrders])
 
   return (
     <div className="min-h-screen p-4 bg-white dark:bg-neutral-900 text-black dark:text-white">
@@ -142,12 +135,12 @@ export default function Orders() {
           onChange={(e) => setStatusFilter(e.target.value)}
           floating={false}
         >
-          <option value="All">{t('status.all')}</option>
-          <option value="New">{t('status.new')}</option>
-          <option value="Pending">{t('status.pending')}</option>
-          <option value="In Progress">{t('status.inProgress')}</option>
-          <option value="Completed">{t('status.completed')}</option>
-          <option value="Cancelled">{t('status.cancelled')}</option>
+          <option value="all">{t('status.all')}</option>
+          <option value="new">{t('status.new')}</option>
+          <option value="pending">{t('status.pending')}</option>
+          <option value="inProgress">{t('status.inProgress')}</option>
+          <option value="completed">{t('status.completed')}</option>
+          <option value="cancelled">{t('status.cancelled')}</option>
         </FormInput>
       </div>
       {selectedOrders.length > 0 && (
@@ -160,20 +153,15 @@ export default function Orders() {
         />
       )}
       {loading ? (
-        <p>{t('loading.orders')}</p>
+        <p>{t('order.loading')}</p>
       ) : orders.length === 0 ? (
-        <p>{t('labels.orders.empty')}</p>
+        <p>{t('order.empty')}</p>
       ) : (
         <ul className="space-y-3">
           {filteredOrders.map((order) => (
             <OrderCard
               key={order._id}
-              order={{
-                ...order,
-                statusLabel: t(
-                  `status.${STATUS_LABELS[order.status] || 'unknown'}`
-                ),
-              }}
+              order={order}
               selectable={true}
               isSelected={selectedOrders.includes(order._id)}
               onSelect={() => {
@@ -186,7 +174,17 @@ export default function Orders() {
                 }
               }}
               onClick={() => {
-                const labeled = formatProductsWithLabels(order.products, t)
+                // Lazy load glazes only when needed
+                if (!glazes) {
+                  import('../../api/glazes').then(({ getAllGlazes }) => {
+                    getAllGlazes().then(setGlazes).catch(console.error)
+                  })
+                }
+                const labeled = formatProductsWithLabels(
+                  order.products,
+                  t,
+                  glazes || []
+                )
                 setSelectedOrder({ ...order, products: labeled })
               }}
             />
@@ -196,7 +194,7 @@ export default function Orders() {
       <OrderDetailsModal
         open={!!selectedOrder}
         order={selectedOrder}
-        glazes={glazes}
+        glazes={glazes || []} // empty until lazy loaded
         onClose={() => setSelectedOrder(null)}
       />
       <StatusModal
@@ -206,6 +204,8 @@ export default function Orders() {
           handleBulkStatusUpdate(newStatus)
           setShowStatusModal(false)
         }}
+        currentStatus={selectedStatuses.length === 1 ? selectedStatuses[0] : ''} // single-selection
+        currentStatuses={selectedStatuses.length > 1 ? selectedStatuses : []} // multi-selection
       />
     </div>
   )
