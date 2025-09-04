@@ -1,0 +1,6 @@
+# Root ignores
+/assets_temp/
+
+# (optional) common stuff at repo root
+.DS_Store
+Thumbs.db
