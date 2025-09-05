@@ -101,6 +101,7 @@ export const en = {
     title: 'Glaze',
     name: 'Glaze Name',
     code: 'Code (optional)',
+    new: 'Create new glaze',
   },
 
   // USERS
@@ -168,7 +169,8 @@ export const en = {
     search: 'Name, email, orderID',
     details: 'Order Details',
 
-    exporting: 'Generating PDF...',
+    exportingPDF: 'Generating PDF...',
+    exportingXLS: 'Exporting to Excel...',
     noneSelected: 'No has seleccionado ningún pedido.',
     exportError: 'Error al exportar los pedidos.',
     exportExcelPending: 'La exportación a Excel aún no está disponible.',
@@ -198,12 +200,12 @@ export const en = {
     glazeInt: 'Interior',
     glazeExt: 'Exterior',
     glazeSearch: 'Search Glaze', //Consider using a general search: 'Type in to search'
-    glazeNone: 'No glaze (Transparent)',
+    glazeNone: 'No glaze',
     glazeNoResult: 'No results', // Consider using a general noResults: 'No results'
 
     images: 'Images',
 
-    addButton: 'Add Product',
+    addButton: 'Add Product', // moved to button.addProduct
     added: 'Added products',
 
     figure: 'Figure',
@@ -236,7 +238,7 @@ export const en = {
   // FORMACTIONS abv. fa
   // Consider simplifying like keeping only formActions, formActionsCreate and formActionsEdit 3/8/2025 -Ivan
   formActions: {
-    saveChanges: 'Save changes',
+    saveChanges: 'Save changes', //Duplicated on BUTTONS
     cancel: 'Cancel', //Duplicated on BUTTONS
     confirmTitle: 'Are you sure?',
     confirmMessage: 'All data will be lost. Continue?',
@@ -289,5 +291,49 @@ export const en = {
     current: 'Current', // ← add (future use)
     multiple: 'Multiple statuses selected', // ← add (future use)
     // noOtherStatuses: 'There are no other statuses available.', // ← optional
+  },
+
+  //EXCELMODAL
+  exportModal: {
+    title: 'Export to Excel / CSV',
+    searchPlaceholder: 'Search fields…',
+    selectAll: 'Select all',
+    clear: 'Clear',
+    savePrefs: 'Save preference',
+    prefsSaved: 'Preferences saved',
+    prefsSaveError: 'Could not save preferences ❌',
+    export: 'Export',
+    exportStarted: 'Export started!',
+    noResults: 'No fields match your search.',
+    selectedCount: 'Selected', // <-- importante: incluye {{n}}
+  },
+
+  button: {
+    cancel: 'Cancel',
+    confirm: 'Confirm',
+    save: 'Save',
+    close: 'Close',
+    search: 'Search',
+    //Add Product
+    addProduct: 'Add Product',
+  },
+
+  fields: {
+    orderID: 'Order ID',
+    customerName: 'Customer name',
+    customerPhone: 'Customer phone',
+    customerEmail: 'Customer email',
+    status: 'Status',
+    isUrgent: 'Urgent?',
+    orderDate: 'Order date',
+    deliverDate: 'Delivery date',
+    notes: 'Notes',
+    productIndex: 'Product index',
+    productType: 'Product type',
+    productDescription: 'Product description',
+    glazeInteriorName: 'Interior glaze',
+    glazeInteriorHex: 'Interior glaze (hex)',
+    glazeExteriorName: 'Exterior glaze',
+    glazeExteriorHex: 'Exterior glaze (hex)',
   },
 }

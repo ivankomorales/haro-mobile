@@ -25,7 +25,7 @@ import { getOriginPath } from '../../utils/navigationUtils'
 export default function NewOrder() {
   const navigate = useNavigate()
   const location = useLocation()
-  const { setTitle, setShowSplitButton } = useLayout()
+  const { setTitle, setShowSplitButton, resetLayout } = useLayout()
 
   //console.log('location.state:', location.state) //CONSOLE LOG LOCATION STATE
 
@@ -69,11 +69,8 @@ export default function NewOrder() {
     setTitle(isEditBase ? t('order.editTitle') : t('order.newTitle'))
     setShowSplitButton(true)
 
-    return () => {
-      setTitle('Haro Mobile')
-      setShowSplitButton(true)
-    }
-  }, [isEditBase, setTitle, t])
+    return resetLayout
+  }, [isEditBase, setTitle, setShowSplitButton, resetLayout, t])
 
   // Social media input states
   const [socialInput, setSocialInput] = useState('')

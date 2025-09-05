@@ -1,4 +1,4 @@
-import { createContext, useContext, useState } from 'react'
+import { createContext, useContext, useMemo, useState } from 'react'
 
 /**
  * LayoutContext (React Context Provider)
@@ -23,31 +23,46 @@ import { createContext, useContext, useState } from 'react'
  * ```
  */
 
-const LayoutContext = createContext()
-
-const DEFAULT_TITLE = 'Haro Mobile' // TODO i18n
+const DEFAULT_TITLE = 'Haro Mobile' // TODO: i18n 
 const DEFAULT_SPLIT = true
+
+const LayoutContext = createContext(null)
+LayoutContext.displayName = 'LayoutContext'
 
 export function LayoutProvider({ children }) {
   const [title, setTitle] = useState(DEFAULT_TITLE)
   const [showSplitButton, setShowSplitButton] = useState(DEFAULT_SPLIT)
 
+  const resetLayout = () => {
+    setTitle(DEFAULT_TITLE)
+    setShowSplitButton(DEFAULT_SPLIT)
+  }
+
+  // Avoid recreating object on every render
+  const value = useMemo(
+    () => ({
+      title,
+      setTitle,
+      showSplitButton,
+      setShowSplitButton,
+      resetLayout,
+      DEFAULT_TITLE,
+      DEFAULT_SPLIT,
+    }),
+    [title, showSplitButton]
+  )
+
   return (
-    <LayoutContext.Provider
-      value={{
-        title,
-        setTitle,
-        showSplitButton,
-        setShowSplitButton,
-        DEFAULT_TITLE,
-        DEFAULT_SPLIT,
-      }}
-    >
-      {children}
-    </LayoutContext.Provider>
+    <LayoutContext.Provider value={value}>{children}</LayoutContext.Provider>
   )
 }
 
 export function useLayout() {
-  return useContext(LayoutContext)
+  const ctx = useContext(LayoutContext)
+  if (ctx == null) {
+    throw new Error('useLayout must be used within a <LayoutProvider>.')
+  }
+  return ctx
 }
+
+export { DEFAULT_TITLE, DEFAULT_SPLIT }

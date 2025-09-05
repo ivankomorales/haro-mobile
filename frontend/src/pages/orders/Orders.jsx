@@ -33,7 +33,7 @@ export default function Orders() {
   const navigate = useNavigate()
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
-  const { setTitle, setShowSplitButton } = useLayout()
+  const { setTitle, setShowSplitButton, resetLayout } = useLayout()
 
   const [showStatusModal, setShowStatusModal] = useState(false)
 
@@ -42,11 +42,8 @@ export default function Orders() {
     setShowSplitButton(true)
 
     // Opcional: restaurar a valores por defecto al salir
-    return () => {
-      setTitle('Haro Mobile')
-      setShowSplitButton(true)
-    }
-  }, [])
+    return resetLayout
+  }, [setTitle, setShowSplitButton, resetLayout])
 
   useEffect(() => {
     async function fetchOrders() {
@@ -116,34 +113,42 @@ export default function Orders() {
     <div className="min-h-screen p-4 bg-white dark:bg-neutral-900 text-black dark:text-white">
       {/* Optional h1 for accessibility */}
       {/*<h1 className="text-xl font-semibold mb-4">{t('labels.orders.title')}</h1>*/}
-      {/* Search and Filter */}
-      <div className="flex flex-col sm:flex-row gap-2 mb-4">
-        <FormInput
-          name="search"
-          label={t('button.search')}
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          floating={false}
-          placeholder={t('order.search')}
-        />
+      <div
+        className="
+        sticky top-14 sm:top-16 z-30
+        bg-white/85 dark:bg-neutral-900/85
+        backdrop-blur supports-[backdrop-filter]:backdrop-blur
+        border-b border-gray-200 dark:border-neutral-800
+      "
+      >
+        {/* Fixed Search and Filter */}
+        <div className="flex flex-col sm:flex-row gap-2 mb-4">
+          <FormInput
+            name="search"
+            label={t('button.search')}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            floating={false}
+            placeholder={t('order.search')}
+          />
 
-        <FormInput
-          as="select"
-          name="statusFilter"
-          label={t('status.label')}
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          floating={false}
-        >
-          <option value="all">{t('status.all')}</option>
-          <option value="new">{t('status.new')}</option>
-          <option value="pending">{t('status.pending')}</option>
-          <option value="inProgress">{t('status.inProgress')}</option>
-          <option value="completed">{t('status.completed')}</option>
-          <option value="cancelled">{t('status.cancelled')}</option>
-        </FormInput>
-      </div>
-      {selectedOrders.length > 0 && (
+          <FormInput
+            as="select"
+            name="statusFilter"
+            label={t('status.label')}
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            floating={false}
+          >
+            <option value="all">{t('status.all')}</option>
+            <option value="new">{t('status.new')}</option>
+            <option value="pending">{t('status.pending')}</option>
+            <option value="inProgress">{t('status.inProgress')}</option>
+            <option value="completed">{t('status.completed')}</option>
+            <option value="cancelled">{t('status.cancelled')}</option>
+          </FormInput>
+        </div>
+
         <OrderActionsBar
           selectedOrders={selectedOrders}
           allVisibleOrders={filteredOrders}
@@ -151,7 +156,7 @@ export default function Orders() {
           onSelectAll={(ids) => setSelectedOrders(ids)}
           onBulkStatusChange={() => setShowStatusModal(true)}
         />
-      )}
+      </div>
       {loading ? (
         <p>{t('order.loading')}</p>
       ) : orders.length === 0 ? (

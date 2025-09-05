@@ -16,6 +16,7 @@ const {
 } = require("../controllers/orderController");
 
 const { exportOrdersToPDF } = require("../controllers/exportController");
+const { exportOrdersToExcel } = require("../controllers/exportController");
 
 // Middlewares
 const { verifyToken, requireAdmin } = require("../middleware/auth");
@@ -87,7 +88,7 @@ router.delete("/:id", requireAdmin, cancelOrder);
 
 router.post("/export/pdf", requireAdmin, exportOrdersToPDF);
 // futuros: excel, word
-// router.post("/export/excel", requireAdmin, exportOrdersToExcel)
+router.post("/export/excel", requireAdmin, exportOrdersToExcel);
 // router.post("/export/word", requireAdmin, exportOrdersToWord);
 
 //

@@ -46,13 +46,15 @@ export default function OrderDetails() {
         glazeLabel={t('glaze.title')}
         descriptionLabel={t('product.description')}
       />
-      <button
-        type="button"
-        onClick={() => navigate(originPath)}
-        className="w-full sm:w-auto sm:px-4 py-2 rounded bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-neutral-700 dark:text-gray-200 dark:hover:bg-neutral-600"
-      >
-        {t('button.Close')}
-      </button>
+      <div className="mt-6 flex justify-center">
+        <button
+          type="button"
+          onClick={() => navigate(originPath)}
+          className="w-full sm:w-auto sm:px-4 py-2 rounded bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-neutral-700 dark:text-gray-200 dark:hover:bg-neutral-600"
+        >
+          {t('button.close')}
+        </button>
+      </div>
     </div>
   )
 }

@@ -7,6 +7,7 @@ const path = require("path");
 const stream = require("stream");
 const { promisify } = require("util");
 const finished = promisify(stream.finished);
+const ExcelJS = require("exceljs");
 
 const PRODUCT_LABELS = {
   figure: "Figura",
@@ -411,4 +412,446 @@ exports.exportOrdersToPDF = async (req, res) => {
     console.error("Error exporting PDF:", err);
     res.status(500).json({ error: "Failed to export PDF" });
   }
+}; // end exportOrdersToPDF
+
+// Main controller: POST /api/orders/export/xlsx  body: { orderIds: [] }
+exports.exportOrdersToExcel = async (req, res) => {
+  try {
+    const { orderIds, fields } = req.body || {};
+    if (!Array.isArray(orderIds) || orderIds.length === 0) {
+      return res.status(400).json({ error: "orderIds is required" });
+    }
+
+    const orders = await Order.find({ _id: { $in: orderIds } })
+      .populate("customer")
+      .populate("products.glazes.interior")
+      .populate("products.glazes.exterior")
+      .sort({ orderDate: -1 })
+      .lean();
+
+    if (!orders.length) {
+      return res.status(404).json({ error: "No orders found" });
+    }
+
+    // ---------- helpers ----------
+    // Sanitize to XML-safe string (keeps \t \n \r). Prevents Excel "repair".
+    const xmlSafe = (v) =>
+      String(v ?? "").replace(/[^\x09\x0A\x0D\x20-\uD7FF\uE000-\uFFFD]/g, "");
+    const S = (v) => xmlSafe(v);
+    const D = (d) => {
+      if (!d) return null;
+      const dt = new Date(d);
+      return Number.isNaN(dt.getTime()) ? null : dt;
+    };
+    // Accept "#RRGGBB" or "RRGGBB" → returns "FFRRGGBB" (ARGB) or null
+    const toARGB = (hex) => {
+      if (!hex) return null;
+      let h = String(hex).trim().replace(/^#/, "");
+      // #abc -> #aabbcc
+      if (/^[0-9a-fA-F]{3}$/.test(h)) {
+        h = h
+          .split("")
+          .map((ch) => ch + ch)
+          .join("");
+      }
+      if (!/^[0-9a-fA-F]{6}$/.test(h)) return null;
+      return ("FF" + h).toUpperCase(); // ARGB
+    };
+
+    // Determines if an hex color is wether dark or light
+    function isDarkColor(hex) {
+      if (!hex) return false;
+
+      // Limpia "#" si existe y expande 3 dígitos (#abc -> #aabbcc)
+      let h = String(hex).trim().replace(/^#/, "");
+      if (/^[0-9a-fA-F]{3}$/.test(h)) {
+        h = h
+          .split("")
+          .map((ch) => ch + ch)
+          .join("");
+      }
+      if (!/^[0-9a-fA-F]{6}$/.test(h)) return false;
+
+      // Convierte hex -> RGB
+      const r = parseInt(h.slice(0, 2), 16);
+      const g = parseInt(h.slice(2, 4), 16);
+      const b = parseInt(h.slice(4, 6), 16);
+
+      // Luminancia relativa (perceptual, estándar WCAG)
+      const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+
+      // Si es < 0.5 => color oscuro
+      return luminance < 0.5;
+    }
+
+    // Extract glaze names/hex from multiple possible shapes
+    function extractGlazes(p = {}, opts = {}) {
+      const { productType, notApplicablePlaceholder = "" } = opts;
+
+      // If you want to display "-" for non-applicable fields (e.g., interior on plates), adjust here:
+      const NA_INTERIOR_TYPES = new Set(["plate"]); // <-- add the types where there's NO interior
+      const NA_EXTERIOR_TYPES = new Set([]); // <-- if there are any types without exterior
+
+      // Flexible access (depending on your different shapes)
+      const g = p.glazes || {};
+      const gi = g.interior || p.glazeInterior || p.interiorGlaze || null;
+      const ge = g.exterior || p.glazeExterior || p.exteriorGlaze || null;
+
+      // Safe helpers
+      const pickString = (v) => (typeof v === "string" ? v : "");
+      const pickName = (obj) => {
+        if (!obj) return "";
+        if (typeof obj === "string") return obj;
+        if (typeof obj === "object") {
+          return (
+            pickString(obj.name) ||
+            pickString(obj.label) ||
+            pickString(obj.title) ||
+            pickString(obj.slug)
+          );
+        }
+        return "";
+      };
+      const pickHex = (obj) => {
+        if (!obj) return "";
+        if (typeof obj === "string") return obj; // in case the hex comes directly
+        if (typeof obj === "object") {
+          const raw =
+            pickString(obj.hex) ||
+            pickString(obj.color) ||
+            pickString(obj.colorHex) ||
+            pickString(obj.hexColor) ||
+            pickString(obj.code);
+          return raw;
+        }
+        return "";
+      };
+
+      // “Not applicable” (if you want a dash for NA; leave '' if you prefer empty)
+      const interiorNA = NA_INTERIOR_TYPES.has(
+        String(productType || "").trim()
+      );
+      const exteriorNA = NA_EXTERIOR_TYPES.has(
+        String(productType || "").trim()
+      );
+
+      const glazeInteriorName = interiorNA
+        ? notApplicablePlaceholder
+        : pickName(gi);
+      const glazeInteriorHex = interiorNA
+        ? notApplicablePlaceholder
+        : pickHex(gi);
+      const glazeExteriorName = exteriorNA
+        ? notApplicablePlaceholder
+        : pickName(ge);
+      const glazeExteriorHex = exteriorNA
+        ? notApplicablePlaceholder
+        : pickHex(ge);
+
+      return {
+        glazeInteriorName,
+        glazeInteriorHex,
+        glazeExteriorName,
+        glazeExteriorHex,
+      };
+    }
+
+    // ---------- rows (1 row per product; if none → 1 row per order) ----------
+    const rows = [];
+    for (const o of orders) {
+      const base = {
+        orderID: S(o.orderID || o._id),
+        customerName: S(
+          [o.customer?.name, o.customer?.lastName].filter(Boolean).join(" ")
+        ),
+        customerPhone: S(o.customer?.phone),
+        customerEmail: S(o.customer?.email),
+        status: S(o.status), // new | pending | inProgress | completed | cancelled
+        isUrgent: !!o.isUrgent,
+        orderDate: D(o.orderDate || o.createdAt),
+        deliverDate: D(o.deliverDate),
+        notes: S(o.notes),
+      };
+
+      const products = Array.isArray(o.products) ? o.products : [];
+      if (products.length === 0) {
+        rows.push({
+          ...base,
+          productIndex: "",
+          productType: "",
+          productDescription: "",
+          ...extractGlazes({}),
+        });
+      } else {
+        products.forEach((p, i) => {
+          const glz = extractGlazes(p, {
+            productType: p?.type,
+            // To show "-" on non applicable fields
+            notApplicablePlaceholder: "-", // or '' for empty
+          });
+
+          rows.push({
+            ...base,
+            productIndex: i + 1,
+            productType: S(p?.type),
+            productDescription: S(p?.description),
+            ...glz,
+          });
+        });
+      }
+    }
+
+    // ---------- dynamic columns (allows 'fields' selection) ----------
+    const FIELD_DEFS = {
+      orderID: { header: "orderID", key: "orderID", width: 20 },
+      customerName: { header: "customerName", key: "customerName", width: 24 },
+      customerPhone: {
+        header: "customerPhone",
+        key: "customerPhone",
+        width: 16,
+      },
+      customerEmail: {
+        header: "customerEmail",
+        key: "customerEmail",
+        width: 28,
+      },
+      status: { header: "status", key: "status", width: 14 },
+      isUrgent: { header: "isUrgent", key: "isUrgent", width: 10 },
+      orderDate: {
+        header: "orderDate",
+        key: "orderDate",
+        width: 12,
+        style: { numFmt: "yyyy-mm-dd" },
+      },
+      deliverDate: {
+        header: "deliverDate",
+        key: "deliverDate",
+        width: 12,
+        style: { numFmt: "yyyy-mm-dd" },
+      },
+      notes: { header: "notes", key: "notes", width: 40 },
+      productIndex: { header: "productIndex", key: "productIndex", width: 10 },
+      productType: { header: "productType", key: "productType", width: 16 },
+      productDescription: {
+        header: "productDescription",
+        key: "productDescription",
+        width: 40,
+      },
+      glazeInteriorName: {
+        header: "glazeInteriorName",
+        key: "glazeInteriorName",
+        width: 18,
+      },
+      // glazeInteriorHex: {
+      //   header: "glazeInteriorHex",
+      //   key: "glazeInteriorHex",
+      //   width: 14,
+      // },
+      glazeExteriorName: {
+        header: "glazeExteriorName",
+        key: "glazeExteriorName",
+        width: 18,
+      },
+      // glazeExteriorHex: {
+      //   header: "glazeExteriorHex",
+      //   key: "glazeExteriorHex",
+      //   width: 14,
+      // },
+    };
+
+    // Default fields if none provided
+    const DEFAULT_FIELDS = [
+      "orderID",
+      "customerName",
+      "customerPhone",
+      "customerEmail",
+      "status",
+      "isUrgent",
+      "orderDate",
+      "deliverDate",
+      "notes",
+      "productIndex",
+      "productType",
+      "productDescription",
+      "glazeInteriorName",
+      //"glazeInteriorHex",
+      "glazeExteriorName",
+      //"glazeExteriorHex",
+    ];
+
+    const chosen =
+      Array.isArray(fields) && fields.length
+        ? fields.filter((k) => FIELD_DEFS[k])
+        : DEFAULT_FIELDS;
+
+    // ---------- workbook ----------
+    const wb = new ExcelJS.Workbook();
+    wb.creator = "Haro-mobile";
+    wb.created = new Date();
+
+    const ws = wb.addWorksheet("Orders");
+    ws.columns = chosen.map((k) => FIELD_DEFS[k]);
+
+    // Simple header style (safe)
+    const headerRow = ws.getRow(1);
+    headerRow.font = { bold: true };
+    headerRow.alignment = { vertical: "middle", horizontal: "center" };
+    headerRow.height = 20;
+
+    // A1:XX1 filter range based on column count
+    ws.autoFilter = `A1:${colLetter(ws.columnCount)}1`;
+
+    // Determine which column indexes are the glaze swatches (hex)
+    const glazeNameCols = new Set(
+      ["glazeInteriorName", "glazeExteriorName"]
+        .filter((k) => chosen.includes(k))
+        .map((k) => ws.getColumn(k).number)
+    );
+
+    // Add rows + styles
+    for (const data of rows) {
+      const r = ws.addRow(data);
+
+      // Wrap long text
+      if (FIELD_DEFS.notes && chosen.includes("notes")) {
+        r.getCell("notes").alignment = { wrapText: true, vertical: "top" };
+      }
+      if (
+        FIELD_DEFS.productDescription &&
+        chosen.includes("productDescription")
+      ) {
+        r.getCell("productDescription").alignment = {
+          wrapText: true,
+          vertical: "top",
+        };
+      }
+
+      // Apply glaze swatch fills (cell background = hex)
+      if (chosen.includes("glazeInteriorName")) {
+        const hex = data.glazeInteriorHex;
+        const argb = toARGB(hex);
+        if (argb) {
+          const c = r.getCell("glazeInteriorName");
+          c.fill = {
+            type: "pattern",
+            pattern: "solid",
+            fgColor: { argb },
+          };
+          // Determinar si el color de fondo es oscuro
+          const textColor = isDarkColor(hex) ? "FFFFFFFF" : "FF000000"; // blanco o negro
+          c.font = { color: { argb: textColor }, bold: true }; // opcional: bold
+          c.alignment = {
+            vertical: "middle",
+            horizontal: "center",
+            wrapText: true,
+          };
+        }
+      }
+
+      if (chosen.includes("glazeExteriorName")) {
+        const hex = data.glazeExteriorHex;
+        const argb = toARGB(hex);
+        if (argb) {
+          const c = r.getCell("glazeExteriorName");
+          c.fill = {
+            type: "pattern",
+            pattern: "solid",
+            fgColor: { argb },
+          };
+          const textColor = isDarkColor(hex) ? "FFFFFFFF" : "FF000000";
+          c.font = { color: { argb: textColor }, bold: true };
+          c.alignment = {
+            vertical: "middle",
+            horizontal: "center",
+            wrapText: true,
+          };
+        }
+      }
+
+      // Urgent row highlight: paint the whole row light red EXCEPT glaze swatches
+      if (data.isUrgent) {
+        for (let c = 1; c <= ws.columnCount; c++) {
+          if (glazeNameCols.has(c)) continue; // do not override swatches
+          r.getCell(c).fill = {
+            type: "pattern",
+            pattern: "solid",
+            fgColor: { argb: "FFFF0000" },
+          };
+        }
+      }
+    }
+
+    // Auto-fit columns (safe heuristic)
+    autoFitColumns(ws, { min: 10, max: 70, padding: 2 });
+    if (chosen.includes("notes")) {
+      ws.getColumn("notes").width = Math.max(
+        ws.getColumn("notes").width ?? 40,
+        50
+      );
+    }
+    if (chosen.includes("productDescription")) {
+      ws.getColumn("productDescription").width = Math.max(
+        ws.getColumn("productDescription").width ?? 40,
+        50
+      );
+    }
+
+    // ---- send as buffer (avoids streaming/compression issues) ----
+    const pad = (n) => String(n).padStart(2, "0");
+    const now = new Date();
+    const fecha = `${pad(now.getDate())}-${pad(
+      now.getMonth() + 1
+    )}-${now.getFullYear()}`;
+    const filename = `pedidos-${fecha}.xlsx`;
+
+    const buf = await wb.xlsx.writeBuffer();
+    res.setHeader(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    );
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="${filename}"; filename*=UTF-8''${encodeURIComponent(
+        filename
+      )}`
+    );
+    res.setHeader("Content-Length", buf.byteLength);
+    return res.end(Buffer.from(buf));
+  } catch (err) {
+    console.error("Error exporting Excel:", err);
+    return res.status(500).json({ error: "Failed to export Excel" });
+  }
 };
+
+// Excel column number → letter, e.g., 1 -> A, 28 -> AB
+function colLetter(n) {
+  let s = "";
+  while (n > 0) {
+    const m = (n - 1) % 26;
+    s = String.fromCharCode(65 + m) + s;
+    n = ((n - 1) / 26) | 0;
+  }
+  return s;
+}
+
+/** Auto-fit helper: compute column width from longest cell text (very safe) */
+function autoFitColumns(ws, opts = {}) {
+  const min = opts.min ?? 8;
+  const max = opts.max ?? 60;
+  const padding = opts.padding ?? 1;
+
+  ws.columns.forEach((col) => {
+    let maxLen = 0;
+    col.eachCell({ includeEmpty: true }, (cell) => {
+      let v = cell.value;
+      if (v == null) v = "";
+      else if (v.richText) v = v.richText.map((r) => r.text).join("");
+      else if (typeof v === "object" && v.text) v = v.text;
+      else if (v instanceof Date) v = "yyyy-mm-dd";
+      else v = String(v);
+      if (v.length > maxLen) maxLen = v.length;
+    });
+    col.width = Math.min(max, Math.max(min, maxLen + padding));
+  });
+}
+// end exportOrdersToExcel

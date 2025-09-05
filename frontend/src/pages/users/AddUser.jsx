@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { ChevronLeft } from 'lucide-react'
 import FormInput from '../../components/FormInput'
@@ -7,6 +7,7 @@ import FormActions from '../../components/FormActions'
 import { getMessage as t } from '../../utils/getMessage'
 import { showSuccess, showError } from '../../utils/toastUtils'
 import { getOriginPath } from '../../utils/navigationUtils'
+import { useLayout } from '../../context/LayoutContext'
 
 export default function AddUser() {
   const navigate = useNavigate()
@@ -15,6 +16,16 @@ export default function AddUser() {
     location.state?.originPath ?? location.state?.from
   )
   const { create } = useCreateUser(navigate)
+
+  // Top Bar Actions
+  const { setTitle, setShowSplitButton, resetLayout } = useLayout()
+
+  useEffect(() => {
+    setTitle(t('user.title'))
+    setShowSplitButton(false)
+
+    return resetLayout
+  }, [setTitle, setShowSplitButton, resetLayout])
 
   const [formData, setFormData] = useState({
     name: '',
@@ -27,8 +38,8 @@ export default function AddUser() {
 
   const [loading, setLoading] = useState(false)
 
-  console.log('📦 location.state:', location.state)
-  console.log('📍 originPath (raw):', location.state?.originPath)
+  // console.log('📦 location.state:', location.state)
+  // console.log('📍 originPath (raw):', location.state?.originPath)
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value })
@@ -59,17 +70,17 @@ export default function AddUser() {
 
   return (
     <div className="pt-10 px-4 pb-24 min-h-screen bg-white dark:bg-neutral-900 text-gray-800 dark:text-gray-100 font-sans">
-      <button
+      {/* <button
         onClick={() => navigate(-1)}
         className="mb-4 flex items-center text-sm text-blue-600 dark:text-blue-400 hover:underline "
       >
         <ChevronLeft className="h-5 w-5 mr-1" />
         {t('button.back')}
-      </button>
+      </button> */}
 
-      <h1 className="text-xl font-semibold mb-6 text-center">
+      {/* <h1 className="text-xl font-semibold mb-6 text-center">
         {t('user.title')}
-      </h1>
+      </h1> */}
 
       <form onSubmit={handleSubmit} className="max-w-md mx-auto space-y-6">
         <FormInput

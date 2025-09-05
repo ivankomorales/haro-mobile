@@ -82,6 +82,7 @@ export default function OrderDetailsModal({
 
               <div className="mt-6 flex justify-end">
                 <button
+                  type="button"
                   onClick={onClose}
                   className="px-4 py-2 text-sm font-medium rounded bg-gray-200 hover:bg-gray-300 dark:bg-neutral-700 dark:hover:bg-neutral-600"
                 >

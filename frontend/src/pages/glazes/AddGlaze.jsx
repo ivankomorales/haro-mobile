@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import FormInput from '../../components/FormInput'
 import { useCreateGlaze } from '../../hooks/useCreateGlaze'
@@ -8,6 +8,7 @@ import { ChevronLeft } from 'lucide-react'
 import { getMessage as t } from '../../utils/getMessage'
 import FormActions from '../../components/FormActions'
 import { getOriginPath } from '../../utils/navigationUtils'
+import { useLayout } from '../../context/LayoutContext'
 
 export default function AddGlaze() {
   const navigate = useNavigate()
@@ -17,6 +18,17 @@ export default function AddGlaze() {
   )
 
   const { create } = useCreateGlaze(navigate)
+
+  // Top bar actions
+  const { setTitle, setShowSplitButton, resetLayout } = useLayout()
+
+  useEffect(() => {
+    setTitle(t('glaze.new'))
+    // si NO necesitas el botón “split”, apágalo:
+    setShowSplitButton(false)
+
+    return resetLayout
+  }, [setTitle, setShowSplitButton, resetLayout])
 
   const imageInputRef = useRef(null)
   const [formData, setFormData] = useState({
@@ -28,7 +40,6 @@ export default function AddGlaze() {
 
   const [error, setError] = useState(null)
   const [success, setSuccess] = useState(null)
-
   const [loading, setLoading] = useState(false)
 
   const handleChange = (e) => {
@@ -76,17 +87,17 @@ export default function AddGlaze() {
 
   return (
     <div className="pt-10 px-4 pb-24 min-h-screen bg-white dark:bg-neutral-900 text-gray-800 dark:text-gray-100 font-sans">
-      <button
+      {/* <button
         onClick={() => navigate(-1)}
         className="mb-4 flex items-center text-sm text-blue-600 dark:text-blue-400 hover:underline "
       >
         <ChevronLeft className="h-5 w-5 mr-1" />
         {t('button.back')}
-      </button>
+      </button> */}
       {/* Optional Title */}
-      <h1 className="text-center mb-8 text-xl font-semibold">
+      {/* <h1 className="text-center mb-8 text-xl font-semibold">
         {t('glaze.title')}
-      </h1>
+      </h1> */}
 
       <form onSubmit={handleSubmit} className="max-w-md mx-auto space-y-6">
         {/* Name + color */}
