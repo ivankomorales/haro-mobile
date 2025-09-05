@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { Eye, EyeOff, Calendar } from 'lucide-react'
 import DatePicker from 'react-datepicker'
 import 'react-datepicker/dist/react-datepicker.css'
+import { fromYMD, toYMD } from '../utils/date'
 
 /**
  * FormInput (reusable)
@@ -94,12 +95,12 @@ export default function FormInput({
           </select>
         ) : type === 'date' ? (
           <DatePicker
-            selected={value ? new Date(value) : null}
+            selected={value ? fromYMD(value) : null}
             onChange={(date) => {
               const syntheticEvent = {
                 target: {
                   name,
-                  value: date?.toISOString().split('T')[0] || '',
+                  value: date ? toYMD(date) : '',
                 },
               }
               onChange(syntheticEvent)

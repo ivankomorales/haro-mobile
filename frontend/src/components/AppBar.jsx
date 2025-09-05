@@ -3,7 +3,7 @@ export default function AppBar({ title, left, right, extra, progress }) {
   return (
     <div
       className="
-        w-full 
+        w-full z-50
         bg-white dark:bg-neutral-900 
         border-b border-gray-200 dark:border-neutral-700
         shadow-sm

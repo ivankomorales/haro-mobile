@@ -1,21 +1,17 @@
-// src/pages/orders/Orders.jsx
-import { useEffect, useState, useMemo } from 'react'
-import { getOrderById, getOrders } from '../../api/orders'
+// comments in English only
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { getOrders, updateManyOrderStatus } from '../../api/orders'
+import { parseFlexible, formatDMY, endOfDay } from '../../utils/date'
 import { getMessage as t } from '../../utils/getMessage'
 import FormInput from '../../components/FormInput'
 import { useLayout } from '../../context/LayoutContext'
 import { OrderCard } from '../../components/OrderCard'
-import {
-  STATUS_COLORS,
-  STATUS_TEXT_COLORS,
-  STATUS_LABELS,
-} from '../../utils/orderStatusUtils'
 import OrderDetailsModal from '../../components/OrderDetailsModal'
 import { formatProductsWithLabels } from '../../utils/transformProducts'
 import OrderActionsBar from '../../components/OrderActionsBar'
 import StatusModal from '../../components/StatusModal'
-import { updateManyOrderStatus } from '../../api/orders'
+import OrdersFilters from '../../components/OrdersFilters'
 import {
   showError,
   showSuccess,
@@ -23,28 +19,35 @@ import {
   dismissToast,
 } from '../../utils/toastUtils'
 
+const DEFAULT_FILTERS = {
+  status: 'all',
+  dateFrom: '',
+  dateTo: '',
+  isUrgent: '',
+  shippingRequired: '',
+}
+
 export default function Orders() {
   const [orders, setOrders] = useState([])
   const [selectedOrder, setSelectedOrder] = useState(null)
   const [selectedOrders, setSelectedOrders] = useState([])
   const [glazes, setGlazes] = useState(null) // lazy: null = not loaded yet
+  const [filters, setFilters] = useState(DEFAULT_FILTERS)
 
   const [loading, setLoading] = useState(true)
   const navigate = useNavigate()
   const [search, setSearch] = useState('')
-  const [statusFilter, setStatusFilter] = useState('all')
   const { setTitle, setShowSplitButton, resetLayout } = useLayout()
-
   const [showStatusModal, setShowStatusModal] = useState(false)
 
+  // header setup
   useEffect(() => {
-    setTitle(t('order.title')) //    setTitle(t('home.title'))
+    setTitle(t('order.title'))
     setShowSplitButton(true)
-
-    // Opcional: restaurar a valores por defecto al salir
     return resetLayout
   }, [setTitle, setShowSplitButton, resetLayout])
 
+  // fetch orders
   useEffect(() => {
     async function fetchOrders() {
       try {
@@ -56,42 +59,64 @@ export default function Orders() {
         setLoading(false)
       }
     }
-
     fetchOrders()
   }, [])
 
+  // derived: filtered orders
   const filteredOrders = useMemo(() => {
-    const query = search.toLowerCase()
+    const q = search.trim().toLowerCase()
+    const df = filters.dateFrom ? parseFlexible(filters.dateFrom) : null
+    const dt = filters.dateTo ? endOfDay(parseFlexible(filters.dateTo)) : null
+
     return orders.filter((order) => {
       const name =
         `${order.customer?.name || ''} ${order.customer?.lastName || ''}`.toLowerCase()
       const email = (order.customer?.email || '').toLowerCase()
       const orderID = (order.orderID || '').toLowerCase()
-
       const matchesSearch =
-        name.includes(query) || email.includes(query) || orderID.includes(query)
-      const matchesStatus =
-        statusFilter === 'all' || order.status === statusFilter
-      return matchesSearch && matchesStatus
-    })
-  }, [orders, search, statusFilter])
+        !q || name.includes(q) || email.includes(q) || orderID.includes(q)
 
+      const statusOk =
+        filters.status === 'all' || order.status === filters.status
+
+      const dateVal = order.orderDate || order.createdAt
+      const when = dateVal ? new Date(dateVal) : null
+      const dateOk =
+        (!df || (when && when >= df)) && (!dt || (when && when <= dt))
+
+      const urgentOk =
+        filters.isUrgent === ''
+          ? true
+          : Boolean(order.isUrgent) === (filters.isUrgent === 'true')
+
+      const shippingOk =
+        filters.shippingRequired === ''
+          ? true
+          : Boolean(order.shippingRequired) ===
+            (filters.shippingRequired === 'true')
+
+      return matchesSearch && statusOk && dateOk && urgentOk && shippingOk
+    })
+  }, [orders, search, filters])
+
+  const selectedStatuses = useMemo(() => {
+    const set = new Set()
+    for (const o of orders) {
+      if (selectedOrders.includes(o._id)) set.add(o.status)
+    }
+    return Array.from(set)
+  }, [orders, selectedOrders])
+
+  // bulk status change
   const handleBulkStatusUpdate = async (newStatus) => {
     const toastId = showLoading('order.updatingStatus')
-
     try {
       await updateManyOrderStatus(selectedOrders, newStatus)
-
-      // opcional: actualizar los pedidos localmente para reflejar el nuevo estado
-      const updated = orders.map((order) =>
-        selectedOrders.includes(order._id)
-          ? { ...order, status: newStatus }
-          : order
+      const updated = orders.map((o) =>
+        selectedOrders.includes(o._id) ? { ...o, status: newStatus } : o
       )
-
       setOrders(updated)
-      setSelectedOrders([]) // limpiar selección
-
+      setSelectedOrders([])
       dismissToast(toastId)
       showSuccess('order.statusUpdated')
     } catch (err) {
@@ -101,68 +126,126 @@ export default function Orders() {
     }
   }
 
-  const selectedStatuses = useMemo(() => {
-    const set = new Set()
-    for (const o of orders) {
-      if (selectedOrders.includes(o._id)) set.add(o.status)
+  // chips for active filters
+  const chips = useMemo(() => {
+    const arr = []
+    if (filters.status !== 'all')
+      arr.push({
+        key: 'status',
+        label: `Estado: ${statusLabel(filters.status)}`,
+      })
+    if (filters.dateFrom) {
+      const d = parseFlexible(filters.dateFrom)
+      arr.push({
+        key: 'dateFrom',
+        label: `Desde: ${d ? formatDMY(d) : filters.dateFrom}`,
+      })
     }
-    return Array.from(set) // canonical values
-  }, [orders, selectedOrders])
+    if (filters.dateTo) {
+      const d = parseFlexible(filters.dateTo)
+      arr.push({
+        key: 'dateTo',
+        label: `Hasta: ${d ? formatDMY(d) : filters.dateTo}`,
+      })
+    }
+    if (filters.isUrgent !== '')
+      arr.push({
+        key: 'isUrgent',
+        label: filters.isUrgent === 'true' ? 'Urgente: Sí' : 'Urgente: No',
+      })
+    if (filters.shippingRequired !== '')
+      arr.push({
+        key: 'shippingRequired',
+        label:
+          filters.shippingRequired === 'true'
+            ? 'Envío requerido: Sí'
+            : 'Envío requerido: No',
+      })
+    return arr
+  }, [filters])
+
+  const clearChip = (key) => {
+    setFilters((f) => {
+      const next = { ...f }
+      if (key === 'status') next.status = 'all'
+      else if (key === 'dateFrom') next.dateFrom = ''
+      else if (key === 'dateTo') next.dateTo = ''
+      else if (key === 'isUrgent') next.isUrgent = ''
+      else if (key === 'shippingRequired') next.shippingRequired = ''
+      return next
+    })
+  }
+
+  const clearAllChips = () => setFilters(DEFAULT_FILTERS)
 
   return (
-    <div className="min-h-screen p-4 bg-white dark:bg-neutral-900 text-black dark:text-white">
-      {/* Optional h1 for accessibility */}
-      {/*<h1 className="text-xl font-semibold mb-4">{t('labels.orders.title')}</h1>*/}
-      <div
-        className="
-        sticky top-14 sm:top-16 z-30
-        bg-white/85 dark:bg-neutral-900/85
-        backdrop-blur supports-[backdrop-filter]:backdrop-blur
-        border-b border-gray-200 dark:border-neutral-800
-      "
-      >
-        {/* Fixed Search and Filter */}
-        <div className="flex flex-col sm:flex-row gap-2 mb-4">
-          <FormInput
-            name="search"
-            label={t('button.search')}
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            floating={false}
-            placeholder={t('order.search')}
+    <div className="min-h-screen p-2 bg-white dark:bg-neutral-900 text-black dark:text-white">
+      {/* Sticky header */}
+      <div className="sticky top-0 z-40 bg-white dark:bg-neutral-900 border-gray-200 dark:border-neutral-800">
+        <div className="bg-white/85 dark:bg-neutral-900/85 backdrop-blur supports-[backdrop-filter]:backdrop-blur shadow-sm pt-3">
+          <div className="w-full flex items-end gap-2">
+            {/* Search */}
+            <div className="flex-1">
+              <FormInput
+                name="search"
+                label={t('button.search')}
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                floating={false}
+                placeholder={t('order.search')}
+              />
+            </div>
+
+            {/* Filters button + menu */}
+            <OrdersFilters value={filters} onChange={setFilters} />
+          </div>
+
+          {/* Active filter chips */}
+          {chips.length > 0 && (
+            <div className="flex items-center flex-wrap gap-2 mt-3">
+              {chips.map((c) => (
+                <span
+                  key={c.key}
+                  className="inline-flex items-center gap-2 text-sm px-2.5 py-1 rounded-full
+                             bg-neutral-100 dark:bg-neutral-800"
+                >
+                  {c.label}
+                  <button
+                    onClick={() => clearChip(c.key)}
+                    className="h-5 w-5 inline-flex items-center justify-center rounded-full
+                               hover:bg-neutral-200 dark:hover:bg-neutral-700"
+                    title="Quitar"
+                  >
+                    ×
+                  </button>
+                </span>
+              ))}
+              <button
+                onClick={clearAllChips}
+                className="ml-1 text-sm px-2 py-1 rounded hover:bg-neutral-100 dark:hover:bg-neutral-800"
+              >
+                Limpiar todo
+              </button>
+            </div>
+          )}
+
+          <OrderActionsBar
+            selectedOrders={selectedOrders}
+            allVisibleOrders={filteredOrders}
+            onClearSelection={() => setSelectedOrders([])}
+            onSelectAll={(ids) => setSelectedOrders(ids)}
+            onBulkStatusChange={() => setShowStatusModal(true)}
           />
-
-          <FormInput
-            as="select"
-            name="statusFilter"
-            label={t('status.label')}
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            floating={false}
-          >
-            <option value="all">{t('status.all')}</option>
-            <option value="new">{t('status.new')}</option>
-            <option value="pending">{t('status.pending')}</option>
-            <option value="inProgress">{t('status.inProgress')}</option>
-            <option value="completed">{t('status.completed')}</option>
-            <option value="cancelled">{t('status.cancelled')}</option>
-          </FormInput>
         </div>
-
-        <OrderActionsBar
-          selectedOrders={selectedOrders}
-          allVisibleOrders={filteredOrders}
-          onClearSelection={() => setSelectedOrders([])}
-          onSelectAll={(ids) => setSelectedOrders(ids)}
-          onBulkStatusChange={() => setShowStatusModal(true)}
-        />
       </div>
+
+      {/* List */}
       {loading ? (
         <p>{t('order.loading')}</p>
       ) : orders.length === 0 ? (
         <p>{t('order.empty')}</p>
       ) : (
-        <ul className="space-y-3">
+        <ul className="space-y-3 pt-2 sm:pt-6 pb-14">
           {filteredOrders.map((order) => (
             <OrderCard
               key={order._id}
@@ -179,7 +262,6 @@ export default function Orders() {
                 }
               }}
               onClick={() => {
-                // Lazy load glazes only when needed
                 if (!glazes) {
                   import('../../api/glazes').then(({ getAllGlazes }) => {
                     getAllGlazes().then(setGlazes).catch(console.error)
@@ -196,10 +278,12 @@ export default function Orders() {
           ))}
         </ul>
       )}
+
+      {/* Modals */}
       <OrderDetailsModal
         open={!!selectedOrder}
         order={selectedOrder}
-        glazes={glazes || []} // empty until lazy loaded
+        glazes={glazes || []}
         onClose={() => setSelectedOrder(null)}
       />
       <StatusModal
@@ -209,9 +293,27 @@ export default function Orders() {
           handleBulkStatusUpdate(newStatus)
           setShowStatusModal(false)
         }}
-        currentStatus={selectedStatuses.length === 1 ? selectedStatuses[0] : ''} // single-selection
-        currentStatuses={selectedStatuses.length > 1 ? selectedStatuses : []} // multi-selection
+        currentStatus={selectedStatuses.length === 1 ? selectedStatuses[0] : ''}
+        currentStatuses={selectedStatuses.length > 1 ? selectedStatuses : []}
       />
     </div>
   )
+}
+
+// ---- tiny helpers ----
+function statusLabel(k) {
+  switch (k) {
+    case 'new':
+      return 'Nuevo'
+    case 'pending':
+      return 'Pendiente'
+    case 'inProgress':
+      return 'En progreso'
+    case 'completed':
+      return 'Completado'
+    case 'cancelled':
+      return 'Cancelado'
+    default:
+      return 'Todos'
+  }
 }

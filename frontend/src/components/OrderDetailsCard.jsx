@@ -1,5 +1,6 @@
 // src/components/OrderDetailsCard.jsx
 import { Phone, Mail, Globe, AlertCircle, SquarePen } from 'lucide-react'
+//import { formatDMY } from "../../utils/date";
 import { format } from 'date-fns'
 
 export default function OrderDetailsCard({
@@ -19,6 +20,7 @@ export default function OrderDetailsCard({
   const {
     orderID = '',
     orderDate,
+    deliverDate,
     customer = {},
     deposit = 0,
     products = [],
