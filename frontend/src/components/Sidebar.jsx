@@ -1,9 +1,10 @@
 // components/Sidebar.jsx
-import { House, ClipboardList, UserRound } from 'lucide-react'
+import { House, ClipboardList, UserRound, Package } from 'lucide-react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { smartNavigate } from '../utils/smartNavigate'
 import { useConfirm } from '../context/ConfirmContext'
 import { getOriginPath } from '../utils/navigationUtils'
+import { useState } from 'react'
 
 export default function Sidebar() {
   const navigate = useNavigate()
@@ -11,6 +12,10 @@ export default function Sidebar() {
   const confirm = useConfirm()
 
   const isActive = (route) => location.pathname.startsWith(route)
+
+  const [openProducts, setOpenProducts] = useState(true)
+  const sectionBtn =
+    'w-full flex items-center justify-between px-2 py-2 rounded-md font-semibold hover:bg-gray-100 dark:hover:bg-neutral-800'
 
   const handleNav = (path) => {
     smartNavigate(navigate, location.pathname, path, {
@@ -60,6 +65,30 @@ export default function Sidebar() {
           <UserRound className="w-5 h-5" />
           Users
         </button>
+        <div className="mt-2">
+          <button
+            onClick={() => setOpenProducts((v) => !v)}
+            className={sectionBtn}
+            aria-expanded={openProducts}
+          >
+            <span className="flex items-center gap-2">
+              <Package className="w-5 h-5" />
+              Products
+            </span>
+            <span className="text-xs">{openProducts ? '▾' : '▸'}</span>
+          </button>
+
+          {openProducts && (
+            <div className="mt-1 pl-6 space-y-1">
+              <button
+                onClick={() => handleNav('/products/glazes')}
+                className={linkClass('/products/glazes')}
+              >
+                Glazes
+              </button>
+            </div>
+          )}
+        </div>
       </nav>
     </div>
   )

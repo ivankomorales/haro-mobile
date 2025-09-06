@@ -483,6 +483,11 @@ exports.exportOrdersToExcel = async (req, res) => {
       // Si es < 0.5 => color oscuro
       return luminance < 0.5;
     }
+    // Helper to join name + code as "Name (CODE)"
+    function joinNameCode(name, code) {
+      if (!name) return "";
+      return code ? `${name} (${code})` : name;
+    }
 
     // Extract glaze names/hex from multiple possible shapes
     function extractGlazes(p = {}, opts = {}) {
@@ -526,6 +531,10 @@ exports.exportOrdersToExcel = async (req, res) => {
         }
         return "";
       };
+      const pickCode = (obj) => {
+        if (!obj || typeof obj !== "object") return "";
+        return pickString(obj.code);
+      };
 
       // “Not applicable” (if you want a dash for NA; leave '' if you prefer empty)
       const interiorNA = NA_INTERIOR_TYPES.has(
@@ -534,16 +543,25 @@ exports.exportOrdersToExcel = async (req, res) => {
       const exteriorNA = NA_EXTERIOR_TYPES.has(
         String(productType || "").trim()
       );
+      const interiorNameRaw = interiorNA
+        ? notApplicablePlaceholder
+        : pickName(gi);
+      const interiorCode = interiorNA ? "" : pickCode(gi);
+      const exteriorNameRaw = exteriorNA
+        ? notApplicablePlaceholder
+        : pickName(ge);
+      const exteriorCode = exteriorNA ? "" : pickCode(ge);
 
       const glazeInteriorName = interiorNA
         ? notApplicablePlaceholder
-        : pickName(gi);
+        : joinNameCode(interiorNameRaw, interiorCode);
+      const glazeExteriorName = exteriorNA
+        ? notApplicablePlaceholder
+        : joinNameCode(exteriorNameRaw, exteriorCode);
+
       const glazeInteriorHex = interiorNA
         ? notApplicablePlaceholder
         : pickHex(gi);
-      const glazeExteriorName = exteriorNA
-        ? notApplicablePlaceholder
-        : pickName(ge);
       const glazeExteriorHex = exteriorNA
         ? notApplicablePlaceholder
         : pickHex(ge);

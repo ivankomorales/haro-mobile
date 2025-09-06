@@ -63,8 +63,10 @@ export default function DashboardLayout() {
     glaze: isAdmin,
   }
 
+  const showBottom = !isDesktop && !hideBars
+
   return (
-    <div className="flex h-screen bg-white dark:bg-neutral-900 text-black dark:text-white overflow-hidden">
+    <div className="flex app-shell bg-white dark:bg-neutral-900 text-black dark:text-white overflow-hidden">
       {/* Sidebar on Desktop */}
       {isDesktop && !hideBars && <SideBar />}
 
@@ -107,16 +109,16 @@ export default function DashboardLayout() {
           >
             <ul className="py-2">
               <li className="px-4 py-2 hover:bg-gray-100 cursor-pointer">
-                Perfil
+                Perfil {/* TODO */}
               </li>
               <li className="px-4 py-2 hover:bg-gray-100 cursor-pointer">
-                Ajustes
+                Ajustes {/* TODO */}
               </li>
               <li
                 className="px-4 py-2 hover:bg-gray-100 cursor-pointer text-red-600"
                 onClick={handleLogout}
               >
-                Cerrar sesión
+                Cerrar sesión {/* TODO */}
               </li>
             </ul>
           </div>
@@ -130,7 +132,7 @@ export default function DashboardLayout() {
         </main>
 
         {/* BottomNav for Mobile */}
-        {!isDesktop && !hideBars && <BottomNavBar />}
+        {showBottom && <BottomNavBar />}
       </div>
     </div>
   )

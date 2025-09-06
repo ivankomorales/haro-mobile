@@ -83,7 +83,7 @@ export default function Home() {
                 month: 'short',
                 year: '2-digit',
               })
-            : (t('home.loading') || 'Loading...')}
+            : t('home.loading') || 'Loading...'}
         </span>
       </div>
 
@@ -104,7 +104,7 @@ export default function Home() {
                 if (!glazes) {
                   try {
                     const mod = await import('../api/glazes')
-                    const all = await mod.getAllGlazes()
+                    const all = await mod.getAllGlazes({ navigate }) // TODO
                     setGlazes(all)
                   } catch (e) {
                     console.error('Error loading glazes', e)

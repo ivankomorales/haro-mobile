@@ -63,7 +63,7 @@ export default function AddProduct() {
   useEffect(() => {
     async function fetchGlazes() {
       try {
-        const response = await getAllGlazes()
+        const response = await getAllGlazes({ navigate }) //TODO
         setGlazes(response)
       } catch (error) {
         console.error('Failed to fetch glazes', error)

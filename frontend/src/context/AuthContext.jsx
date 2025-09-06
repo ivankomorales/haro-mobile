@@ -1,10 +1,10 @@
-// src/context/AuthContext.jsx
+// comments in English only
 import { createContext, useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getUserFromToken, isTokenExpired } from '../utils/jwt'
 import { showError, showSuccess } from '../utils/toastUtils'
+import { apiLogin, apiLogout } from '../api/auth'
 
-// No default export ❌
 export const AuthContext = createContext(null)
 
 export function AuthProvider({ children }) {
@@ -14,61 +14,34 @@ export function AuthProvider({ children }) {
   const navigate = useNavigate()
 
   useEffect(() => {
-    const storedToken = localStorage.getItem('token')
-
-    if (!storedToken) {
+    const stored = localStorage.getItem('token')
+    if (!stored) {
       setLoading(false)
       return
     }
-
-    const expired = isTokenExpired(storedToken)
-    const decoded = getUserFromToken(storedToken)
-
-    if (decoded && !expired) {
-      setUser(decoded)
-      setToken(storedToken)
+    if (!isTokenExpired(stored)) {
+      setToken(stored)
+      setUser(getUserFromToken(stored))
     } else {
-      console.warn('[Auth] Token inválido o expirado en hot reload.')
-      setUser(null)
-      setToken(null)
-      logout(true) // true = expired session
+      localStorage.removeItem('token')
     }
-
     setLoading(false)
   }, [])
-
-  const login = async (email, password) => {
-    try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      })
-
-      if (!res.ok) throw new Error('auth.loginFailed')
-      const data = await res.json()
-      if (!data.token) throw new Error('auth.invalidToken')
-
-      localStorage.setItem('token', data.token)
-      setToken(data.token)
-      const decoded = getUserFromToken(data.token)
-      setUser(decoded)
-      navigate('/home')
-    } catch (err) {
-      const key = err.message?.startsWith('auth.')
-        ? err.message
-        : 'auth.serverError'
-      showError(key)
-    }
+  // Rename to avoid confusion with apiLogin
+  const handleLogin = async (email, password) => {
+    const data = await apiLogin(email, password) // throws on error
+    if (!data?.token) throw new Error('auth.invalidToken')
+    localStorage.setItem('token', data.token)
+    setToken(data.token)
+    setUser(getUserFromToken(data.token))
+    navigate('/home')
   }
 
   const logout = (expired = false) => {
     localStorage.removeItem('token')
     setToken(null)
     setUser(null)
-    expired
-      ? showError('auth.sessionExpired')
-      : showSuccess('auth.loggedOut')
+    expired ? showError('auth.sessionExpired') : showSuccess('auth.loggedOut')
     navigate('/', { replace: true })
   }
 
@@ -77,7 +50,7 @@ export function AuthProvider({ children }) {
       value={{
         user,
         token,
-        login,
+        login: handleLogin, // expose the context login
         logout,
         isLoggedIn: Boolean(user),
         isAdmin: user?.role === 'admin',

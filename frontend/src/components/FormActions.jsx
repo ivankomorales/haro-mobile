@@ -24,15 +24,19 @@ export default function FormActions({
   confirmMessage = 'You will lose unsaved changes if you exit now.',
   confirmText = 'Yes, exit',
   cancelText = 'No, stay',
+  // NEW (optional, default false so nothing breaks):
+  submitDisabled = false,
+  submitLoading = false,
 }) {
   const [isCancelOpen, setIsCancelOpen] = useState(false)
   const navigate = useNavigate()
-  const location = useLocation()
 
   const handleCancel = () => {
     setIsCancelOpen(false)
     navigate(cancelRedirect, { state: cancelState })
   }
+
+  const isSubmitDisabled = Boolean(submitDisabled || submitLoading)
 
   return (
     <div className="flex sm:flex-row sm:justify-end gap-4 pt-2 w-full">
@@ -57,9 +61,16 @@ export default function FormActions({
       <button
         type="button"
         onClick={onSubmit}
-        className="w-full sm:w-auto sm:px-4 py-2 rounded bg-black text-white hover:bg-neutral-800"
+        disabled={isSubmitDisabled}                
+        aria-disabled={isSubmitDisabled}           
+        className={[
+          'w-full sm:w-auto sm:px-4 py-2 rounded text-white transition',
+          isSubmitDisabled
+            ? 'bg-neutral-400 cursor-not-allowed opacity-60'
+            : 'bg-black hover:bg-neutral-800 dark:bg-amber-500',
+        ].join(' ')}
       >
-        {submitButtonText}
+        {submitLoading ? 'Saving…' : submitButtonText}
       </button>
     </div>
   )

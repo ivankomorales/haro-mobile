@@ -9,10 +9,12 @@ import { getMessage as t } from '../../utils/getMessage'
 import FormActions from '../../components/FormActions'
 import { getOriginPath } from '../../utils/navigationUtils'
 import { useLayout } from '../../context/LayoutContext'
+import DropWrap from '../../components/DropWrap'
 
 export default function AddGlaze() {
   const navigate = useNavigate()
   const location = useLocation()
+  const returnTo = location.state?.returnTo
   const originPath = getOriginPath(
     location.state?.originPath ?? location.state?.from
   )
@@ -133,16 +135,25 @@ export default function AddGlaze() {
         />
 
         {/* Image */}
-        <ImageUploader
-          multiple={false}
-          value={formData.images}
-          onChange={(imgs) => setFormData({ ...formData, images: imgs })}
-        />
+        <DropWrap
+          onFiles={(files) => {
+            setFormData((s) => ({ ...s, images: files })) // keep your current submit flow
+          }}
+        >
+          <ImageUploader
+            multiple={false}
+            value={formData.images}
+            onChange={(imgs) => setFormData({ ...formData, images: imgs })}
+          />
+        </DropWrap>
 
         {error && <div className="text-red-500 text-sm">{error}</div>}
         {success && <div className="text-green-600 text-sm">{success}</div>}
 
-        <FormActions onSubmit={handleSubmit} cancelRedirect={originPath} />
+        <FormActions
+          onSubmit={handleSubmit}
+          cancelRedirect={returnTo || originPath || '/products/glazes'}
+        />
       </form>
     </div>
   )

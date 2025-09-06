@@ -261,16 +261,32 @@ export default function Orders() {
                   setSelectedOrders([...selectedOrders, order._id])
                 }
               }}
-              onClick={() => {
+              onClick={async () => {
                 if (!glazes) {
-                  import('../../api/glazes').then(({ getAllGlazes }) => {
-                    getAllGlazes().then(setGlazes).catch(console.error)
-                  })
+                  try {
+                    const { getAllGlazes } = await import('../../api/glazes')
+                    // pass { navigate } so 401/403 redirects to /login
+                    const all = await getAllGlazes({ navigate })
+                    setGlazes(all)
+
+                    const labeled = formatProductsWithLabels(
+                      order.products,
+                      t,
+                      all || []
+                    )
+                    setSelectedOrder({ ...order, products: labeled })
+                    return
+                  } catch (e) {
+                    console.error(e)
+                    return
+                  }
                 }
+
+                // already cached
                 const labeled = formatProductsWithLabels(
                   order.products,
                   t,
-                  glazes || []
+                  glazes
                 )
                 setSelectedOrder({ ...order, products: labeled })
               }}

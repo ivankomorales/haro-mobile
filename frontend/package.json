@@ -34,6 +34,7 @@
     "prettier": "^3.6.2",
     "tailwindcss": "^4.1.11",
     "vite": "^7.0.4",
+    "vite-plugin-pwa": "^1.0.3",
     "vitest": "^3.2.4"
   }
 }

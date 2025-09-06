@@ -87,7 +87,7 @@ const updateGlaze = async (req, res, next) => {
 
     if (req.body.colorHex && req.body.colorHex !== glaze.hex) {
       changes.push(`colorHex: ${glaze.hex} → ${req.body.colorHex}`);
-      glaze.colorHex = req.body.colorHex;
+      glaze.hex = req.body.colorHex;
     }
 
     if (req.body.image && req.body.image !== glaze.image) {

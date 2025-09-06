@@ -28,6 +28,7 @@ export default function BottomNavBar() {
         rounded-full
       "
     >
+      {/* TODO Change to have bottom bar fixed at bottom <nav className="fixed bottom-0 left-0 right-0 h-[var(--bottom-bar-h)] pb-[var(--safe-bottom)] bg-white/90 dark:bg-neutral-900/90 backdrop-blur border-t border-neutral-200 dark:border-neutral-800 z-50"> */}
       <div className="grid grid-cols-5 h-full max-w-lg mx-auto">
         {/* Home */}
         <button

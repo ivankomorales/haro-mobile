@@ -3,7 +3,6 @@ import { useAuth } from '../hooks/useAuth'
 import FormInput from '../components/FormInput'
 import { getMessage as t } from '../utils/getMessage'
 
-
 export default function Login() {
   const { login } = useAuth()
   const [email, setEmail] = useState('')
@@ -17,7 +16,7 @@ export default function Login() {
     if (!email) newErrors.email = 'auth.emailRequired'
     if (!password) newErrors.password = 'auth.passwordRequired'
 
-    if (Object.keys(newErrors).length > 0) {
+    if (Object.keys(newErrors).length) {
       setErrors(newErrors)
       return
     }
@@ -25,12 +24,12 @@ export default function Login() {
     try {
       await login(email, password)
     } catch (err) {
-      setErrors({ form: 'auth.LoginFailed' })
+      setErrors({ form: err.message || 'auth.loginFailed' })
     }
   }
 
   return (
-    <div className="flex items-center justify-center h-screen bg-white dark:bg-neutral-900 text-gray-900 dark:text-gray-100 px-4">
+    <div className="grid place-items-center min-h-[100svh] app-shell bg-white dark:bg-neutral-900 px-4 overflow-hidden">
       <form
         onSubmit={handleSubmit}
         className="bg-white dark:bg-neutral-800 p-6 rounded-xl shadow-md w-full max-w-sm flex flex-col gap-4"

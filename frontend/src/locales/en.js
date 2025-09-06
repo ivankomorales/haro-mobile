@@ -60,6 +60,7 @@ export const en = {
     glaze: {
       added: 'Glaze added successfully.',
       loaded: 'Glazes loaded successfully.',
+      updated: 'Glaze updated successfully.',
     },
     image: {
       uploaded: 'Images uploaded successfully!',
@@ -102,6 +103,9 @@ export const en = {
     name: 'Glaze Name',
     code: 'Code (optional)',
     new: 'Create new glaze',
+
+    updating: 'Updating glaze...',
+    updateFailed: 'Failed to update glaze.',
   },
 
   // USERS
@@ -308,16 +312,6 @@ export const en = {
     selectedCount: 'Selected', // <-- importante: incluye {{n}}
   },
 
-  button: {
-    cancel: 'Cancel',
-    confirm: 'Confirm',
-    save: 'Save',
-    close: 'Close',
-    search: 'Search',
-    //Add Product
-    addProduct: 'Add Product',
-  },
-
   fields: {
     orderID: 'Order ID',
     customerName: 'Customer name',
@@ -335,5 +329,11 @@ export const en = {
     glazeInteriorHex: 'Interior glaze (hex)',
     glazeExteriorName: 'Exterior glaze',
     glazeExteriorHex: 'Exterior glaze (hex)',
+  },
+
+  // LOADING
+  loading: {
+    image: 'Loading Image',
+    orderCreate: 'Creating Order',
   },
 }

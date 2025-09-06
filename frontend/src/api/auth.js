@@ -1,5 +1,5 @@
 // src/api/auth.js
-
+import fetchWithAuth from '../utils/fetchWithAuth'
 /**
  * Login user and receive token.
  *
@@ -32,4 +32,16 @@ export const login = async (credentials) => {
 export const logout = (navigate) => {
   localStorage.removeItem('token')
   navigate('/')
+}
+
+export async function apiLogin(email, password) {
+  return await fetchWithAuth('/api/auth/login', {
+    method: 'POST',
+    body: { email, password },
+  })
+}
+
+export function apiLogout() {
+  // optional server call if you had one; for now just a placeholder
+  return Promise.resolve()
 }
