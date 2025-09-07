@@ -12,12 +12,7 @@ import { formatProductsWithLabels } from '../../utils/transformProducts'
 import OrderActionsBar from '../../components/OrderActionsBar'
 import StatusModal from '../../components/StatusModal'
 import OrdersFilters from '../../components/OrdersFilters'
-import {
-  showError,
-  showSuccess,
-  showLoading,
-  dismissToast,
-} from '../../utils/toastUtils'
+import { showError, showSuccess, showLoading, dismissToast } from '../../utils/toastUtils'
 
 const DEFAULT_FILTERS = {
   status: 'all',
@@ -62,38 +57,39 @@ export default function Orders() {
     fetchOrders()
   }, [])
 
+  // -- helper: folds accents/diacritics for accent-insensitive search --
+  const fold = (s) =>
+    (s ?? '')
+      .toString()
+      .normalize('NFD') // split base letters and accents
+      .replace(/[\u0300-\u036f]/g, '') // remove diacritic marks
+      .toLowerCase()
+
   // derived: filtered orders
   const filteredOrders = useMemo(() => {
-    const q = search.trim().toLowerCase()
+    const q = fold(search.trim())
     const df = filters.dateFrom ? parseFlexible(filters.dateFrom) : null
     const dt = filters.dateTo ? endOfDay(parseFlexible(filters.dateTo)) : null
 
     return orders.filter((order) => {
-      const name =
-        `${order.customer?.name || ''} ${order.customer?.lastName || ''}`.toLowerCase()
+      const name = fold(`${order.customer?.name || ''} ${order.customer?.lastName || ''}`)
       const email = (order.customer?.email || '').toLowerCase()
       const orderID = (order.orderID || '').toLowerCase()
-      const matchesSearch =
-        !q || name.includes(q) || email.includes(q) || orderID.includes(q)
+      const matchesSearch = !q || name.includes(q) || email.includes(q) || orderID.includes(q)
 
-      const statusOk =
-        filters.status === 'all' || order.status === filters.status
+      const statusOk = filters.status === 'all' || order.status === filters.status
 
       const dateVal = order.orderDate || order.createdAt
       const when = dateVal ? new Date(dateVal) : null
-      const dateOk =
-        (!df || (when && when >= df)) && (!dt || (when && when <= dt))
+      const dateOk = (!df || (when && when >= df)) && (!dt || (when && when <= dt))
 
       const urgentOk =
-        filters.isUrgent === ''
-          ? true
-          : Boolean(order.isUrgent) === (filters.isUrgent === 'true')
+        filters.isUrgent === '' ? true : Boolean(order.isUrgent) === (filters.isUrgent === 'true')
 
       const shippingOk =
         filters.shippingRequired === ''
           ? true
-          : Boolean(order.shippingRequired) ===
-            (filters.shippingRequired === 'true')
+          : Boolean(order.shippingRequired) === (filters.shippingRequired === 'true')
 
       return matchesSearch && statusOk && dateOk && urgentOk && shippingOk
     })
@@ -156,10 +152,7 @@ export default function Orders() {
     if (filters.shippingRequired !== '')
       arr.push({
         key: 'shippingRequired',
-        label:
-          filters.shippingRequired === 'true'
-            ? 'Envío requerido: Sí'
-            : 'Envío requerido: No',
+        label: filters.shippingRequired === 'true' ? 'Envío requerido: Sí' : 'Envío requerido: No',
       })
     return arr
   }, [filters])
@@ -179,11 +172,13 @@ export default function Orders() {
   const clearAllChips = () => setFilters(DEFAULT_FILTERS)
 
   return (
-    <div className="min-h-screen p-2 bg-white dark:bg-neutral-900 text-black dark:text-white">
-      {/* Sticky header */}
-      <div className="sticky top-0 z-40 bg-white dark:bg-neutral-900 border-gray-200 dark:border-neutral-800">
-        <div className="bg-white/85 dark:bg-neutral-900/85 backdrop-blur supports-[backdrop-filter]:backdrop-blur shadow-sm pt-3">
-          <div className="w-full flex items-end gap-2">
+    <div className="min-h-screen bg-white text-black dark:bg-neutral-900 dark:text-white">
+      {/* Sticky header (full-bleed inside this component) */}
+      <div className="sticky top-0 z-40">
+        {/* Single background layer for the header; no shadow to avoid "card" look */}
+
+        <div className="border-b border-gray-200 bg-white px-2 pt-3 dark:border-neutral-800 dark:bg-neutral-900">
+          <div className="flex w-full items-end gap-2">
             {/* Search */}
             <div className="flex-1">
               <FormInput
@@ -202,18 +197,16 @@ export default function Orders() {
 
           {/* Active filter chips */}
           {chips.length > 0 && (
-            <div className="flex items-center flex-wrap gap-2 mt-3">
+            <div className="mt-3 flex flex-wrap items-center gap-2">
               {chips.map((c) => (
                 <span
                   key={c.key}
-                  className="inline-flex items-center gap-2 text-sm px-2.5 py-1 rounded-full
-                             bg-neutral-100 dark:bg-neutral-800"
+                  className="inline-flex items-center gap-2 rounded-full bg-neutral-100 px-2.5 py-1 text-sm dark:bg-neutral-800"
                 >
                   {c.label}
                   <button
                     onClick={() => clearChip(c.key)}
-                    className="h-5 w-5 inline-flex items-center justify-center rounded-full
-                               hover:bg-neutral-200 dark:hover:bg-neutral-700"
+                    className="inline-flex h-5 w-5 items-center justify-center rounded-full hover:bg-neutral-200 dark:hover:bg-neutral-700"
                     title="Quitar"
                   >
                     ×
@@ -222,7 +215,7 @@ export default function Orders() {
               ))}
               <button
                 onClick={clearAllChips}
-                className="ml-1 text-sm px-2 py-1 rounded hover:bg-neutral-100 dark:hover:bg-neutral-800"
+                className="ml-1 rounded px-2 py-1 text-sm hover:bg-neutral-100 dark:hover:bg-neutral-800"
               >
                 Limpiar todo
               </button>
@@ -239,79 +232,72 @@ export default function Orders() {
         </div>
       </div>
 
-      {/* List */}
-      {loading ? (
-        <p>{t('order.loading')}</p>
-      ) : orders.length === 0 ? (
-        <p>{t('order.empty')}</p>
-      ) : (
-        <ul className="space-y-3 pt-2 sm:pt-6 pb-14">
-          {filteredOrders.map((order) => (
-            <OrderCard
-              key={order._id}
-              order={order}
-              selectable={true}
-              isSelected={selectedOrders.includes(order._id)}
-              onSelect={() => {
-                if (selectedOrders.includes(order._id)) {
-                  setSelectedOrders(
-                    selectedOrders.filter((id) => id !== order._id)
-                  )
-                } else {
-                  setSelectedOrders([...selectedOrders, order._id])
-                }
-              }}
-              onClick={async () => {
-                if (!glazes) {
-                  try {
-                    const { getAllGlazes } = await import('../../api/glazes')
-                    // pass { navigate } so 401/403 redirects to /login
-                    const all = await getAllGlazes({ navigate })
-                    setGlazes(all)
-
-                    const labeled = formatProductsWithLabels(
-                      order.products,
-                      t,
-                      all || []
-                    )
-                    setSelectedOrder({ ...order, products: labeled })
-                    return
-                  } catch (e) {
-                    console.error(e)
-                    return
+      {/* Page content padding only below the header */}
+      <div className="p-2">
+        {/* List */}
+        {loading ? (
+          <p>{t('order.loading')}</p>
+        ) : orders.length === 0 ? (
+          <p>{t('order.empty')}</p>
+        ) : (
+          <ul className="space-y-3 pt-2 pb-14 sm:pt-6">
+            {filteredOrders.map((order) => (
+              <OrderCard
+                key={order._id}
+                order={order}
+                selectable={true}
+                isSelected={selectedOrders.includes(order._id)}
+                onSelect={() => {
+                  if (selectedOrders.includes(order._id)) {
+                    setSelectedOrders(selectedOrders.filter((id) => id !== order._id))
+                  } else {
+                    setSelectedOrders([...selectedOrders, order._id])
                   }
-                }
+                }}
+                onClick={async () => {
+                  if (!glazes) {
+                    try {
+                      const { getAllGlazes } = await import('../../api/glazes')
+                      // pass { navigate } so 401/403 redirects to /login
+                      const all = await getAllGlazes({ navigate })
+                      setGlazes(all)
 
-                // already cached
-                const labeled = formatProductsWithLabels(
-                  order.products,
-                  t,
-                  glazes
-                )
-                setSelectedOrder({ ...order, products: labeled })
-              }}
-            />
-          ))}
-        </ul>
-      )}
+                      const labeled = formatProductsWithLabels(order.products, t, all || [])
+                      setSelectedOrder({ ...order, products: labeled })
+                      return
+                    } catch (e) {
+                      console.error(e)
+                      return
+                    }
+                  }
 
-      {/* Modals */}
-      <OrderDetailsModal
-        open={!!selectedOrder}
-        order={selectedOrder}
-        glazes={glazes || []}
-        onClose={() => setSelectedOrder(null)}
-      />
-      <StatusModal
-        open={showStatusModal}
-        onClose={() => setShowStatusModal(false)}
-        onConfirm={(newStatus) => {
-          handleBulkStatusUpdate(newStatus)
-          setShowStatusModal(false)
-        }}
-        currentStatus={selectedStatuses.length === 1 ? selectedStatuses[0] : ''}
-        currentStatuses={selectedStatuses.length > 1 ? selectedStatuses : []}
-      />
+                  // already cached
+                  const labeled = formatProductsWithLabels(order.products, t, glazes)
+                  setSelectedOrder({ ...order, products: labeled })
+                }}
+              />
+            ))}
+          </ul>
+        )}
+
+        {/* Modals */}
+        <OrderDetailsModal
+          open={!!selectedOrder}
+          order={selectedOrder}
+          glazes={glazes || []}
+          onClose={() => setSelectedOrder(null)}
+        />
+        <StatusModal
+          open={showStatusModal}
+          onClose={() => setShowStatusModal(false)}
+          onConfirm={(newStatus) => {
+            handleBulkStatusUpdate(newStatus)
+            setShowStatusModal(false)
+          }}
+          currentStatus={selectedStatuses.length === 1 ? selectedStatuses[0] : ''}
+          currentStatuses={selectedStatuses.length > 1 ? selectedStatuses : []}
+        />
+      </div>
     </div>
   )
 }

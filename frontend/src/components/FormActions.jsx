@@ -39,11 +39,11 @@ export default function FormActions({
   const isSubmitDisabled = Boolean(submitDisabled || submitLoading)
 
   return (
-    <div className="flex sm:flex-row sm:justify-end gap-4 pt-2 w-full">
+    <div className="flex w-full gap-4 pt-2 sm:flex-row sm:justify-end">
       <button
         type="button"
         onClick={() => setIsCancelOpen(true)}
-        className="w-full sm:w-auto sm:px-4 py-2 rounded bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-neutral-700 dark:text-gray-200 dark:hover:bg-neutral-600"
+        className="w-full rounded bg-gray-200 py-2 text-gray-700 hover:bg-gray-300 sm:w-auto sm:px-4 dark:bg-neutral-700 dark:text-gray-200 dark:hover:bg-neutral-600"
       >
         {cancelButtonText}
       </button>
@@ -61,12 +61,12 @@ export default function FormActions({
       <button
         type="button"
         onClick={onSubmit}
-        disabled={isSubmitDisabled}                
-        aria-disabled={isSubmitDisabled}           
+        disabled={isSubmitDisabled}
+        aria-disabled={isSubmitDisabled}
         className={[
-          'w-full sm:w-auto sm:px-4 py-2 rounded text-white transition',
+          'w-full rounded py-2 text-white transition sm:w-auto sm:px-4',
           isSubmitDisabled
-            ? 'bg-neutral-400 cursor-not-allowed opacity-60'
+            ? 'cursor-not-allowed bg-neutral-400 opacity-60'
             : 'bg-black hover:bg-neutral-800 dark:bg-amber-500',
         ].join(' ')}
       >

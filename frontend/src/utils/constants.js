@@ -13,6 +13,5 @@ export const ORDER_CREATION_ROUTES = [
   '/orders/new/products',
   '/orders/new/confirm',
   '/users/add',
-  '/glazes/add'
-  
+  '/glazes/add',
 ]

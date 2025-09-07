@@ -1,11 +1,5 @@
 // src/components/StatusModal.jsx
-import {
-  Dialog,
-  DialogTitle,
-  DialogPanel,
-  Transition,
-  TransitionChild,
-} from '@headlessui/react'
+import { Dialog, DialogTitle, DialogPanel, Transition, TransitionChild } from '@headlessui/react'
 import { Fragment, useEffect, useMemo, useState } from 'react'
 import { getMessage as t } from '../utils/getMessage'
 
@@ -24,10 +18,7 @@ export default function StatusModal({
   }, [open, currentStatus])
 
   // Optional: stable order for options (avoid relying on object key order)
-  const STATUS_ORDER = useMemo(
-    () => ['new', 'pending', 'inProgress', 'completed', 'cancelled'],
-    []
-  )
+  const STATUS_ORDER = useMemo(() => ['new', 'pending', 'inProgress', 'completed', 'cancelled'], [])
 
   const handleConfirm = () => {
     onConfirm(newStatus)
@@ -61,13 +52,13 @@ export default function StatusModal({
             leaveFrom="opacity-100 scale-100"
             leaveTo="opacity-0 scale-95"
           >
-            <DialogPanel className="w-full max-w-md transform overflow-hidden rounded-lg bg-white dark:bg-neutral-900 p-6 text-left align-middle shadow-xl transition-all">
+            <DialogPanel className="w-full max-w-md transform overflow-hidden rounded-lg bg-white p-6 text-left align-middle shadow-xl transition-all dark:bg-neutral-900">
               <DialogTitle className="text-lg font-medium text-gray-900 dark:text-white">
                 {t('statusModal.title')}
               </DialogTitle>
 
               <div className="mt-4">
-                <label className="block text-sm text-gray-700 dark:text-gray-300 mb-1">
+                <label className="mb-1 block text-sm text-gray-700 dark:text-gray-300">
                   {t('statusModal.subtitle')}
                 </label>
 
@@ -75,7 +66,7 @@ export default function StatusModal({
                 <select
                   value={newStatus}
                   onChange={(e) => setNewStatus(e.target.value)}
-                  className="w-full rounded border dark:border-neutral-600 bg-white dark:bg-neutral-800 text-sm text-gray-900 dark:text-white px-3 py-2"
+                  className="w-full rounded border bg-white px-3 py-2 text-sm text-gray-900 dark:border-neutral-600 dark:bg-neutral-800 dark:text-white"
                 >
                   {STATUS_ORDER.map((status) => (
                     <option key={status} value={status}>
@@ -89,7 +80,7 @@ export default function StatusModal({
               <div className="mt-6 flex justify-end gap-3">
                 <button
                   onClick={onClose}
-                  className="px-4 py-2 text-sm bg-gray-200 dark:bg-neutral-700 text-gray-800 dark:text-white rounded hover:bg-gray-300 dark:hover:bg-neutral-600"
+                  className="rounded bg-gray-200 px-4 py-2 text-sm text-gray-800 hover:bg-gray-300 dark:bg-neutral-700 dark:text-white dark:hover:bg-neutral-600"
                 >
                   {t('button.cancel')}
                 </button>
@@ -97,12 +88,11 @@ export default function StatusModal({
                 <button
                   onClick={handleConfirm}
                   disabled={isUnchanged}
-                  className={`px-4 py-2 text-sm text-white rounded transition
-                    ${
-                      isUnchanged
-                        ? 'bg-emerald-600/60 cursor-not-allowed'
-                        : 'bg-emerald-600 hover:bg-emerald-700'
-                    }`}
+                  className={`rounded px-4 py-2 text-sm text-white transition ${
+                    isUnchanged
+                      ? 'cursor-not-allowed bg-emerald-600/60'
+                      : 'bg-emerald-600 hover:bg-emerald-700'
+                  }`}
                 >
                   {t('button.confirm')}
                 </button>

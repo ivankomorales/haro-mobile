@@ -1,11 +1,5 @@
 // src/components/ExportModal.jsx
-import {
-  Dialog,
-  DialogTitle,
-  DialogPanel,
-  Transition,
-  TransitionChild,
-} from '@headlessui/react'
+import { Dialog, DialogTitle, DialogPanel, Transition, TransitionChild } from '@headlessui/react'
 import { Fragment, useEffect, useMemo, useState } from 'react'
 import { getMessage as t } from '../utils/getMessage'
 import { showSuccess, showError } from '../utils/toastUtils'
@@ -106,9 +100,7 @@ export default function ExcelModal({
       const idxInAll = ALL_FIELDS.indexOf(field)
       if (idxInAll === -1) return [...prev, field] // fallback
       // busca el primer seleccionado que venga DESPUÉS en ALL_FIELDS
-      const nextKey = ALL_FIELDS.slice(idxInAll + 1).find((k) =>
-        prev.includes(k)
-      )
+      const nextKey = ALL_FIELDS.slice(idxInAll + 1).find((k) => prev.includes(k))
       if (!nextKey) return [...prev, field] // si no hay siguiente, va al final
       // inserta antes de ese siguiente
       const copy = [...prev]
@@ -177,7 +169,7 @@ export default function ExcelModal({
             leaveFrom="opacity-100 scale-100"
             leaveTo="opacity-0 scale-95"
           >
-            <DialogPanel className="w-full max-w-lg transform overflow-hidden rounded-lg bg-white dark:bg-neutral-900 p-6 text-left align-middle shadow-xl transition-all">
+            <DialogPanel className="w-full max-w-lg transform overflow-hidden rounded-lg bg-white p-6 text-left align-middle shadow-xl transition-all dark:bg-neutral-900">
               <DialogTitle className="text-lg font-medium text-gray-900 dark:text-white">
                 {t ? t('exportModal.title') : 'Export to Excel / CSV'}
               </DialogTitle>
@@ -188,31 +180,29 @@ export default function ExcelModal({
                   type="text"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  placeholder={
-                    t ? t('exportModal.searchPlaceholder') : 'Search fields…'
-                  }
-                  className="w-full rounded border dark:border-neutral-600 bg-white dark:bg-neutral-800 text-sm text-gray-900 dark:text-white px-3 py-2"
+                  placeholder={t ? t('exportModal.searchPlaceholder') : 'Search fields…'}
+                  className="w-full rounded border bg-white px-3 py-2 text-sm text-gray-900 dark:border-neutral-600 dark:bg-neutral-800 dark:text-white"
                 />
               </div>
 
               {/* Botones rápidos */}
-              <div className="mt-3 flex flex-col sm:flex-row sm:items-center gap-2">
+              <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center">
                 <div className="flex flex-wrap gap-2">
                   <button
                     onClick={selectAll}
-                    className="px-2 py-1 sm:px-3 sm:py-1.5 text-xs sm:text-sm bg-gray-200 dark:bg-neutral-700 text-gray-800 dark:text-white rounded hover:bg-gray-300 dark:hover:bg-neutral-600"
+                    className="rounded bg-gray-200 px-2 py-1 text-xs text-gray-800 hover:bg-gray-300 sm:px-3 sm:py-1.5 sm:text-sm dark:bg-neutral-700 dark:text-white dark:hover:bg-neutral-600"
                   >
                     {t ? t('exportModal.selectAll') : 'Select all'}
                   </button>
                   <button
                     onClick={clearAll}
-                    className="px-2 py-1 sm:px-3 sm:py-1.5 text-xs sm:text-sm bg-gray-200 dark:bg-neutral-700 text-gray-800 dark:text-white rounded hover:bg-gray-300 dark:hover:bg-neutral-600"
+                    className="rounded bg-gray-200 px-2 py-1 text-xs text-gray-800 hover:bg-gray-300 sm:px-3 sm:py-1.5 sm:text-sm dark:bg-neutral-700 dark:text-white dark:hover:bg-neutral-600"
                   >
                     {t ? t('exportModal.clear') : 'Clear'}
                   </button>
                 </div>
 
-                <span className="sm:ml-auto text-xs sm:text-sm text-gray-600 dark:text-gray-300">
+                <span className="text-xs text-gray-600 sm:ml-auto sm:text-sm dark:text-gray-300">
                   {t
                     ? `${t('exportModal.selectedCount')} ${selected.length}`
                     : `${selected.length} selected`}
@@ -220,16 +210,14 @@ export default function ExcelModal({
               </div>
 
               {/* Lista de checkboxes */}
-              <div className="mt-4 max-h-72 overflow-auto border rounded dark:border-neutral-700 divide-y dark:divide-neutral-800">
+              <div className="mt-4 max-h-72 divide-y overflow-auto rounded border dark:divide-neutral-800 dark:border-neutral-700">
                 {filtered.map((key) => {
-                  const label = t
-                    ? t(`fields.${key}`, DEFAULT_LABELS[key])
-                    : DEFAULT_LABELS[key]
+                  const label = t ? t(`fields.${key}`, DEFAULT_LABELS[key]) : DEFAULT_LABELS[key]
                   const checked = selected.includes(key)
                   return (
                     <label
                       key={key}
-                      className="flex items-center gap-3 px-3 py-2 text-sm cursor-pointer hover:bg-gray-50 dark:hover:bg-neutral-800"
+                      className="flex cursor-pointer items-center gap-3 px-3 py-2 text-sm hover:bg-gray-50 dark:hover:bg-neutral-800"
                     >
                       <input
                         type="checkbox"
@@ -237,9 +225,7 @@ export default function ExcelModal({
                         onChange={() => toggle(key)}
                         className="h-4 w-4"
                       />
-                      <span className="text-gray-900 dark:text-white">
-                        {label}
-                      </span>
+                      <span className="text-gray-900 dark:text-white">{label}</span>
                       <span className="ml-auto text-[11px] text-gray-500 dark:text-gray-400">
                         {key}
                       </span>
@@ -248,18 +234,16 @@ export default function ExcelModal({
                 })}
                 {filtered.length === 0 && (
                   <div className="px-3 py-6 text-sm text-gray-500 dark:text-gray-400">
-                    {t
-                      ? t('exportModal.noResults')
-                      : 'No fields match your search.'}
+                    {t ? t('exportModal.noResults') : 'No fields match your search.'}
                   </div>
                 )}
               </div>
 
               {/* Acciones */}
-              <div className="mt-6 flex flex-col-reverse sm:flex-row gap-2 sm:gap-3">
+              <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:gap-3">
                 <button
                   onClick={onClose}
-                  className="w-full sm:w-auto px-3 py-2 sm:px-4 sm:py-2 text-sm bg-gray-200 dark:bg-neutral-700 text-gray-800 dark:text-white rounded hover:bg-gray-300 dark:hover:bg-neutral-600"
+                  className="w-full rounded bg-gray-200 px-3 py-2 text-sm text-gray-800 hover:bg-gray-300 sm:w-auto sm:px-4 sm:py-2 dark:bg-neutral-700 dark:text-white dark:hover:bg-neutral-600"
                 >
                   {t ? t('button.cancel') : 'Cancel'}
                 </button>
@@ -267,12 +251,11 @@ export default function ExcelModal({
                 <button
                   onClick={handleSavePrefs}
                   disabled={noneChecked || !isDirty}
-                  className={`w-full sm:w-auto px-3 py-2 sm:px-4 sm:py-2 text-sm text-white rounded transition
-                    ${
-                      noneChecked || !isDirty
-                        ? 'bg-blue-600/60 cursor-not-allowed'
-                        : 'bg-blue-600 hover:bg-blue-700'
-                    }`}
+                  className={`w-full rounded px-3 py-2 text-sm text-white transition sm:w-auto sm:px-4 sm:py-2 ${
+                    noneChecked || !isDirty
+                      ? 'cursor-not-allowed bg-blue-600/60'
+                      : 'bg-blue-600 hover:bg-blue-700'
+                  }`}
                 >
                   {t ? t('exportModal.savePrefs') : 'Save preference'}
                 </button>
@@ -280,8 +263,7 @@ export default function ExcelModal({
                 <button
                   onClick={handleExport}
                   disabled={noneChecked}
-                  className={`w-full sm:w-auto px-3 py-2 sm:px-4 sm:py-2 text-sm text-white rounded transition
-                     ${noneChecked ? 'bg-emerald-600/60 cursor-not-allowed' : 'bg-emerald-600 hover:bg-emerald-700'}`}
+                  className={`w-full rounded px-3 py-2 text-sm text-white transition sm:w-auto sm:px-4 sm:py-2 ${noneChecked ? 'cursor-not-allowed bg-emerald-600/60' : 'bg-emerald-600 hover:bg-emerald-700'}`}
                 >
                   {t ? t('exportModal.export') : 'Export'}
                 </button>

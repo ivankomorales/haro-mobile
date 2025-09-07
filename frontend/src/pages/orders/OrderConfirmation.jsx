@@ -5,12 +5,7 @@ import OrderDetailsCard from '../../components/OrderDetailsCard'
 import { useRequireState } from '../../utils/useRequireState'
 import { getMessage as t } from '../../utils/getMessage'
 import FormActions from '../../components/FormActions'
-import {
-  showError,
-  showSuccess,
-  showLoading,
-  dismissToast,
-} from '../../utils/toastUtils'
+import { showError, showSuccess, showLoading, dismissToast } from '../../utils/toastUtils'
 import { createOrder } from '../../api/orders'
 import { cleanAddresses } from '../../utils/orderBuilder'
 
@@ -81,10 +76,7 @@ export default function OrderConfirmation() {
   })
 
   useRequireState(
-    (st) =>
-      st?.customer?.name &&
-      Array.isArray(st?.products) &&
-      st.products.length > 0,
+    (st) => st?.customer?.name && Array.isArray(st?.products) && st.products.length > 0,
     '/orders/new',
     () => ({ originPath: location.state?.originPath ?? '/orders' })
   )
@@ -138,11 +130,9 @@ export default function OrderConfirmation() {
         const intId = p.glazes?.interior?._id || p.glazes?.interior || null
         const extId = p.glazes?.exterior?._id || p.glazes?.exterior || null
 
-        const giName =
-          p.glazes?.interiorName || p.glazes?.interior?.name || null
+        const giName = p.glazes?.interiorName || p.glazes?.interior?.name || null
         const giHex = p.glazes?.interiorHex || p.glazes?.interior?.hex || null
-        const geName =
-          p.glazes?.exteriorName || p.glazes?.exterior?.name || null
+        const geName = p.glazes?.exteriorName || p.glazes?.exterior?.name || null
         const geHex = p.glazes?.exteriorHex || p.glazes?.exterior?.hex || null
 
         return {
@@ -183,15 +173,12 @@ export default function OrderConfirmation() {
         },
         // omit empty dates so backend default (+5 weeks) can apply
         orderDate: order.orderDate ? new Date(order.orderDate) : undefined,
-        deliverDate: order.deliverDate
-          ? new Date(order.deliverDate)
-          : undefined,
+        deliverDate: order.deliverDate ? new Date(order.deliverDate) : undefined,
         status: ensureStatus(order.status),
         deposit: Number(order.deposit || 0),
         notes: order.notes || '',
         shipping: {
-          isRequired:
-            !!order.shipping?.isRequired && cleanedAddresses.length > 0,
+          isRequired: !!order.shipping?.isRequired && cleanedAddresses.length > 0,
           addresses: cleanedAddresses,
         },
         products: cleanProducts,
@@ -222,8 +209,8 @@ export default function OrderConfirmation() {
   }
 
   return (
-    <div className="min-h-screen bg-white dark:bg-neutral-900 flex flex-col items-center px-4 py-6">
-      <h1 className="text-xl font-semibold text-black dark:text-white mb-4">
+    <div className="flex min-h-screen flex-col items-center bg-white px-4 py-6 dark:bg-neutral-900">
+      <h1 className="mb-4 text-xl font-semibold text-black dark:text-white">
         {t('order.confirm') || 'Confirm Order'}
       </h1>
 
@@ -244,14 +231,10 @@ export default function OrderConfirmation() {
         />
       </div>
 
-      <div className="w-full max-w-2xl mt-6">
+      <div className="mt-6 w-full max-w-2xl">
         <FormActions
           onSubmit={handleConfirm}
-          submitButtonText={
-            submitting
-              ? t('loading.order')
-              : t('order.submit') || 'Create Order'
-          }
+          submitButtonText={submitting ? t('loading.order') : t('order.submit') || 'Create Order'}
           cancelButtonText={t('formActions.cancel')}
           confirmTitle={t('formActionsConfirm.confirmTitle')}
           confirmMessage={t('formActions.confirmMessage')}

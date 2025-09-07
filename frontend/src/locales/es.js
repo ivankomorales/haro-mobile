@@ -19,8 +19,7 @@ export const es = {
     },
     order: {
       createFailed: 'Ocurrió un error al crear el pedido.',
-      deliverDateBeforeCreation:
-        'La fecha de entrega no puede ser anterior a la de pedido.',
+      deliverDateBeforeCreation: 'La fecha de entrega no puede ser anterior a la de pedido.',
       missingProduct: 'Debes agregar al menos un producto antes de continuar.',
       missingDate: 'La fecha de pedido es obligatoria.',
       notFound: 'Error al cargar el pedido',
@@ -41,13 +40,10 @@ export const es = {
     address: 'La dirección es obligatoria.',
     city: 'La ciudad es obligatoria.',
     facebookFormat: 'El usuario de Facebook debe iniciar con “/”.',
-    incompleteAddressBeforeAdding:
-      'Completa la dirección actual antes de agregar otra.',
-    incompleteShipping:
-      'Completa todos los campos de envío antes de agregar uno nuevo.',
+    incompleteAddressBeforeAdding: 'Completa la dirección actual antes de agregar otra.',
+    incompleteShipping: 'Completa todos los campos de envío antes de agregar uno nuevo.',
     instagramFormat: 'El usuario de Instagram debe iniciar con “@”.',
-    invalidDeliveryDate:
-      'La fecha de entrega debe ser posterior a la del pedido.',
+    invalidDeliveryDate: 'La fecha de entrega debe ser posterior a la del pedido.',
     phone: 'El teléfono es obligatorio.',
     positiveNumber: 'El valor debe ser mayor a 0',
     requiredFields: 'Completa todos los campos obligatorios.',

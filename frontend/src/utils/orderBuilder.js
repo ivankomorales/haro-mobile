@@ -91,11 +91,7 @@ export function validateBaseForm(formData) {
   if (!formData.orderDate) errors.orderDate = 'errors.order.missingDate'
 
   // Validate delivery date is not before the order date
-  if (
-    formData.deliverDate &&
-    formData.orderDate &&
-    formData.deliverDate < formData.orderDate
-  ) {
+  if (formData.deliverDate && formData.orderDate && formData.deliverDate < formData.orderDate) {
     errors.deliverDate = 'validation.invalidDeliveryDate'
   }
 
@@ -105,10 +101,7 @@ export function validateBaseForm(formData) {
   }
 
   // Email (optional) — must be valid format if present
-  if (
-    formData.email &&
-    !/^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$/.test(formData.email)
-  ) {
+  if (formData.email && !/^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$/.test(formData.email)) {
     errors.email = 'errors.user.invalidEmail'
   }
 
@@ -136,8 +129,7 @@ export function validateBaseForm(formData) {
     // At least one complete address required
     const nonEmpty = addressErrors.filter((e) => Object.keys(e).length === 0)
     if (nonEmpty.length === 0) {
-      errors.addresses =
-        addressErrors.length > 0 ? addressErrors : ['incomplete']
+      errors.addresses = addressErrors.length > 0 ? addressErrors : ['incomplete']
     } else if (addressErrors.some((e) => Object.keys(e).length > 0)) {
       errors.addresses = addressErrors
     }
@@ -159,12 +151,8 @@ export function buildBaseOrder(formData, opts = {}) {
   }
 
   // Normalize dates: if empty, omit field to let backend defaults kick in
-  const orderDate = formData.orderDate
-    ? new Date(formData.orderDate)
-    : undefined
-  const deliverDate = formData.deliverDate
-    ? new Date(formData.deliverDate)
-    : undefined
+  const orderDate = formData.orderDate ? new Date(formData.orderDate) : undefined
+  const deliverDate = formData.deliverDate ? new Date(formData.deliverDate) : undefined
 
   // Normalize status to new enum (lowercase)
   const status = ensureStatus(formData.status)

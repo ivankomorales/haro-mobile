@@ -4,6 +4,7 @@ import {
   Plus,
   ChartNoAxesCombined, // o ChartNoAxesCombined
   UserRound,
+  Paintbrush,
 } from 'lucide-react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { smartNavigate } from '../utils/smartNavigate'
@@ -19,17 +20,9 @@ export default function BottomNavBar() {
   const isActive = (route) => pathname.startsWith(route)
 
   return (
-    <div
-      className="
-        fixed bottom-4 left-1/2 -translate-x-1/2 z-50 
-        w-full max-w-lg h-16
-        bg-white border dark:bg-gray-700
-        border-gray-200 dark:border-gray-600
-        rounded-full
-      "
-    >
+    <div className="fixed bottom-4 left-1/2 z-50 h-16 w-full max-w-lg -translate-x-1/2 rounded-full border border-gray-200 bg-white dark:border-gray-600 dark:bg-gray-700">
       {/* TODO Change to have bottom bar fixed at bottom <nav className="fixed bottom-0 left-0 right-0 h-[var(--bottom-bar-h)] pb-[var(--safe-bottom)] bg-white/90 dark:bg-neutral-900/90 backdrop-blur border-t border-neutral-200 dark:border-neutral-800 z-50"> */}
-      <div className="grid grid-cols-5 h-full max-w-lg mx-auto">
+      <div className="mx-auto grid h-full max-w-lg grid-cols-5">
         {/* Home */}
         <button
           onClick={() =>
@@ -38,23 +31,19 @@ export default function BottomNavBar() {
               state: { originPath: getOriginPath(pathname) },
             })
           }
-          className="inline-flex flex-col items-center justify-center px-5 rounded-s-full group"
+          className="group inline-flex flex-col items-center justify-center rounded-s-full px-5"
         >
           <House
-            className={`
-              w-5 h-5 transition-transform duration-200
-              ${
-                isActive('/home')
-                  ? 'text-blue-600 dark:text-blue-400 scale-120'
-                  : 'text-gray-500 dark:text-gray-400 group-hover:text-blue-600 dark:group-hover:text-blue-400'
-              }`}
+            className={`h-5 w-5 transition-transform duration-200 ${
+              isActive('/home')
+                ? 'scale-120 text-blue-600 dark:text-blue-400'
+                : 'text-gray-500 group-hover:text-blue-600 dark:text-gray-400 dark:group-hover:text-blue-400'
+            }`}
           />
           <span className="sr-only">Home</span>
           {/* Indicador animado */}
           <span
-            className={`absolute -top-0.5 w-7 h-1.5 rounded-full transition-all duration-200 
-              ${isActive('/home') ? 'bg-blue-600 opacity-100 scale-100' : 'opacity-0 scale-0'}
-            `}
+            className={`absolute -top-0.5 h-1.5 w-7 rounded-full transition-all duration-200 ${isActive('/home') ? 'scale-100 bg-blue-600 opacity-100' : 'scale-0 opacity-0'} `}
           ></span>
         </button>
 
@@ -66,23 +55,19 @@ export default function BottomNavBar() {
               state: { originPath: getOriginPath(pathname) },
             })
           }
-          className="relative flex flex-col items-center justify-center px-5 group"
+          className="group relative flex flex-col items-center justify-center px-5"
         >
           <Clipboard
-            className={`
-              w-5 h-5 transition-transform duration-200
-              ${
-                isActive('/orders')
-                  ? 'text-blue-600 dark:text-blue-400 scale-120'
-                  : 'text-gray-500 dark:text-gray-400 group-hover:text-blue-600 dark:group-hover:text-blue-400'
-              }`}
+            className={`h-5 w-5 transition-transform duration-200 ${
+              isActive('/orders')
+                ? 'scale-120 text-blue-600 dark:text-blue-400'
+                : 'text-gray-500 group-hover:text-blue-600 dark:text-gray-400 dark:group-hover:text-blue-400'
+            }`}
           />
           <span className="sr-only">Orders</span>
           {/* Indicador animado */}
           <span
-            className={`absolute -top-0.5 w-7 h-1.5 rounded-full transition-all duration-200 
-              ${isActive('/orders') ? 'bg-blue-600 opacity-100 scale-100' : 'opacity-0 scale-0'}
-            `}
+            className={`absolute -top-0.5 h-1.5 w-7 rounded-full transition-all duration-200 ${isActive('/orders') ? 'scale-100 bg-blue-600 opacity-100' : 'scale-0 opacity-0'} `}
           ></span>
         </button>
 
@@ -96,17 +81,9 @@ export default function BottomNavBar() {
                 },
               })
             }
-            className="
-              inline-flex items-center justify-center 
-              w-10 h-10 
-              text-white font-medium 
-              bg-blue-600 hover:bg-blue-700 
-              rounded-full
-              focus:outline-none
-              group
-            "
+            className="group inline-flex h-10 w-10 items-center justify-center rounded-full bg-blue-600 font-medium text-white hover:bg-blue-700 focus:outline-none"
           >
-            <Plus className="w-4 h-4" />
+            <Plus className="h-7 w-7" />
             <span className="sr-only">New Order</span>
           </button>
         </div>
@@ -114,28 +91,24 @@ export default function BottomNavBar() {
         {/* Dashboard */}
         <button
           onClick={() =>
-            smartNavigate(navigate, pathname, '/dashboard', {
+            smartNavigate(navigate, pathname, '/products/glazes', {
               confirm,
               state: { originPath: getOriginPath(pathname) },
             })
           }
-          className="inline-flex flex-col items-center justify-center px-5 group"
+          className="group inline-flex flex-col items-center justify-center px-5"
         >
-          <ChartNoAxesCombined
-            className={`
-              w-5 h-5 transition-transform duration-200
-              ${
-                isActive('/dashboard')
-                  ? 'text-blue-600 dark:text-blue-400 scale-120'
-                  : 'text-gray-500 dark:text-gray-400 group-hover:text-blue-600 dark:group-hover:text-blue-400'
-              }`}
+          <Paintbrush
+            className={`h-5 w-5 transition-transform duration-200 ${
+              isActive('/products/glazes')
+                ? 'scale-120 text-blue-600 dark:text-blue-400'
+                : 'text-gray-500 group-hover:text-blue-600 dark:text-gray-400 dark:group-hover:text-blue-400'
+            }`}
           />
-          <span className="sr-only">Dashboard</span>
+          <span className="sr-only">Esmaltes</span>
           {/* Indicador animado */}
           <span
-            className={`absolute -top-0.5 w-7 h-1.5 rounded-full transition-all duration-200 
-              ${isActive('/dashboard') ? 'bg-blue-600 opacity-100 scale-100' : 'opacity-0 scale-0'}
-            `}
+            className={`absolute -top-0.5 h-1.5 w-7 rounded-full transition-all duration-200 ${isActive('/products/glazes') ? 'scale-100 bg-blue-600 opacity-100' : 'scale-0 opacity-0'} `}
           ></span>
         </button>
 
@@ -147,23 +120,19 @@ export default function BottomNavBar() {
               state: { originPath: getOriginPath(pathname) },
             })
           }
-          className="inline-flex flex-col items-center justify-center px-5 rounded-e-full group"
+          className="group inline-flex flex-col items-center justify-center rounded-e-full px-5"
         >
           <UserRound
-            className={`
-              w-5 h-5 transition-transform duration-200
-              ${
-                isActive('/profile')
-                  ? 'text-blue-600 dark:text-blue-400 scale-120'
-                  : 'text-gray-500 dark:text-gray-400 group-hover:text-blue-600 dark:group-hover:text-blue-400'
-              }`}
+            className={`h-5 w-5 transition-transform duration-200 ${
+              isActive('/profile')
+                ? 'scale-120 text-blue-600 dark:text-blue-400'
+                : 'text-gray-500 group-hover:text-blue-600 dark:text-gray-400 dark:group-hover:text-blue-400'
+            }`}
           />
           <span className="sr-only">Profile</span>
           {/* Indicador animado */}
           <span
-            className={`absolute -top-0.5 w-7 h-1.5 rounded-full transition-all duration-200 
-              ${isActive('/profile') ? 'bg-blue-600 opacity-100 scale-100' : 'opacity-0 scale-0'}
-            `}
+            className={`absolute -top-0.5 h-1.5 w-7 rounded-full transition-all duration-200 ${isActive('/profile') ? 'scale-100 bg-blue-600 opacity-100' : 'scale-0 opacity-0'} `}
           ></span>
         </button>
       </div>

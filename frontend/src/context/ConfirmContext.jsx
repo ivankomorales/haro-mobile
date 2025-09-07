@@ -48,9 +48,7 @@ export const ConfirmProvider = ({ children }) => {
       <ConfirmModal
         open={modalState.open}
         title={modalState.title || messages.formActionsCreate.confirmTitle}
-        message={
-          modalState.message || messages.formActionsCreate.confirmMessage
-        }
+        message={modalState.message || messages.formActionsCreate.confirmMessage}
         confirmText={modalState.confirmText || messages.formActions.confirmText}
         cancelText={modalState.cancelText || messages.formActions.cancelText}
         onClose={() => setModalState({ open: false })}

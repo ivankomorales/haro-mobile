@@ -11,21 +11,14 @@ import { getOriginPath } from '../../utils/navigationUtils'
 import { useLayout } from '../../context/LayoutContext'
 import DropWrap from '../../components/DropWrap'
 import { getGlazeById, updateGlaze } from '../../api/glazes'
-import {
-  showLoading,
-  showSuccess,
-  showError,
-  dismissToast,
-} from '../../utils/toastUtils'
+import { showLoading, showSuccess, showError, dismissToast } from '../../utils/toastUtils'
 
 export default function EditGlaze() {
   const { id } = useParams()
   const navigate = useNavigate()
   const location = useLocation()
   const returnTo = location.state?.returnTo
-  const originPath = getOriginPath(
-    location.state?.originPath ?? location.state?.from
-  )
+  const originPath = getOriginPath(location.state?.originPath ?? location.state?.from)
 
   const { setTitle, setShowSplitButton, resetLayout } = useLayout()
 
@@ -142,9 +135,7 @@ export default function EditGlaze() {
       navigate(returnTo || originPath || '/products/glazes', { replace: true })
     } catch (err) {
       console.error(err)
-      const key = err?.message?.startsWith?.('auth.')
-        ? err.message
-        : 'glaze.updateFailed'
+      const key = err?.message?.startsWith?.('auth.') ? err.message : 'glaze.updateFailed'
       showError(key)
       setError(err.message || 'Error updating glaze')
     } finally {
@@ -158,8 +149,8 @@ export default function EditGlaze() {
   }
 
   return (
-    <div className="pt-10 px-4 pb-24 min-h-screen bg-white dark:bg-neutral-900 text-gray-800 dark:text-gray-100 font-sans">
-      <form onSubmit={handleSubmit} className="max-w-md mx-auto space-y-6">
+    <div className="min-h-screen bg-white px-4 pt-10 pb-24 font-sans text-gray-800 dark:bg-neutral-900 dark:text-gray-100">
+      <form onSubmit={handleSubmit} className="mx-auto max-w-md space-y-6">
         {/* Name + color */}
         <div className="flex items-center gap-4">
           <FormInput
@@ -176,11 +167,9 @@ export default function EditGlaze() {
               name="hex"
               value={formData.hex}
               onChange={handleChange}
-              className="w-10 h-10 border border-gray-300 dark:border-gray-600 rounded cursor-pointer"
+              className="h-10 w-10 cursor-pointer rounded border border-gray-300 dark:border-gray-600"
             />
-            <span className="text-sm text-gray-700 dark:text-gray-300 w-16">
-              {formData.hex}
-            </span>
+            <span className="w-16 text-sm text-gray-700 dark:text-gray-300">{formData.hex}</span>
           </div>
         </div>
 
@@ -201,11 +190,11 @@ export default function EditGlaze() {
               <img
                 src={currentImage}
                 alt={formData.name}
-                className="w-32 h-32 rounded-md border object-cover"
+                className="h-32 w-32 rounded-md border object-cover"
               />
             ) : (
               <div
-                className="w-32 h-32 rounded-md border"
+                className="h-32 w-32 rounded-md border"
                 style={{ background: formData.hex }}
                 title={formData.hex}
               />
@@ -214,17 +203,13 @@ export default function EditGlaze() {
 
           {/* Drop / pick new image (replaces on save) */}
           <DropWrap
-            onFiles={(files) =>
-              setFormData((s) => ({ ...s, newImages: files }))
-            }
+            onFiles={(files) => setFormData((s) => ({ ...s, newImages: files }))}
             className="mt-2"
           >
             <ImageUploader
               multiple={false}
               value={formData.newImages}
-              onChange={(imgs) =>
-                setFormData((s) => ({ ...s, newImages: imgs }))
-              }
+              onChange={(imgs) => setFormData((s) => ({ ...s, newImages: imgs }))}
             />
           </DropWrap>
           <div className="text-xs text-neutral-500">
@@ -236,7 +221,7 @@ export default function EditGlaze() {
           </div>
         </div>
 
-        {error && <div className="text-red-500 text-sm">{error}</div>}
+        {error && <div className="text-sm text-red-500">{error}</div>}
 
         <FormActions
           onSubmit={handleSubmit}

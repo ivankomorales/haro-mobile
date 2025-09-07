@@ -1,11 +1,5 @@
 // src/components/OrderDetailsModal.jsx
-import {
-  Dialog,
-  DialogPanel,
-  DialogTitle,
-  Transition,
-  TransitionChild,
-} from '@headlessui/react'
+import { Dialog, DialogPanel, DialogTitle, Transition, TransitionChild } from '@headlessui/react'
 import { Fragment } from 'react'
 import OrderDetailsCard from './OrderDetailsCard'
 import { getMessage as t } from '../utils/getMessage'
@@ -20,13 +14,7 @@ function imageToUrl(img) {
   return null
 }
 
-export default function OrderDetailsModal({
-  open,
-  order,
-  onClose,
-  i18n,
-  glazes,
-}) {
+export default function OrderDetailsModal({ open, order, onClose, i18n, glazes }) {
   if (!order) return null
 
   // Prepare products for display: labels + image URLs
@@ -67,7 +55,7 @@ export default function OrderDetailsModal({
             leaveFrom="opacity-100 scale-100"
             leaveTo="opacity-0 scale-95"
           >
-            <DialogPanel className="w-full max-w-3xl rounded-xl bg-white dark:bg-neutral-900 p-6 shadow-lg overflow-y-auto max-h-[90vh]">
+            <DialogPanel className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-xl bg-white p-6 shadow-lg dark:bg-neutral-900">
               <OrderDetailsCard
                 order={formattedOrder}
                 glazes={glazes}
@@ -84,7 +72,7 @@ export default function OrderDetailsModal({
                 <button
                   type="button"
                   onClick={onClose}
-                  className="px-4 py-2 text-sm font-medium rounded bg-gray-200 hover:bg-gray-300 dark:bg-neutral-700 dark:hover:bg-neutral-600"
+                  className="rounded bg-gray-200 px-4 py-2 text-sm font-medium hover:bg-gray-300 dark:bg-neutral-700 dark:hover:bg-neutral-600"
                 >
                   {t('button.close')}
                 </button>

@@ -41,25 +41,25 @@ export default function GlazeSelect({
 
   return (
     <div className="mb-4">
-      <label className="block text-sm font-medium text-gray-700 dark:text-white mb-1">
+      <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-white">
         {label}
       </label>
 
       {/* Headless UI Combobox works best when value is the primitive we compare (id) */}
       <Combobox value={selectedId} onChange={(val) => onChange(val)}>
         <div className="relative">
-          <div className="flex items-center gap-2 border p-2 rounded dark:bg-neutral-900 dark:border-gray-700">
+          <div className="flex items-center gap-2 rounded border p-2 dark:border-gray-700 dark:bg-neutral-900">
             {/* Thumbnail or color square */}
             {selectedGlaze?.image ? (
               <img
                 src={selectedGlaze.image}
                 alt={selectedGlaze.name}
                 title={selectedGlaze.name}
-                className="w-6 h-6 rounded"
+                className="h-6 w-6 rounded"
               />
             ) : (
               <span
-                className="w-6 h-6 rounded border"
+                className="h-6 w-6 rounded border"
                 style={{ backgroundColor: selectedGlaze?.hex || '#fff' }}
                 title={selectedGlaze?.name || ''}
               />
@@ -67,25 +67,23 @@ export default function GlazeSelect({
 
             <ComboboxInput
               aria-label={ariaLabelText}
-              className="flex-1 outline-none bg-transparent text-sm text-black dark:text-white"
+              className="flex-1 bg-transparent text-sm text-black outline-none dark:text-white"
               // IMPORTANT: let HeadlessUI render the visible value via displayValue
-              displayValue={(id) =>
-                glazes.find((g) => g._id === id)?.name || ''
-              }
+              displayValue={(id) => glazes.find((g) => g._id === id)?.name || ''}
               onChange={(e) => setQuery(e.target.value)}
               placeholder={placeholderText}
             />
 
-            <ComboboxButton className="ml-1 p-1 rounded ui-open:rotate-180 transition">
+            <ComboboxButton className="ui-open:rotate-180 ml-1 rounded p-1 transition">
               <ChevronDown size={16} />
             </ComboboxButton>
           </div>
 
-          <ComboboxOptions className="absolute z-50 w-full mt-1 max-h-60 overflow-auto bg-white dark:bg-neutral-800 border border-gray-300 dark:border-gray-700 rounded shadow">
+          <ComboboxOptions className="absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded border border-gray-300 bg-white shadow dark:border-gray-700 dark:bg-neutral-800">
             {/* None option */}
             <ComboboxOption
               value=""
-              className="cursor-pointer px-4 py-2 text-sm ui-active:bg-gray-100 ui-active:dark:bg-neutral-700"
+              className="ui-active:bg-gray-100 ui-active:dark:bg-neutral-700 cursor-pointer px-4 py-2 text-sm"
             >
               {noneText}
             </ComboboxOption>
@@ -95,19 +93,12 @@ export default function GlazeSelect({
                 <ComboboxOption
                   key={g._id}
                   value={g._id} // we always return the id
-                  className="cursor-pointer px-4 py-2 text-sm flex items-center gap-2 ui-active:bg-gray-100 ui-active:dark:bg-neutral-700"
+                  className="ui-active:bg-gray-100 ui-active:dark:bg-neutral-700 flex cursor-pointer items-center gap-2 px-4 py-2 text-sm"
                 >
                   {g.image ? (
-                    <img
-                      src={g.image}
-                      alt={g.name}
-                      className="w-6 h-6 rounded"
-                    />
+                    <img src={g.image} alt={g.name} className="h-6 w-6 rounded" />
                   ) : (
-                    <span
-                      className="w-6 h-6 rounded border"
-                      style={{ backgroundColor: g.hex }}
-                    />
+                    <span className="h-6 w-6 rounded border" style={{ backgroundColor: g.hex }} />
                   )}
                   {g.name}
                 </ComboboxOption>

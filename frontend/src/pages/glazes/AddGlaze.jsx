@@ -15,9 +15,7 @@ export default function AddGlaze() {
   const navigate = useNavigate()
   const location = useLocation()
   const returnTo = location.state?.returnTo
-  const originPath = getOriginPath(
-    location.state?.originPath ?? location.state?.from
-  )
+  const originPath = getOriginPath(location.state?.originPath ?? location.state?.from)
 
   const { create } = useCreateGlaze(navigate)
 
@@ -59,9 +57,7 @@ export default function AddGlaze() {
     try {
       // Upload all images to Cloudinary
       const urls = await Promise.all(
-        formData.images.map((img) =>
-          uploadToCloudinary(img, 'haromobile/glazes')
-        )
+        formData.images.map((img) => uploadToCloudinary(img, 'haromobile/glazes'))
       )
 
       // Build glaze payload
@@ -88,7 +84,7 @@ export default function AddGlaze() {
   }
 
   return (
-    <div className="pt-10 px-4 pb-24 min-h-screen bg-white dark:bg-neutral-900 text-gray-800 dark:text-gray-100 font-sans">
+    <div className="min-h-screen bg-white px-4 pt-10 pb-24 font-sans text-gray-800 dark:bg-neutral-900 dark:text-gray-100">
       {/* <button
         onClick={() => navigate(-1)}
         className="mb-4 flex items-center text-sm text-blue-600 dark:text-blue-400 hover:underline "
@@ -101,7 +97,7 @@ export default function AddGlaze() {
         {t('glaze.title')}
       </h1> */}
 
-      <form onSubmit={handleSubmit} className="max-w-md mx-auto space-y-6">
+      <form onSubmit={handleSubmit} className="mx-auto max-w-md space-y-6">
         {/* Name + color */}
         <div className="flex items-center gap-4">
           <FormInput
@@ -118,11 +114,9 @@ export default function AddGlaze() {
               name="hex"
               value={formData.hex}
               onChange={handleChange}
-              className="w-10 h-10 border border-gray-300 dark:border-gray-600 rounded cursor-pointer"
+              className="h-10 w-10 cursor-pointer rounded border border-gray-300 dark:border-gray-600"
             />
-            <span className="text-sm text-gray-700 dark:text-gray-300 w-16">
-              {formData.hex}
-            </span>
+            <span className="w-16 text-sm text-gray-700 dark:text-gray-300">{formData.hex}</span>
           </div>
         </div>
 
@@ -147,8 +141,8 @@ export default function AddGlaze() {
           />
         </DropWrap>
 
-        {error && <div className="text-red-500 text-sm">{error}</div>}
-        {success && <div className="text-green-600 text-sm">{success}</div>}
+        {error && <div className="text-sm text-red-500">{error}</div>}
+        {success && <div className="text-sm text-green-600">{success}</div>}
 
         <FormActions
           onSubmit={handleSubmit}

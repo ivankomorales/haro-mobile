@@ -126,10 +126,7 @@ export default function EditOrder() {
   }
 
   return (
-    <form
-      onSubmit={handleUpdateOrder}
-      className="space-y-4 p-4 max-w-2xl mx-auto"
-    >
+    <form onSubmit={handleUpdateOrder} className="mx-auto max-w-2xl space-y-4 p-4">
       <FormInput
         name="name"
         label={t('form.name')}
@@ -202,9 +199,7 @@ export default function EditOrder() {
       <FormAddress
         active={formData.shipping.active}
         addresses={formData.shipping.addresses}
-        onChange={(updated) =>
-          setFormData((prev) => ({ ...prev, shipping: updated }))
-        }
+        onChange={(updated) => setFormData((prev) => ({ ...prev, shipping: updated }))}
         error={errors.addresses}
       />
 

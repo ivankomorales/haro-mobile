@@ -35,34 +35,22 @@ export default function Sidebar() {
     }`
 
   return (
-    <div
-      className="hidden md:flex flex-col w-56 h-screen px-4 py-6
-                 bg-white dark:bg-neutral-900 border-r dark:border-neutral-800"
-    >
+    <div className="hidden h-screen w-56 flex-col border-r bg-white px-4 py-6 md:flex dark:border-neutral-800 dark:bg-neutral-900">
       <div className="mb-6 text-center text-lg font-bold text-gray-800 dark:text-gray-100">
         Haro Mobile
       </div>
 
       <nav className="flex flex-col space-y-4 text-sm">
-        <button
-          onClick={() => handleNav('/home')}
-          className={linkClass('/home')}
-        >
-          <House className="w-5 h-5" />
+        <button onClick={() => handleNav('/home')} className={linkClass('/home')}>
+          <House className="h-5 w-5" />
           Home
         </button>
-        <button
-          onClick={() => handleNav('/orders')}
-          className={linkClass('/orders')}
-        >
-          <ClipboardList className="w-5 h-5" />
+        <button onClick={() => handleNav('/orders')} className={linkClass('/orders')}>
+          <ClipboardList className="h-5 w-5" />
           Orders
         </button>
-        <button
-          onClick={() => handleNav('/profile')}
-          className={linkClass('/profile')}
-        >
-          <UserRound className="w-5 h-5" />
+        <button onClick={() => handleNav('/profile')} className={linkClass('/profile')}>
+          <UserRound className="h-5 w-5" />
           Users
         </button>
         <div className="mt-2">
@@ -72,14 +60,14 @@ export default function Sidebar() {
             aria-expanded={openProducts}
           >
             <span className="flex items-center gap-2">
-              <Package className="w-5 h-5" />
+              <Package className="h-5 w-5" />
               Products
             </span>
             <span className="text-xs">{openProducts ? '▾' : '▸'}</span>
           </button>
 
           {openProducts && (
-            <div className="mt-1 pl-6 space-y-1">
+            <div className="mt-1 space-y-1 pl-6">
               <button
                 onClick={() => handleNav('/products/glazes')}
                 className={linkClass('/products/glazes')}

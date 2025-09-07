@@ -2,13 +2,7 @@
 import { useRef, useMemo, useEffect } from 'react'
 import { ImagePlus, X } from 'lucide-react'
 
-export default function ImageUploader({
-  label,
-  multiple = false,
-  value = [],
-  onChange,
-  inputRef,
-}) {
+export default function ImageUploader({ label, multiple = false, value = [], onChange, inputRef }) {
   const localRef = useRef(null)
 
   // Build preview URLs. Only createObjectURL for File items.
@@ -65,24 +59,24 @@ export default function ImageUploader({
         </label>
       )}
 
-      <div className="flex items-center gap-3 flex-wrap">
+      <div className="flex flex-wrap items-center gap-3">
         {previews.map((src, idx) => {
           if (!src) return null
           return (
             <div
               key={idx}
-              className="relative w-20 h-20 rounded overflow-hidden border dark:border-gray-600"
+              className="relative h-20 w-20 overflow-hidden rounded border dark:border-gray-600"
             >
               <img
                 src={src}
                 alt={`preview-${idx}`}
-                className="object-cover w-full h-full"
+                className="h-full w-full object-cover"
                 loading="lazy"
               />
               <button
                 type="button"
                 onClick={() => removeImage(idx)}
-                className="absolute top-0 right-0 bg-black/60 text-white p-1 rounded-bl"
+                className="absolute top-0 right-0 rounded-bl bg-black/60 p-1 text-white"
                 aria-label="Remove image"
                 title="Remove"
               >
@@ -92,8 +86,8 @@ export default function ImageUploader({
           )
         })}
 
-        <label className="w-20 h-20 border border-dashed dark:border-gray-600 flex items-center justify-center rounded cursor-pointer hover:bg-gray-100 dark:hover:bg-neutral-700">
-          <ImagePlus className="w-5 h-5 text-gray-500 dark:text-gray-300" />
+        <label className="flex h-20 w-20 cursor-pointer items-center justify-center rounded border border-dashed hover:bg-gray-100 dark:border-gray-600 dark:hover:bg-neutral-700">
+          <ImagePlus className="h-5 w-5 text-gray-500 dark:text-gray-300" />
           <input
             type="file"
             accept="image/*"

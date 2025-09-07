@@ -10,7 +10,5 @@ export default function useHideBars() {
   // Si es desktop, no ocultamos barras aunque coincida la ruta
   if (isDesktop) return false
 
-  return HIDE_BARS_ROUTES.some((pattern) =>
-    matchPath({ path: pattern, end: false }, pathname)
-  )
+  return HIDE_BARS_ROUTES.some((pattern) => matchPath({ path: pattern, end: false }, pathname))
 }

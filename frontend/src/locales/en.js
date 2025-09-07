@@ -22,8 +22,7 @@ export const en = {
     },
     order: {
       createFailed: 'Something went wrong while creating the order.',
-      deliverDateBeforeCreation:
-        'Delivery date cannot be earlier than order date.',
+      deliverDateBeforeCreation: 'Delivery date cannot be earlier than order date.',
       missingProduct: 'You must add at least one product before continuing.',
       missingDate: 'Order date is required.',
       notFound: 'Error loading order',
@@ -44,10 +43,8 @@ export const en = {
     address: 'Address is required.',
     city: 'City is required.',
     facebookFormat: 'Facebook username must start with "/"',
-    incompleteAddressBeforeAdding:
-      'Complete the current address before adding another one',
-    incompleteShipping:
-      'Please complete all shipping address fields before adding a new one.',
+    incompleteAddressBeforeAdding: 'Complete the current address before adding another one',
+    incompleteShipping: 'Please complete all shipping address fields before adding a new one.',
     instagramFormat: 'Instagram handle must start with "@"',
     invalidDeliveryDate: 'The delivery date must be after the order date.',
     phone: 'Phone is required.',
@@ -334,6 +331,7 @@ export const en = {
   // LOADING
   loading: {
     image: 'Loading Image',
+    order: 'Loading Order',
     orderCreate: 'Creating Order',
   },
 }

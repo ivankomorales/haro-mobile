@@ -47,19 +47,17 @@ export default function FormInput({
 }) {
   const [show, setShow] = useState(false)
 
-  const inputType =
-    type === 'password' && showToggle ? (show ? 'text' : 'password') : type
+  const inputType = type === 'password' && showToggle ? (show ? 'text' : 'password') : type
 
   const hasRightIcon =
-    (type === 'password' && showToggle) ||
-    (icon === 'calendar' && type === 'date')
+    (type === 'password' && showToggle) || (icon === 'calendar' && type === 'date')
 
   return (
     <div className="w-full">
       <div className="relative w-full">
         {/* Prefix (left aligned inside input) */}
         {prefix && (
-          <span className="absolute left-3 top-2/3 -translate-y-1/2 text-sm text-gray-500 dark:text-gray-300 pointer-events-none">
+          <span className="pointer-events-none absolute top-2/3 left-3 -translate-y-1/2 text-sm text-gray-500 dark:text-gray-300">
             {prefix}
           </span>
         )}
@@ -68,7 +66,7 @@ export default function FormInput({
         {!floating && (
           <label
             htmlFor={name}
-            className="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300"
+            className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300"
           >
             {label}
           </label>
@@ -81,14 +79,7 @@ export default function FormInput({
             id={name}
             value={value}
             onChange={onChange}
-            className={`
-              peer w-full appearance-none px-3 py-2 min-h-[44px]
-              rounded-lg border text-sm bg-white dark:bg-neutral-700
-              text-gray-900 dark:text-white
-              focus:outline-none focus:ring-2 focus:ring-blue-500
-              ${error ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'}
-              ${floating ? 'pt-5' : ''}
-            `}
+            className={`peer min-h-[44px] w-full appearance-none rounded-lg border bg-white px-3 py-2 text-sm text-gray-900 focus:ring-2 focus:ring-blue-500 focus:outline-none dark:bg-neutral-700 dark:text-white ${error ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} ${floating ? 'pt-5' : ''} `}
             {...props}
           >
             {props.children}
@@ -106,15 +97,7 @@ export default function FormInput({
               onChange(syntheticEvent)
             }}
             dateFormat="dd-MM-yyyy"
-            className={`
-              peer w-full ${prefix ? 'pl-10' : 'px-3'} py-1 min-h-[44px]
-              rounded-lg border text-sm bg-white dark:bg-neutral-700
-              text-gray-900 dark:text-white
-              focus:outline-none focus:ring-2 focus:ring-blue-500
-              ${error ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'}
-              ${floating ? 'pt-5' : ''}
-              ${hasRightIcon ? 'pr-11' : ''}
-            `}
+            className={`peer w-full ${prefix ? 'pl-10' : 'px-3'} min-h-[44px] rounded-lg border bg-white py-1 text-sm text-gray-900 focus:ring-2 focus:ring-blue-500 focus:outline-none dark:bg-neutral-700 dark:text-white ${error ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} ${floating ? 'pt-5' : ''} ${hasRightIcon ? 'pr-11' : ''} `}
             wrapperClassName="w-full"
             placeholderText={floating ? ' ' : (props.placeholder ?? label)}
             showPopperArrow={false}
@@ -133,15 +116,7 @@ export default function FormInput({
             max={max}
             step={step}
             required={required}
-            className={`
-              peer w-full ${prefix ? 'pl-10' : 'px-3'} py-1 min-h-[44px]
-              rounded-lg border text-sm bg-white dark:bg-neutral-700
-              text-gray-900 dark:text-white
-              focus:outline-none focus:ring-2 focus:ring-blue-500
-              ${error ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'}
-              ${floating ? 'pt-5' : ''}
-              ${hasRightIcon ? 'pr-11' : ''}
-            `}
+            className={`peer w-full ${prefix ? 'pl-10' : 'px-3'} min-h-[44px] rounded-lg border bg-white py-1 text-sm text-gray-900 focus:ring-2 focus:ring-blue-500 focus:outline-none dark:bg-neutral-700 dark:text-white ${error ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} ${floating ? 'pt-5' : ''} ${hasRightIcon ? 'pr-11' : ''} `}
             {...props}
           />
         )}
@@ -150,13 +125,7 @@ export default function FormInput({
         {floating && (
           <label
             htmlFor={name}
-            className={`
-              absolute left-3 top-1 text-sm text-gray-500 dark:text-gray-400
-              transform origin-[0] scale-75 -translate-y-0.5 transition-all
-              peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-2
-              peer-focus:scale-75 peer-focus:-translate-y-1.5
-              ${error ? 'text-red-500' : 'peer-focus:text-blue-600 dark:peer-focus:text-blue-400'}
-            `}
+            className={`absolute top-1 left-3 origin-[0] -translate-y-0.5 scale-75 transform text-sm text-gray-500 transition-all peer-placeholder-shown:translate-y-2 peer-placeholder-shown:scale-100 peer-focus:-translate-y-1.5 peer-focus:scale-75 dark:text-gray-400 ${error ? 'text-red-500' : 'peer-focus:text-blue-600 dark:peer-focus:text-blue-400'} `}
           >
             {label}
           </label>
@@ -164,13 +133,13 @@ export default function FormInput({
 
         {/* Icon wrapper (right-aligned) */}
         {hasRightIcon && (
-          <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
+          <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center">
             {type === 'password' && showToggle && (
               <button
                 type="button"
                 tabIndex={-1}
                 onClick={() => setShow((prev) => !prev)}
-                className="text-gray-500 dark:text-gray-300 pointer-events-auto"
+                className="pointer-events-auto text-gray-500 dark:text-gray-300"
                 aria-label={show ? 'Hide password' : 'Show password'}
               >
                 {show ? <EyeOff size={18} /> : <Eye size={18} />}
@@ -178,10 +147,7 @@ export default function FormInput({
             )}
 
             {icon === 'calendar' && type === 'date' && (
-              <Calendar
-                size={18}
-                className="text-gray-500 dark:text-gray-300 translate-y-2.5"
-              />
+              <Calendar size={18} className="translate-y-2.5 text-gray-500 dark:text-gray-300" />
             )}
           </div>
         )}
@@ -189,7 +155,7 @@ export default function FormInput({
 
       {/* Error message (below input) */}
       {error && (
-        <p className="text-red-500 text-sm mt-1">
+        <p className="mt-1 text-sm text-red-500">
           {errorFormatter ? errorFormatter(error) : error}
         </p>
       )}

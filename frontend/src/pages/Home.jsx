@@ -5,11 +5,7 @@ import { useNavigate } from 'react-router-dom'
 import { getMessage as t } from '../utils/getMessage'
 import { useLayout } from '../context/LayoutContext'
 import { OrderCard } from '../components/OrderCard'
-import {
-  STATUS_COLORS,
-  STATUS_TEXT_COLORS,
-  STATUS_LABELS,
-} from '../utils/orderStatusUtils'
+import { STATUS_COLORS, STATUS_TEXT_COLORS, STATUS_LABELS } from '../utils/orderStatusUtils'
 import OrderDetailsModal from '../components/OrderDetailsModal'
 
 export default function Home() {
@@ -34,10 +30,7 @@ export default function Home() {
   useEffect(() => {
     async function fetchData() {
       try {
-        const [recent, pending] = await Promise.all([
-          getRecentOrders(),
-          getPendingCount(),
-        ])
+        const [recent, pending] = await Promise.all([getRecentOrders(), getPendingCount()])
         setRecentOrders(recent)
         setPendingCount(pending)
         setLastUpdated(new Date())
@@ -49,29 +42,12 @@ export default function Home() {
   }, [])
 
   return (
-    <div
-      className="
-        min-h-screen
-        p-4 pb-24
-        font-sans
-        bg-white dark:bg-neutral-900
-        text-gray-800 dark:text-gray-100
-      "
-    >
+    <div className="min-h-screen bg-white p-4 pb-24 font-sans text-gray-800 dark:bg-neutral-900 dark:text-gray-100">
       {/* Optional h1 for accessibility */}
       {/*<h1 className="text-xl font-semibold mb-4">{t('home.title')}</h1>*/}
 
-      <div
-        className="
-          text-center
-          p-4 mb-6
-          bg-white dark:bg-neutral-800
-          rounded-lg shadow
-        "
-      >
-        <h2 className="text-base text-gray-500 dark:text-gray-300">
-          {t('home.pendingTitle')}
-        </h2>
+      <div className="mb-6 rounded-lg bg-white p-4 text-center shadow dark:bg-neutral-800">
+        <h2 className="text-base text-gray-500 dark:text-gray-300">{t('home.pendingTitle')}</h2>
         <p className="my-2 text-3xl font-bold">{pendingCount}</p>
         <span className="text-sm text-gray-400">
           {t('home.updatedAt')}{' '}
@@ -95,9 +71,7 @@ export default function Home() {
               key={order.orderID || order._id}
               order={{
                 ...order,
-                statusLabel: t(
-                  `status.${STATUS_LABELS[order.status] || 'unknown'}`
-                ),
+                statusLabel: t(`status.${STATUS_LABELS[order.status] || 'unknown'}`),
               }}
               onClick={async () => {
                 // Lazy-load glazes only when user opens an order

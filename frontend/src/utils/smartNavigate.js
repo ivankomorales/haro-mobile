@@ -13,18 +13,11 @@ import { ORDER_CREATION_ROUTES } from './constants' // or '../utils/constants' i
  * @param {string} targetPath - The path to navigate to.
  * @param {object} options - Optional config, including a custom `confirm` function.
  */
-export const smartNavigate = (
-  navigate,
-  currentPath,
-  targetPath,
-  options = {}
-) => {
+export const smartNavigate = (navigate, currentPath, targetPath, options = {}) => {
   const { confirm } = options
 
   // Check if the user is inside an ongoing flow (e.g., order creation)
-  const needsConfirmation = ORDER_CREATION_ROUTES.some((path) =>
-    currentPath.startsWith(path)
-  )
+  const needsConfirmation = ORDER_CREATION_ROUTES.some((path) => currentPath.startsWith(path))
 
   if (needsConfirmation && typeof confirm === 'function') {
     // Show confirmation modal before navigating away

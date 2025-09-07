@@ -9,11 +9,7 @@
  * @param {Array} glazes - Optional array of all glaze objects from DB.
  * @returns {Array} - The labeled and normalized product list.
  */
-export function formatProductsWithLabels(
-  products = [],
-  t = (x) => x,
-  glazes = []
-) {
+export function formatProductsWithLabels(products = [], t = (x) => x, glazes = []) {
   const glazeMap = new Map(glazes.map((g) => [g._id, g]))
 
   const grouped = products.reduce((acc, p) => {

@@ -13,15 +13,17 @@ import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { LogOut } from 'lucide-react'
 import { logout } from '../api/auth'
+import useKeyboardOpen from '../hooks/useKeyboardOpen'
 
 export default function DashboardLayout() {
   const isDesktop = useMediaQuery({ minWidth: 1024 })
   const hideBars = useHideBars()
+  const kbOpen = useKeyboardOpen()
   const { isAdmin } = useAuth()
   const { title } = useLayout()
   const [showMenu, setShowMenu] = useState(false)
-  const menuRef = useRef()
-  const avatarRef = useRef()
+  const menuRef = useRef(null)
+  const avatarRef = useRef(null)
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -42,10 +44,7 @@ export default function DashboardLayout() {
     }
   }, [])
 
-  const handleAvatarClick = () => {
-    setShowMenu(!showMenu) // Muestra o esconde el menú al hacer click
-  }
-
+  const handleAvatarClick = () => setShowMenu((v) => !v) //Show/Hide menu when clickinig using most recent value: (v)
   const handleLogout = () => {
     logout(navigate)
   }
@@ -63,39 +62,35 @@ export default function DashboardLayout() {
     glaze: isAdmin,
   }
 
-  const showBottom = !isDesktop && !hideBars
+  const showBottom = !isDesktop && !hideBars && !kbOpen
 
   return (
-    <div className="flex app-shell bg-white dark:bg-neutral-900 text-black dark:text-white overflow-hidden">
+    <div className="app-shell flex overflow-hidden bg-white text-black dark:bg-neutral-900 dark:text-white">
       {/* Sidebar on Desktop */}
       {isDesktop && !hideBars && <SideBar />}
 
       {/* Main container */}
-      <div className="flex flex-col flex-1 overflow-hidden">
+      <div className="flex flex-1 flex-col overflow-hidden">
         {/* AppBar fijo */}
         {!hideBars && (
           <AppBar
             title={title}
             extra={
               isDesktop ? (
-                <SplitActionButton
-                  showSecondary={isAdmin}
-                  labels={splitLabels}
-                  show={splitShow}
-                />
+                <SplitActionButton showSecondary={isAdmin} labels={splitLabels} show={splitShow} />
               ) : null
             }
             right={
               <div className="mr-4">
                 <div
                   ref={avatarRef}
-                  className="w-8 h-8 rounded-full overflow-hidden cursor-pointer"
+                  className="h-8 w-8 cursor-pointer overflow-hidden rounded-full"
                   onClick={handleAvatarClick}
                 >
                   <img
                     src="https://i.pravatar.cc/40"
                     alt="Avatar"
-                    className="w-full h-full object-cover"
+                    className="h-full w-full object-cover"
                   />
                 </div>
               </div>
@@ -105,17 +100,13 @@ export default function DashboardLayout() {
         {showMenu && (
           <div
             ref={menuRef}
-            className="absolute right-1 mt-10 w-40 bg-white shadow-md rounded-md z-50"
+            className="absolute right-1 z-50 mt-10 w-40 rounded-md bg-white shadow-md"
           >
             <ul className="py-2">
-              <li className="px-4 py-2 hover:bg-gray-100 cursor-pointer">
-                Perfil {/* TODO */}
-              </li>
-              <li className="px-4 py-2 hover:bg-gray-100 cursor-pointer">
-                Ajustes {/* TODO */}
-              </li>
+              <li className="cursor-pointer px-4 py-2 hover:bg-gray-100">Perfil {/* TODO */}</li>
+              <li className="cursor-pointer px-4 py-2 hover:bg-gray-100">Ajustes {/* TODO */}</li>
               <li
-                className="px-4 py-2 hover:bg-gray-100 cursor-pointer text-red-600"
+                className="cursor-pointer px-4 py-2 text-red-600 hover:bg-gray-100"
                 onClick={handleLogout}
               >
                 Cerrar sesión {/* TODO */}
@@ -126,7 +117,7 @@ export default function DashboardLayout() {
 
         {/* Scrollable Content */}
         <main id="scrollable-content" className="flex-1 overflow-y-auto">
-          <div className="max-w-[92%] mx-auto px-4 py-6">
+          <div className="mx-auto max-w-[92%] px-4 py-6">
             <Outlet />
           </div>
         </main>

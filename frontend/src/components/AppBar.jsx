@@ -1,21 +1,14 @@
 // src/components/AppBar.jsx
 export default function AppBar({ title, left, right, extra, progress }) {
   return (
-    <div
-      className="
-        w-full z-50
-        bg-white dark:bg-neutral-900 
-        border-b border-gray-200 dark:border-neutral-700
-        shadow-sm
-      "
-    >
-      <div className="max-w-[95%] mx-auto px-4 flex items-center justify-between h-14">
+    <div className="z-50 w-full border-b border-gray-200 bg-white shadow-sm dark:border-neutral-700 dark:bg-neutral-900">
+      <div className="mx-auto flex h-14 max-w-[95%] items-center justify-between px-4">
         {/* Left icon (e.g. X, ←, ☰) */}
         <div className="flex w-10 justify-start">{left}</div>
 
         {/* Spacer + Title */}
-        <div className="flex-1 relative">
-          <h1 className="absolute left-1/2 -translate-x-1/2 text-base font-semibold truncate max-w-[60%] text-center">
+        <div className="relative flex-1">
+          <h1 className="absolute left-1/2 max-w-[60%] -translate-x-1/2 truncate text-center text-base font-semibold">
             {title}
           </h1>
         </div>
@@ -24,12 +17,12 @@ export default function AppBar({ title, left, right, extra, progress }) {
         {extra && <div className="mr-19">{extra}</div>}
 
         {/* Right icon (e.g. avatar, settings) */}
-        <div className="flex items-center gap-2 justify-end">{right}</div>
+        <div className="flex items-center justify-end gap-2">{right}</div>
       </div>
 
       {/* Optional progress bar */}
       {typeof progress === 'number' && (
-        <div className="w-full h-1 bg-gray-200 dark:bg-neutral-800">
+        <div className="h-1 w-full bg-gray-200 dark:bg-neutral-800">
           <div
             className="h-1 bg-green-500 transition-all"
             style={{ width: `${Math.min(progress * 100, 100)}%` }}

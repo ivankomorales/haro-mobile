@@ -50,7 +50,7 @@ export default function OrderDetails() {
         <button
           type="button"
           onClick={() => navigate(originPath)}
-          className="w-full sm:w-auto sm:px-4 py-2 rounded bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-neutral-700 dark:text-gray-200 dark:hover:bg-neutral-600"
+          className="w-full rounded bg-gray-200 py-2 text-gray-700 hover:bg-gray-300 sm:w-auto sm:px-4 dark:bg-neutral-700 dark:text-gray-200 dark:hover:bg-neutral-600"
         >
           {t('button.close')}
         </button>

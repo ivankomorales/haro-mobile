@@ -6,11 +6,9 @@ import { ConfirmProvider } from './context/ConfirmContext'
 
 export default function App() {
   return (
-    
     <ConfirmProvider>
       <Toaster position="top-center" reverseOrder={false} />
       <Routes>{[...PublicRoutes(), ...PrivateRoutes()]}</Routes>
     </ConfirmProvider>
-
   )
 }

@@ -65,8 +65,7 @@ export default async function fetchWithAuth(
   }
 
   // Handle no-content responses (e.g., 204)
-  const isNoContent =
-    res.status === 204 || res.headers.get('Content-Length') === '0'
+  const isNoContent = res.status === 204 || res.headers.get('Content-Length') === '0'
   let data = {}
   const clone = res.clone()
 
@@ -101,9 +100,7 @@ export default async function fetchWithAuth(
 
     if (res.status === 422 || res.status === 400) {
       const fieldErrors = (Array.isArray(data.errors) ? data.errors : [])
-        .map(
-          (e, i) => `${e?.param || `[field ${i + 1}]`}: ${e?.msg || 'Invalid'}`
-        )
+        .map((e, i) => `${e?.param || `[field ${i + 1}]`}: ${e?.msg || 'Invalid'}`)
         .join(' | ')
       throw new Error(
         `${data.message || 'auth.validationError'}${fieldErrors ? `: ${fieldErrors}` : ''}`

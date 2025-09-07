@@ -29,12 +29,12 @@ export default function Login() {
   }
 
   return (
-    <div className="grid place-items-center min-h-[100svh] app-shell bg-white dark:bg-neutral-900 px-4 overflow-hidden">
+    <div className="app-shell grid min-h-[100svh] place-items-center overflow-hidden bg-white px-4 dark:bg-neutral-900">
       <form
         onSubmit={handleSubmit}
-        className="bg-white dark:bg-neutral-800 p-6 rounded-xl shadow-md w-full max-w-sm flex flex-col gap-4"
+        className="flex w-full max-w-sm flex-col gap-4 rounded-xl bg-white p-6 shadow-md dark:bg-neutral-800"
       >
-        <h2 className="text-xl font-semibold text-center">Login</h2>
+        <h2 className="text-center text-xl font-semibold">Login</h2>
 
         <FormInput
           label={t('login.email')}
@@ -65,14 +65,12 @@ export default function Login() {
 
         {/* Mensaje de error general */}
         {errors.form && (
-          <div className="text-red-500 text-sm text-center -mt-2">
-            {t(errors.form)}
-          </div>
+          <div className="-mt-2 text-center text-sm text-red-500">{t(errors.form)}</div>
         )}
 
         <button
           type="submit"
-          className="p-3 font-medium text-white bg-black rounded-full dark:bg-amber-500 hover:bg-neutral-900 transition"
+          className="rounded-full bg-black p-3 font-medium text-white transition hover:bg-neutral-900 dark:bg-amber-500"
         >
           {t('button.login')}
         </button>

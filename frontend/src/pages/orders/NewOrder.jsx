@@ -4,21 +4,11 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import FormInput from '../../components/FormInput'
 import FormActions from '../../components/FormActions'
 import FormAddress from '../../components/FormAddress'
-import {
-  Menu,
-  MenuButton,
-  MenuItem,
-  MenuItems,
-  Switch,
-} from '@headlessui/react'
+import { Menu, MenuButton, MenuItem, MenuItems, Switch } from '@headlessui/react'
 import { Instagram, Facebook, Plus } from 'lucide-react'
 import { showSuccess, showError } from '../../utils/toastUtils'
 import { getMessage as t } from '../../utils/getMessage'
-import {
-  prefillFormFromDraft,
-  validateBaseForm,
-  buildBaseOrder,
-} from '../../utils/orderBuilder'
+import { prefillFormFromDraft, validateBaseForm, buildBaseOrder } from '../../utils/orderBuilder'
 import { useLayout } from '../../context/LayoutContext'
 import { getOriginPath } from '../../utils/navigationUtils'
 
@@ -34,9 +24,7 @@ export default function NewOrder() {
   const existingProducts = location.state?.products || []
   const returnTo = location.state?.returnTo
 
-  const originPath = getOriginPath(
-    location.state?.originPath ?? location.state?.from
-  )
+  const originPath = getOriginPath(location.state?.originPath ?? location.state?.from)
 
   const [errors, setErrors] = useState({})
   const [formData, setFormData] = useState({
@@ -80,8 +68,7 @@ export default function NewOrder() {
     { type: 'facebook', label: 'Facebook', icon: Facebook },
   ]
 
-  const getSocialIcon = (type) =>
-    socialOptions.find((o) => o.type === type)?.icon || Instagram
+  const getSocialIcon = (type) => socialOptions.find((o) => o.type === type)?.icon || Instagram
 
   const setTypeAndPrefill = (type) => {
     setCurrentSocialType(type)
@@ -99,9 +86,7 @@ export default function NewOrder() {
     setFormData((prev) => ({
       ...prev,
       shipping: !prev.shipping,
-      addresses: !prev.shipping
-        ? [{ address: '', city: '', zip: '', phone: '' }]
-        : [],
+      addresses: !prev.shipping ? [{ address: '', city: '', zip: '', phone: '' }] : [],
     }))
   }
 
@@ -148,8 +133,7 @@ export default function NewOrder() {
 
   const addAddress = () => {
     const last = formData.addresses.at(-1)
-    const isIncomplete =
-      last && (!last.address || !last.city || !last.zip || !last.phone)
+    const isIncomplete = last && (!last.address || !last.city || !last.zip || !last.phone)
 
     if (isIncomplete) {
       showError('validation.incompleteAddressBeforeAdding')
@@ -244,11 +228,8 @@ export default function NewOrder() {
   }
 
   return (
-    <div className="min-h-screen pb-24 bg-white dark:bg-neutral-900 dark:text-gray-100">
-      <form
-        onSubmit={handleBaseSubmit}
-        className="max-w-2xl mx-auto px-4 pt-6 space-y-6"
-      >
+    <div className="min-h-screen bg-white pb-24 dark:bg-neutral-900 dark:text-gray-100">
+      <form onSubmit={handleBaseSubmit} className="mx-auto max-w-2xl space-y-6 px-4 pt-6">
         {/* Optional h1 for accessibility */}
         {/*<h1 className="text-center mb-8 text-xl font-semibold">
           {isEditBase ? t('order.editTitle') : t('order.newTitle')}
@@ -287,7 +268,7 @@ export default function NewOrder() {
                 name="countryCode"
                 value={formData.countryCode}
                 onChange={handleChange}
-                className="w-20 border rounded dark:bg-neutral-800 dark:border-gray-700"
+                className="w-20 rounded border dark:border-gray-700 dark:bg-neutral-800"
               >
                 <option value="+52">+52</option>
                 <option value="+1">+1</option>
@@ -319,20 +300,20 @@ export default function NewOrder() {
 
           {/* Social media */}
           <div className="mt-4 w-36">
-            <label className="block mb-1 text-sm font-medium text-gray-800 dark:text-gray-200">
+            <label className="mb-1 block text-sm font-medium text-gray-800 dark:text-gray-200">
               {t('order.social')}
             </label>
 
-            <div className="flex gap-1 mb-2">
+            <div className="mb-2 flex gap-1">
               <Menu as="div" className="relative">
-                <MenuButton className="flex items-center justify-center w-10 h-10 border rounded dark:border-gray-600 dark:bg-neutral-800">
+                <MenuButton className="flex h-10 w-10 items-center justify-center rounded border dark:border-gray-600 dark:bg-neutral-800">
                   {(() => {
                     const Icon = getSocialIcon(currentSocialType)
                     return <Icon size={24} />
                   })()}
                 </MenuButton>
 
-                <MenuItems className="absolute z-10 mt-1 w-36 bg-white border rounded shadow dark:bg-neutral-800 dark:border-gray-700">
+                <MenuItems className="absolute z-10 mt-1 w-36 rounded border bg-white shadow dark:border-gray-700 dark:bg-neutral-800">
                   {socialOptions.map((opt) => (
                     <MenuItem
                       as="button"
@@ -340,7 +321,7 @@ export default function NewOrder() {
                       key={opt.type}
                       onClick={() => setTypeAndPrefill(opt.type)}
                       className={({ focus }) =>
-                        `flex items-center gap-2 px-2 py-1 w-full text-left ${
+                        `flex w-full items-center gap-2 px-2 py-1 text-left ${
                           focus ? 'bg-gray-100 dark:bg-neutral-700' : ''
                         }`
                       }
@@ -355,22 +336,18 @@ export default function NewOrder() {
               {/* Social input */}
               <input
                 type="text"
-                placeholder={
-                  currentSocialType === 'instagram' ? '@username' : '/username'
-                }
+                placeholder={currentSocialType === 'instagram' ? '@username' : '/username'}
                 value={socialInput}
                 onChange={(e) => setSocialInput(e.target.value)}
-                onKeyDown={(e) =>
-                  e.key === 'Enter' && (e.preventDefault(), addOrUpdateSocial())
-                }
-                className="flex-1 h-10 px-3 text-sm border rounded dark:bg-neutral-800 dark:text-white dark:border-gray-600"
+                onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addOrUpdateSocial())}
+                className="h-10 flex-1 rounded border px-3 text-sm dark:border-gray-600 dark:bg-neutral-800 dark:text-white"
               />
 
               {/* Add button */}
               <button
                 type="button"
                 onClick={addOrUpdateSocial}
-                className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 dark:bg-neutral-700 dark:hover:bg-neutral-600 shrink-0"
+                className="shrink-0 rounded bg-gray-200 px-3 py-1 hover:bg-gray-300 dark:bg-neutral-700 dark:hover:bg-neutral-600"
                 title={t('order.addUpdate')}
               >
                 <Plus size={16} />
@@ -386,7 +363,7 @@ export default function NewOrder() {
                 return (
                   <span
                     key={type}
-                    className="flex items-center gap-2 px-3 py-1 text-sm bg-gray-100 rounded-full dark:bg-neutral-700"
+                    className="flex items-center gap-2 rounded-full bg-gray-100 px-3 py-1 text-sm dark:bg-neutral-700"
                   >
                     <Icon size={14} />
                     {value}
@@ -452,14 +429,14 @@ export default function NewOrder() {
         {/* Status & deposit */}
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <div>
-            <label className="block mb-1 text-sm font-medium text-gray-800 dark:text-gray-200">
+            <label className="mb-1 block text-sm font-medium text-gray-800 dark:text-gray-200">
               {t('order.status')}
             </label>
             <select
               name="status"
               value={formData.status}
               onChange={handleChange}
-              className="w-full h-10 px-3 py-3 text-sm border rounded dark:bg-neutral-800 dark:text-white dark:border-gray-600"
+              className="h-10 w-full rounded border px-3 py-3 text-sm dark:border-gray-600 dark:bg-neutral-800 dark:text-white"
             >
               <option value="new">{t('status.new')}</option>
               <option value="pending">{t('status.pending')}</option>
@@ -498,12 +475,12 @@ export default function NewOrder() {
             onChange={handleToggleShipping}
             className={`${
               formData.shipping ? 'bg-green-500' : 'bg-gray-300'
-            } inline-flex relative w-11 h-6 items-center rounded-full transition-colors duration-200`}
+            } relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200`}
           >
             <span
               className={`${
                 formData.shipping ? 'translate-x-6' : 'translate-x-1'
-              } inline-block w-4 h-4 transform rounded-full bg-white transition-transform`}
+              } inline-block h-4 w-4 transform rounded-full bg-white transition-transform`}
             />
           </Switch>
         </div>
@@ -540,32 +517,22 @@ export default function NewOrder() {
           error={errors.notes}
           errorFormatter={t}
         />
-        <p className="-mt-4 text-right text-xs text-gray-400">
-          {formData.notes.length}/200
-        </p>
+        <p className="-mt-4 text-right text-xs text-gray-400">{formData.notes.length}/200</p>
 
         {/* Actions Buttons - Cancel Confirm */}
         <FormActions
           onSubmit={handleBaseSubmit}
-          submitButtonText={
-            isEditBase ? t('formActions.saveChanges') : t('button.addProduct')
-          }
+          submitButtonText={isEditBase ? t('formActions.saveChanges') : t('button.addProduct')}
           cancelButtonText={t('formActions.cancel')}
           confirmTitle={
-            isEditBase
-              ? t('formActionsEdit.confirmTitle')
-              : t('formActionsCreate.confirmTitle')
+            isEditBase ? t('formActionsEdit.confirmTitle') : t('formActionsCreate.confirmTitle')
           }
           confirmMessage={
-            isEditBase
-              ? t('formActionsEdit.confirmMessage')
-              : t('formActionsCreate.confirmMessage')
+            isEditBase ? t('formActionsEdit.confirmMessage') : t('formActionsCreate.confirmMessage')
           }
           confirmText={t('formActions.confirmText')}
           cancelText={t('formActions.cancelText')}
-          cancelRedirect={
-            isEditBase ? returnTo || '/orders/confirmation' : originPath
-          }
+          cancelRedirect={isEditBase ? returnTo || '/orders/confirmation' : originPath}
           cancelState={isEditBase ? location.state : undefined}
         />
       </form>

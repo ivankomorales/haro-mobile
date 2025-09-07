@@ -1,5 +1,5 @@
 /* Tailwind first */
-@import "tailwindcss";
+@import 'tailwindcss';
 
 /* 1) Reset & neutral base (no theme colors here) */
 :root {
@@ -17,26 +17,32 @@
 }
 
 /* 2) Base light colors */
-html, body { height: 100%; }
+html,
+body {
+  height: 100%;
+}
 body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
   background-color: #ffffff; /* light background */
-  color: #222222;            /* light text */
-  overscroll-behavior: contain;      /* prevent “bounce” on mobile */
+  color: #222222; /* light text */
+  overscroll-behavior: contain; /* prevent “bounce” on mobile */
   -webkit-text-size-adjust: 100%;
-  touch-action: manipulation;        /* better scrolling/tapping on mobile */
+  touch-action: manipulation; /* better scrolling/tapping on mobile */
 }
 
 /* 3) Base dark colors (activated via <html class="dark">) */
 .dark body {
   background-color: #121212; /* dark background */
-  color: #f1f1f1;            /* dark text */
+  color: #f1f1f1; /* dark text */
 }
 
 /* 4) Neutral styles for basic elements */
-a { text-decoration: none; color: inherit; }
+a {
+  text-decoration: none;
+  color: inherit;
+}
 
 button {
   font-family: inherit;
@@ -46,7 +52,7 @@ button {
 }
 
 /* Hide the default datepicker icon since you style it manually */
-input[type="date"]::-webkit-calendar-picker-indicator {
+input[type='date']::-webkit-calendar-picker-indicator {
   opacity: 0;
   cursor: pointer;
 }
@@ -57,17 +63,19 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 .dark input:-webkit-autofill:focus,
 .dark input:-webkit-autofill:active {
   -webkit-box-shadow: 0 0 0 30px #1f2937 inset !important; /* bg-neutral-800 */
-  -webkit-text-fill-color: #f9fafb !important;              /* text-gray-100 */
+  -webkit-text-fill-color: #f9fafb !important; /* text-gray-100 */
   transition: background-color 5000s ease-in-out 0s;
 }
 
 /* 6) App shell helpers — do not affect theme colors */
-.app-shell { min-height: 100svh; }
+.app-shell {
+  min-height: 100svh;
+}
 
 /* Single scroll area, never behind bottom bar */
-.app-main { 
-  flex: 1 1 auto; 
-  overflow-y: auto; 
+.app-main {
+  flex: 1 1 auto;
+  overflow-y: auto;
   padding-bottom: calc(var(--bottom-bar-h) + var(--safe-bottom));
 }
 
@@ -77,4 +85,9 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 }
 
 /* iOS auto-zoom prevention: keep inputs >=16px */
-input, select, textarea, button { font-size: 16px; }
+input,
+select,
+textarea,
+button {
+  font-size: 16px;
+}

@@ -43,21 +43,21 @@ export default function SplitActionButton({
 
   return (
     <div className="relative">
-      <div className="flex rounded-md shadow overflow-hidden">
+      <div className="flex overflow-hidden rounded-md shadow">
         <button
           onClick={() =>
             handleSelect('/orders/new', {
               state: { originPath: getOriginPath(location.pathname) },
             })
           }
-          className="bg-orange-600 text-white px-4 py-2 text-sm font-medium hover:bg-orange-700"
+          className="bg-orange-600 px-4 py-2 text-sm font-medium text-white hover:bg-orange-700"
         >
           {labels.main}
         </button>
         {showSecondary && (
           <button
             onClick={() => setOpen((prev) => !prev)}
-            className="bg-orange-600 text-white px-2 py-2 text-sm font-medium hover:bg-orange-700"
+            className="bg-orange-600 px-2 py-2 text-sm font-medium text-white hover:bg-orange-700"
           >
             ▼
           </button>
@@ -65,7 +65,7 @@ export default function SplitActionButton({
       </div>
 
       {showSecondary && open && (
-        <div className="absolute right-0 mt-1 w-40 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-700 rounded-md shadow-lg z-50">
+        <div className="absolute right-0 z-50 mt-1 w-40 rounded-md border border-gray-300 bg-white shadow-lg dark:border-neutral-700 dark:bg-neutral-800">
           {show.order && (
             <button
               onClick={() =>

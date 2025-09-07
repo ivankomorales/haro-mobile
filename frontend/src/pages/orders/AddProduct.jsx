@@ -8,21 +8,14 @@ import { uploadToCloudinary } from '../../utils/uploadToCloudinary'
 import ImageUploader from '../../components/ImageUploader'
 import FormActions from '../../components/FormActions'
 import { getMessage as t } from '../../utils/getMessage'
-import {
-  showLoading,
-  dismissToast,
-  showError,
-  showSuccess,
-} from '../../utils/toastUtils'
+import { showLoading, dismissToast, showError, showSuccess } from '../../utils/toastUtils'
 import { useRequireState } from '../../utils/useRequireState'
 import { getOriginPath } from '../../utils/navigationUtils'
 
 export default function AddProduct() {
   const navigate = useNavigate()
   const location = useLocation()
-  const originPath = getOriginPath(
-    location.state?.originPath ?? location.state?.from
-  )
+  const originPath = getOriginPath(location.state?.originPath ?? location.state?.from)
 
   const baseOrder = location.state || {}
   const editIndex = location.state?.editIndex
@@ -51,10 +44,7 @@ export default function AddProduct() {
 
   // Redirect to NewOrder if no minimal data found
   useRequireState(
-    (st) =>
-      st?.customer?.name &&
-      st?.orderDate &&
-      typeof st?.shipping?.isRequired === 'boolean',
+    (st) => st?.customer?.name && st?.orderDate && typeof st?.shipping?.isRequired === 'boolean',
     '/orders/new',
     () => ({ originPath: location.state?.originPath ?? '/orders' })
   )
@@ -153,10 +143,7 @@ export default function AddProduct() {
           // exteriorImage: exterior?.image || '',
         },
       }
-      console.log(
-        'A) handleAddProduct -> newProduct.glazes:',
-        newProduct.glazes
-      )
+      console.log('A) handleAddProduct -> newProduct.glazes:', newProduct.glazes)
       setProducts((prev) => [...prev, newProduct])
       showSuccess('success.product.added')
 
@@ -215,9 +202,7 @@ export default function AddProduct() {
         // Upload only new Files; keep existing URLs/objects
         const uploads = await Promise.all(
           (formData.images || []).map((item) =>
-            item instanceof File
-              ? uploadToCloudinary(item, 'haromobile/products')
-              : item
+            item instanceof File ? uploadToCloudinary(item, 'haromobile/products') : item
           )
         )
 
@@ -242,9 +227,7 @@ export default function AddProduct() {
           products.map(async (product) => {
             const uploads = await Promise.all(
               (product.images || []).map((item) =>
-                item instanceof File
-                  ? uploadToCloudinary(item, 'haromobile/products')
-                  : item
+                item instanceof File ? uploadToCloudinary(item, 'haromobile/products') : item
               )
             )
             return { ...product, images: uploads }
@@ -359,9 +342,9 @@ export default function AddProduct() {
   }
 
   return (
-    <div className="min-h-screen pb-24 bg-white dark:bg-neutral-900 dark:text-gray-100">
-      <div className="max-w-xl mx-auto px-4 py-4 space-y-6">
-        <h1 className="text-center mb-8 text-xl font-semibold">
+    <div className="min-h-screen bg-white pb-24 dark:bg-neutral-900 dark:text-gray-100">
+      <div className="mx-auto max-w-xl space-y-6 px-4 py-4">
+        <h1 className="mb-8 text-center text-xl font-semibold">
           {isEdit ? t('product.edit') : t('product.title')}
         </h1>
 
@@ -383,7 +366,7 @@ export default function AddProduct() {
             <option value="figurine">{t('product.figurine')}</option>
           </FormInput>
 
-          <div className="flex justify-between items-center">
+          <div className="flex items-center justify-between">
             <div>
               <label className="text-sm">{t('product.qty')}:</label>
               <div className="flex items-center gap-4">
@@ -395,7 +378,7 @@ export default function AddProduct() {
                       quantity: Math.max(1, prev.quantity - 1),
                     }))
                   }
-                  className="px-2 py-1 bg-gray-300 dark:bg-gray-600 rounded"
+                  className="rounded bg-gray-300 px-2 py-1 dark:bg-gray-600"
                 >
                   −
                 </button>
@@ -408,7 +391,7 @@ export default function AddProduct() {
                       quantity: prev.quantity + 1,
                     }))
                   }
-                  className="px-2 py-1 bg-gray-300 dark:bg-gray-600 rounded"
+                  className="rounded bg-gray-300 px-2 py-1 dark:bg-gray-600"
                 >
                   +
                 </button>
@@ -434,8 +417,8 @@ export default function AddProduct() {
 
           {/* Esmaltes */}
           {formData.type !== 'figurine' && (
-            <details className="bg-neutral-100 dark:bg-neutral-800 rounded p-4">
-              <summary className="cursor-pointer font-medium text-sm dark:text-white">
+            <details className="rounded bg-neutral-100 p-4 dark:bg-neutral-800">
+              <summary className="cursor-pointer text-sm font-medium dark:text-white">
                 {t('product.glazeTitle')}
               </summary>
               <div className="mt-4 space-y-2">
@@ -444,9 +427,7 @@ export default function AddProduct() {
                     label={t('product.glazeInt')}
                     glazes={glazes}
                     selected={formData.glazeInterior}
-                    onChange={(value) =>
-                      setFormData((prev) => ({ ...prev, glazeInterior: value }))
-                    }
+                    onChange={(value) => setFormData((prev) => ({ ...prev, glazeInterior: value }))}
                     placeholderText={t('product.glazeSearch')} //Consider using a general i18n word
                     noneText={t('product.glazeNone')}
                     noResultsText={t('product.glazeNoResult')}
@@ -457,9 +438,7 @@ export default function AddProduct() {
                   label={t('product.glazeExt')}
                   glazes={glazes}
                   selected={formData.glazeExterior}
-                  onChange={(value) =>
-                    setFormData((prev) => ({ ...prev, glazeExterior: value }))
-                  }
+                  onChange={(value) => setFormData((prev) => ({ ...prev, glazeExterior: value }))}
                   placeholderText={t('product.glazeSearch')}
                   noneText={t('product.glazeNone')}
                   noResultsText={t('labels.glaze.noResults')}
@@ -495,10 +474,10 @@ export default function AddProduct() {
             type="button"
             onClick={handleAddProduct}
             //disabled={!isFormValid()}
-            className={`w-full py-2 rounded font-semibold transition-colors duration-200 ${
+            className={`w-full rounded py-2 font-semibold transition-colors duration-200 ${
               isFormValid()
                 ? 'bg-black text-white hover:bg-neutral-800'
-                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                : 'cursor-not-allowed bg-gray-300 text-gray-500'
             }`}
           >
             + {t('product.addButton')}
@@ -507,19 +486,18 @@ export default function AddProduct() {
 
         {products.length > 0 && (
           <>
-            <h2 className="text-sm font-semibold mt-6 mb-2 text-gray-600 dark:text-gray-200">
+            <h2 className="mt-6 mb-2 text-sm font-semibold text-gray-600 dark:text-gray-200">
               {t('product.added')}
             </h2>
             <ul className="space-y-2 text-sm text-gray-800 dark:text-white">
               {products.map((p, i) => (
                 <li
                   key={i}
-                  className="p-2 border rounded bg-neutral-100 dark:bg-neutral-800 flex items-center justify-between"
+                  className="flex items-center justify-between rounded border bg-neutral-100 p-2 dark:bg-neutral-800"
                 >
                   <div className="flex-1 truncate">
                     <div className="flex-1 truncate">
-                      {t(`product.${p.type}`)} — {p.quantity}{' '}
-                      {t('product.figure')}
+                      {t(`product.${p.type}`)} — {p.quantity} {t('product.figure')}
                       {p.quantity > 1 ? 's' : ''} — ${p.price}
                     </div>
                   </div>
@@ -544,14 +522,10 @@ export default function AddProduct() {
           cancelButtonText={t('formActions.cancel')}
           // Confirm modal al cancelar
           confirmTitle={
-            isEdit
-              ? t('formActionsEdit.confirmTitle')
-              : t('formActionsCreate.confirmTitle')
+            isEdit ? t('formActionsEdit.confirmTitle') : t('formActionsCreate.confirmTitle')
           }
           confirmMessage={
-            isEdit
-              ? t('formActionsEdit.confirmMessage')
-              : t('formActionsCreate.confirmMessage')
+            isEdit ? t('formActionsEdit.confirmMessage') : t('formActionsCreate.confirmMessage')
           }
           confirmText={t('formActions.confirmText')}
           cancelText={t('formActions.cancelText')}

@@ -87,26 +87,14 @@ export default function OrdersFilters({
         id="orders-filter-button"
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="
-          inline-flex items-center justify-center
-          h-10 px-3 rounded-md border border-gray-200 dark:border-neutral-700
-          hover:bg-neutral-100 dark:hover:bg-neutral-800
-          focus:outline-none focus:ring-2 focus:ring-blue-500
-          gap-2
-        "
+        className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-gray-200 px-3 hover:bg-neutral-100 focus:ring-2 focus:ring-blue-500 focus:outline-none dark:border-neutral-700 dark:hover:bg-neutral-800"
         aria-haspopup="menu"
         aria-expanded={open}
         title={tt('filters.title')}
       >
         <Filter className="h-5 w-5" />
         {activeCount > 0 && (
-          <span
-            className="
-              ml-1 inline-flex items-center justify-center
-              text-[11px] font-semibold h-5 min-w-[1.25rem] px-1.5 rounded-full
-              bg-blue-600 text-white
-            "
-          >
+          <span className="ml-1 inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-blue-600 px-1.5 text-[11px] font-semibold text-white">
             {activeCount}
           </span>
         )}
@@ -117,13 +105,7 @@ export default function OrdersFilters({
         <div
           id="orders-filter-menu"
           role="menu"
-          className="
-            absolute right-0 mt-2 z-50
-            w-72 sm:w-80 max-w-[calc(100vw-2rem)]
-            rounded-md border border-gray-200 dark:border-neutral-800
-            bg-white dark:bg-neutral-900 shadow-lg
-            p-3 space-y-3
-          "
+          className="absolute right-0 z-50 mt-2 w-72 max-w-[calc(100vw-2rem)] space-y-3 rounded-md border border-gray-200 bg-white p-3 shadow-lg sm:w-80 dark:border-neutral-800 dark:bg-neutral-900"
         >
           {/* Status */}
           <FormInput
@@ -143,7 +125,7 @@ export default function OrdersFilters({
           </FormInput>
 
           {/* Dates */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <FormInput
               type="date"
               name="dateFrom"
@@ -170,7 +152,7 @@ export default function OrdersFilters({
           </div>
 
           {/* Booleans */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <FormInput
               as="select"
               name="isUrgent"
@@ -202,20 +184,20 @@ export default function OrdersFilters({
           <div className="flex items-center justify-between pt-1">
             <button
               onClick={clearAll}
-              className="text-sm px-2 py-1 rounded hover:bg-neutral-100 dark:hover:bg-neutral-800"
+              className="rounded px-2 py-1 text-sm hover:bg-neutral-100 dark:hover:bg-neutral-800"
             >
               {tt('button.clear')}
             </button>
             <div className="space-x-2">
               <button
                 onClick={() => setOpen(false)}
-                className="text-sm px-3 py-1.5 rounded border border-gray-300 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-800"
+                className="rounded border border-gray-300 px-3 py-1.5 text-sm hover:bg-neutral-100 dark:border-neutral-700 dark:hover:bg-neutral-800"
               >
                 {tt('button.cancel')}
               </button>
               <button
                 onClick={apply}
-                className="text-sm px-3 py-1.5 rounded bg-blue-600 text-white hover:bg-blue-700"
+                className="rounded bg-blue-600 px-3 py-1.5 text-sm text-white hover:bg-blue-700"
               >
                 {tt('button.apply')}
               </button>

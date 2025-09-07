@@ -59,11 +59,7 @@ export default function AddressInput({
       </div>
 
       <div className="mt-3 flex justify-end">
-        <button
-          type="button"
-          onClick={onRemove}
-          className="text-xs text-red-600 hover:underline"
-        >
+        <button type="button" onClick={onRemove} className="text-xs text-red-600 hover:underline">
           {remove}
         </button>
       </div>

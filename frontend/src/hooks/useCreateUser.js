@@ -31,10 +31,7 @@ export const useCreateUser = (navigate) => {
       })
     } catch (err) {
       // Handle expired session or unauthorized
-      if (
-        err.message.toLowerCase().includes('expired') ||
-        err.message.includes('401')
-      ) {
+      if (err.message.toLowerCase().includes('expired') || err.message.includes('401')) {
         logout(navigate)
       }
       throw err

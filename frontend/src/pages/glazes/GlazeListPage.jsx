@@ -49,7 +49,7 @@ export default function GlazeListPage() {
   }
 
   return (
-    <div className="p-4 space-y-4">
+    <div className="space-y-4 p-4">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold">Glazes</h1>
         <button
@@ -62,7 +62,7 @@ export default function GlazeListPage() {
               },
             })
           }
-          className="px-3 py-2 rounded-md bg-black text-white dark:bg-amber-500"
+          className="rounded-md bg-black px-3 py-2 text-white dark:bg-amber-500"
         >
           New glaze
         </button>
@@ -75,25 +75,23 @@ export default function GlazeListPage() {
               <img
                 src={g.image}
                 alt={g.name}
-                className="w-14 h-14 rounded-md border object-cover"
+                className="h-14 w-14 rounded-md border object-cover"
                 loading="lazy"
               />
             ) : g.hex ? (
               <div
-                className="w-14 h-14 rounded-md border"
+                className="h-14 w-14 rounded-md border"
                 style={{ background: g.hex }}
                 title={g.hex}
               />
             ) : (
-              <div className="w-14 h-14 rounded-md border grid place-items-center text-xs text-neutral-500">
+              <div className="grid h-14 w-14 place-items-center rounded-md border text-xs text-neutral-500">
                 N/A
               </div>
             )}
 
-            <div className="flex-1 min-w-0">
-              <div className="font-medium truncate">
-                {joinNameCode(g.name, g.code)}
-              </div>
+            <div className="min-w-0 flex-1">
+              <div className="truncate font-medium">{joinNameCode(g.name, g.code)}</div>
               <div className="text-xs text-neutral-500">{g.hex || '—'}</div>
             </div>
 
@@ -108,14 +106,14 @@ export default function GlazeListPage() {
                     },
                   })
                 }
-                className="px-2 py-1 rounded-md border hover:bg-neutral-100 dark:hover:bg-neutral-800 text-sm"
+                className="rounded-md border px-2 py-1 text-sm hover:bg-neutral-100 dark:hover:bg-neutral-800"
               >
                 Edit
               </button>
               <button
                 onClick={() => handleDeactivate(g._id)}
                 disabled={busyId === g._id}
-                className="px-2 py-1 rounded-md border text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 text-sm disabled:opacity-60"
+                className="rounded-md border px-2 py-1 text-sm text-red-600 hover:bg-red-50 disabled:opacity-60 dark:hover:bg-red-900/20"
                 title="Deactivate"
               >
                 {busyId === g._id ? '…' : 'Deactivate'}
@@ -123,9 +121,7 @@ export default function GlazeListPage() {
             </div>
           </li>
         ))}
-        {items.length === 0 && (
-          <li className="py-10 text-center text-neutral-500">No glazes</li>
-        )}
+        {items.length === 0 && <li className="py-10 text-center text-neutral-500">No glazes</li>}
       </ul>
     </div>
   )

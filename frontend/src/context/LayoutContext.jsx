@@ -23,7 +23,7 @@ import { createContext, useContext, useMemo, useState } from 'react'
  * ```
  */
 
-const DEFAULT_TITLE = 'Haro Mobile' // TODO: i18n 
+const DEFAULT_TITLE = 'Haro Mobile' // TODO: i18n
 const DEFAULT_SPLIT = true
 
 const LayoutContext = createContext(null)
@@ -52,9 +52,7 @@ export function LayoutProvider({ children }) {
     [title, showSplitButton]
   )
 
-  return (
-    <LayoutContext.Provider value={value}>{children}</LayoutContext.Provider>
-  )
+  return <LayoutContext.Provider value={value}>{children}</LayoutContext.Provider>
 }
 
 export function useLayout() {

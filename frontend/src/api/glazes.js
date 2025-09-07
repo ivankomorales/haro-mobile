@@ -20,8 +20,7 @@ export const getAllGlazes = (nav) => fetchWithAuth('/api/glazes', {}, ctx(nav))
  * @param {function|null} navigate
  * @returns {Promise<any>}
  */
-export const getGlazeById = (id, nav) =>
-  fetchWithAuth(`/api/glazes/${id}`, {}, ctx(nav))
+export const getGlazeById = (id, nav) => fetchWithAuth(`/api/glazes/${id}`, {}, ctx(nav))
 
 /**
  * Create a new glaze.
@@ -44,8 +43,4 @@ export const deactivateGlaze = (id, nav) =>
   fetchWithAuth(`/api/glazes/${id}/deactivate`, { method: 'PATCH' }, ctx(nav))
 
 export const updateGlaze = (id, glazeData, nav) =>
-  fetchWithAuth(
-    `/api/glazes/${id}`,
-    { method: 'PUT', body: glazeData },
-    ctx(nav)
-  )
+  fetchWithAuth(`/api/glazes/${id}`, { method: 'PUT', body: glazeData }, ctx(nav))

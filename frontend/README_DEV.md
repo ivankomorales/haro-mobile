@@ -8,95 +8,112 @@ This document is a technical reference for developers working on the Haro Mobile
 haro-mobile/backend
 │
 ├── config/
-│   └── db.js                    # MongoDB connection setup
+│   └── db.js                     # MongoDB connection setup
 │
 ├── controllers/
-│   ├── auditController.js       # Handles fetching audit logs (admin-only)
-│   ├── authController.js        # Login, logout, password update
-│   ├── customerController.js    # Customer CRUD operations
-│   ├── glazeController.js       # CRUD for glazes with audit logging
-│   ├── orderController.js       # Create, update, cancel orders
-│   └── userController.js        # User CRUD, soft delete, role updates
+│   ├── auditController.js        # Handles fetching audit logs (admin-only)
+│   ├── authController.js         # Login, logout, password update
+│   ├── customerController.js     # Customer CRUD operations
+│   ├── exportController.js       # PDF and Excel exports
+│   ├── glazeController.js        # CRUD for glazes with audit logging
+│   ├── orderController.js        # Create, update, cancel orders
+│   └── userController.js         # User CRUD, soft delete, role updates
 │
 ├── middleware/
-│   ├── auth.js                  # JWT verification, attaches user to req
-│   ├── checkRole.js             # Restricts access by role (admin/employee)
-│   ├── errorHandler.js          # Centralized error handler for Express
-│   └── verifyOwnershipOrAdmin.js # Protects resources by ownership or admin
+│   ├── auth.js                   # JWT verification, attaches user to req
+│   ├── checkRole.js              # Restricts access by role (admin/employee)
+│   ├── errorHandler.js           # Centralized error handler for Express
+│   └── verifyOwnershipOrAdmin.j  # Protects resources by ownership or admin
 │
 ├── models/
-│   ├── AuditLog.js              # Logs critical system events (with TTL index)
-│   ├── Counter.js               # For auto-increment order IDs (ORD-000X)
-│   ├── Customer.js              # Customer schema (linked to orders)
-│   ├── Glaze.js                 # Glaze data, soft deletable
-│   ├── Order.js                 # Main order schema with nested products
-│   └── User.js                  # User schema with hashed password + roles
+│   ├── AuditLog.js               # Logs critical system events (with TTL index)
+│   ├── Counter.js                # For auto-increment order IDs (ORD-000X)
+│   ├── Customer.js               # Customer schema (linked to orders)
+│   ├── Glaze.js                  # Glaze data, soft deletable
+│   ├── Order.js                  # Main order schema with nested products
+│   └── User.js                   # User schema with hashed password + roles
 │
 ├── routes/
-│   ├── auditRoutes.js           # /api/logs → Audit logs (admin only)
-│   ├── authRoutes.js            # /api/auth → Login, logout, password
-│   ├── customerRoutes.js        # /api/customers → Customer endpoints
-│   ├── glazeRoutes.js           # /api/glazes → CRUD for glazes
-│   ├── orderRoutes.js           # /api/orders → Order endpoints
-│   └── userRoutes.js            # /api/users → User management
+│   ├── auditRoutes.js            # /api/logs → Audit logs (admin only)
+│   ├── authRoutes.js             # /api/auth → Login, logout, password
+│   ├── customerRoutes.js         # /api/customers → Customer endpoints
+│   ├── glazeRoutes.js            # /api/glazes → CRUD for glazes
+│   ├── orderRoutes.js            # /api/orders → Order endpoints
+│   └── userRoutes.js             # /api/users → User management
 │
 ├── utils/
-│   ├── ApiError.js              # Standardized error object for consistent error handling
-│   ├── audit.js                 # logEvent helper for consistent logging
-│   └── validators.js            # Express-validator middleware sets for input validation
+│   ├── ApiError.js               # Standardized error object for consistent error handling
+│   ├── audit.js                  # logEvent helper for consistent logging
+│   └── validators.js             # Express-validator middleware sets for input validation
 │
-├── .env                         # Environment variables (gitignored)
-├── .gitignore                   # Ignore node_modules, env files, etc.
-├── app.js                       # Main Express app config and routes
-├── package.json                 # Project metadata and dependencies
-└── README.md                    # Project overview and setup instructions
+├── .env                          # Environment variables (gitignored)
+├── .gitignore                    # Ignore node_modules, env files, etc.
+├── app.js                        # Main Express app config and routes
+├── package.json                  # Project metadata and dependencies
+└── README.md                     # Project overview and setup instructions
 
 
 ```
 
 ```
 haro-mobile/frontend
-├── api/              # Wrapper functions around backend API endpoints
+src/
+├── api/                          # Wrapper functions around backend API endpoints
 │   ├── auth.js
 │   ├── glazes.js
 │   ├── orders.js
 │   └── users.js
 │
-├── components/       # Reusable UI components
-│   ├── BottomNav.jsx
+├── assets/
+|
+├── components/                   # Reusable UI components
+
 │   ├── AddressInput.jsx          # Grouped address input fields
 │   ├── AppBar.jsx                # Form footer with Cancel and Submit buttons
+│   ├── BottomNavBar.jsx          #
 │   ├── ConfirmModal.jsx          # Generic confirmation modal (uses Headless UI)
+│   ├── DropWrap.jsx              #
+│   ├── ExcelModal.jsx            #
 │   ├── FormActions.jsx           # Form action buttons with cancel confirmation
 │   ├── FormAddress.jsx           # Dynamic list of shipping address sections
 │   ├── FormInput.jsx             # Reusable input supporting multiple types (prev FloatingInput)
 │   ├── GlazeSelect.jsx           # Searchable glaze selector (autocomplete)
 │   ├── ImageUploader.jsx         # Upload with preview and delete options
+│   ├── OrderActionsBar.jsx       #
+│   ├── OrderCard.jsx             #
 │   ├── OrderDetailsCard.jsx      # Displays full order and customer details
-│   ├── ScrollToTop.jsx
-│   ├── Sidebar.jsx
-│   └── SplitActionButton.jsx     # Button with optional dropdown for extra actions
+│   ├── OrderDetailsModal.jsx     #
+│   ├── OrderFilters.jsx          #
+│   ├── ScrollToTop.jsx           #
+│   ├── Sidebar.jsx               #
+│   ├── SplitActionButton.jsx     # Button with optional dropdown for extra actions
+│   └── StatusModal.jsx           #
 |
-├── context/          # Global app state using React Context
+├── context/                      # Global app state using React Context
 │   ├── AuthContext.jsx
 │   ├── ConfirmContext.jsx        # Global confirmation modal handler
 │   └── LayoutContext.jsx         # Shared layout state (e.g., hiding navs)
 |
-├── hooks/            # Custom React hooks
+├── hooks/                        # Custom React hooks
+│   ├── useAuth.js
+│   ├── useCreateGlaze.js         # POST request helper for new glazes
 │   ├── useCreateUser.js
 │   ├── useDarkMode.js            # (not implemented yet)
-│   ├── useCreateGlaze.js         # POST request helper for new glazes
-│   └── useHideBars.js            # Hides nav bars based on route or screen size
+│   ├── useHideBars.js            # Hides nav bars based on route or screen size
+│   └── useKeyboardOpen.js        # Hides bottom bar when keyboard opens on mobile devices
 |
-├── layouts/          # App layout components
+├── layouts/                      # App layout components
 │   └── DashboardLayout.jsx       # Main layout with sidebar and app bar
 |
-├── locales/          # i18n translation files
+├── locales/
+│   ├── es.js
 │   └── en.js
 |
-├── pages/            # Top-level pages grouped by domain
+├── pages/                        # Top-level pages grouped by domain
 │   ├── glazes/
-│   │   └── AddGlaze.jsx          # Form to create a new glaze
+│   |   ├── AddGlaze.jsx          # Form to create a new glaze
+│   |   ├── EditGlaze.js
+│   │   └── GlazeListPage.jsx          # Form to create a new glaze
 │
 │   ├── orders/
 │   │   ├── AddProduct.jsx        # Add a product to an order
@@ -113,20 +130,23 @@ haro-mobile/frontend
 │   ├── Home.jsx                  # Dashboard/home screen
 │   └── Login.jsx                 # Authentication/login screen
 |
-├── routes/                 # Route guards and wrappers
+├── routes/                       # Route guards and wrappers
 │   ├── PrivateRoute.jsx          # Wrapper component to protect private routes
 │   ├── privateRoutes.jsx         # Path list for routes that require authentication
 │   ├── PrivateRoutes.jsx         # Component that protects private routes (e.g., dashboard, orders)
 │   ├── publicroutes.jsx          # Path list for routes accessible without authentication
 │   └── PublicRoute.jsx           # Wrapper for routes like login, signup, etc.
 │
-├── services/              # Reserved for future service abstractions (e.g., API clients)
+├── services/                     # Reserved for future service abstractions (e.g., API clients)
 │
-├── utils/                 # Reusable utilities and helpers
+├── utils/                        # Reusable utilities and helpers
 │   ├── constants.js              # Paths where header/sidebar should be hidden (e.g., login pages)
+│   ├── date.js
+│   ├── exportUtils.js
 │   ├── fetchWithAuth.js          # Wrapper for fetch that adds authorization headers
 │   ├── getMessage.js             # Access nested error messages safely using dot notation
 │   ├── jwt.js                    # Decode JWT from localStorage to extract user info
+│   ├── navigationUtils.js
 │   ├── orderBuilder.js           # Helpers to create or update order objects
 │   ├── orderStatusUtils.js       # Logic to manage and display order statuses
 │   ├── productBuilder.js         # Create product payloads for submission
@@ -136,9 +156,9 @@ haro-mobile/frontend
 │   ├── uploadToCloudinary.js     # Upload images to Cloudinary from forms
 │   └── useRequireState.js        # Custom hook to block routes missing required `location.state`
 │
-├── App.jsx               # Main layout, route rendering, and global components
-├── index.css             # TailwindCSS and base global styles
-├── main.jsx              # React root file, renders <App/> and sets up context/providers
+├── App.jsx                       # Main layout, route rendering, and global components
+├── index.css                     # TailwindCSS and base global styles
+├── main.jsx                      # React root file, renders <App/> and sets up context/providers
 ```
 
 ### File & Module Responsibilities
@@ -579,4 +599,116 @@ Complete validation for shipping.required field.
 
 Ensure full dark mode support across all components.
 
-### 2025/08/04
+### 2025/08/04 - 2025/09/06
+
+Backend / API
+
+Glaze model & controllers: Glaze { name, hex, code, image, isActive } with CRUD-ish endpoints (create/get/list/update/deactivate) and audit logging.
+
+Excel export:
+
+Populated product glaze relations and extracted glaze names/hex robustly.
+
+Added background swatches in Excel cells for interior/exterior glazes with automatic light/dark text for contrast.
+
+Introduced flexible column set, auto-fit, filters, and safer XML output.
+
+(Note) Name+code concatenation for Excel is pending server-side; UI formatter exists.
+
+Frontend — Networking & Auth
+
+fetchWithAuth overhaul:
+
+Relative /api/... + Vite proxy for mobile LAN; API_BASE empty in dev.
+
+Safer headers, body auto-JSON, robust JSON/text fallbacks, normalized errors.
+
+Standardized 401/403 handling with optional { navigate, logout } hook to redirect to /login.
+
+Added quick NET logging and guidance to avoid localhost on phones.
+
+Login flow:
+
+Switched to fetchWithAuth for /api/auth/login (consistent headers/body).
+
+Fixed missing import (fetchWithAuth) bug that blocked login.
+
+Clarified where not to use fetchWithAuth as a form helper vs. API module.
+
+Frontend — Routing & Layout
+
+Private routes under a layout: Nested under DashboardLayout so /products/glazes and other pages render inside the app chrome (AppBar/Sidebar/BottomNav).
+
+Resolved “No routes matched” for /products/glazes by ensuring nesting and consistent paths.
+
+Return navigation: Adopted state: { originPath, from, returnTo } and getOriginPath() so Cancel/Back returns to Glazes list (fallbacks to /products/glazes).
+
+Frontend — i18n
+
+Locales: Added full Spanish dictionary; fixed import/export shapes (named vs default) to eliminate en is not defined.
+
+getMessage utility: DICTS, setLocale, getLocale, fallback to EN, “humanize” fallback; prevented crashes when keys are missing.
+
+ConfirmContext updated to use t() lookups rather than hard-wiring EN messages.
+
+Frontend — Glazes feature
+
+AddGlaze:
+
+Drag-and-drop via DropWrap + ImageUploader.
+
+Cloudinary upload on submit; sends { name, colorHex, code, image }.
+
+Glaze list (page):
+
+List view (not grid) with image preview instead of hex chip.
+
+Item actions to Edit / Deactivate (inactive hidden by default).
+
+EditGlaze:
+
+Loads current glaze; shows current image above the drop zone (no forced removal).
+
+Toasts integrated: showLoading('glaze.updating'), showSuccess('success.glaze.updated'), showError('glaze.updateFailed').
+
+Dirty check (isDirty) across name/hex/code + new image; Update button disabled if unchanged or invalid.
+
+FormActions updated to support submitDisabled and optional submitLoading; all existing usages remain backward-compatible.
+
+Frontend — Orders / Export UX
+
+Glaze labels in UI: Helper to format glaze display as Name (CODE) for on-screen product labels (used when opening an order and lazy-loading glazes).
+
+Excel export UI keeps name columns while color-coding cells; concatenating code into Excel labels is a small remaining server-side tweak if you want it.
+
+Mobile / PWA / UX polish
+
+Mobile network fixes: Left API_BASE empty in dev + Vite proxy to avoid CORS/localhost traps on phone.
+
+iOS input zoom prevention: Forced font-size: 16px on inputs to stop Safari auto-zoom (the main cause of BottomNav “jumping”).
+
+Viewport stability:
+
+Switched page shells to min-h: 100svh (or 100dvh where appropriate) and ensured single scroll container (<main>), so BottomNav doesn’t drift.
+
+BottomNav uses env(safe-area-inset-bottom) and fixed positioning; optional “hide on keyboard open” class provided.
+
+PWA setup:
+
+Added vite-plugin-pwa config, manifest with maskable icons.
+
+Registered service worker.
+
+index.html meta for viewport-fit=cover, iOS standalone, theme colors.
+
+Delivered a set of placeholder icons and wiring instructions.
+
+Clarified install expectations: HTTPS (or localhost) required for Android install prompts; iOS installs via “Add to Home Screen”.
+
+Dev workflow / Debuggability
+
+Mobile console guidance (Chrome Inspect / Safari Web Inspector).
+
+Explained secure: false in Vite proxy (only relevant for HTTPS self-signed targets).
+
+HMR/socket pitfalls called out; removed fragile HMR host overrides.

@@ -12,9 +12,7 @@ import { useLayout } from '../../context/LayoutContext'
 export default function AddUser() {
   const navigate = useNavigate()
   const location = useLocation()
-  const originPath = getOriginPath(
-    location.state?.originPath ?? location.state?.from
-  )
+  const originPath = getOriginPath(location.state?.originPath ?? location.state?.from)
   const { create } = useCreateUser(navigate)
 
   // Top Bar Actions
@@ -69,7 +67,7 @@ export default function AddUser() {
   }
 
   return (
-    <div className="pt-10 px-4 pb-24 min-h-screen bg-white dark:bg-neutral-900 text-gray-800 dark:text-gray-100 font-sans">
+    <div className="min-h-screen bg-white px-4 pt-10 pb-24 font-sans text-gray-800 dark:bg-neutral-900 dark:text-gray-100">
       {/* <button
         onClick={() => navigate(-1)}
         className="mb-4 flex items-center text-sm text-blue-600 dark:text-blue-400 hover:underline "
@@ -82,7 +80,7 @@ export default function AddUser() {
         {t('user.title')}
       </h1> */}
 
-      <form onSubmit={handleSubmit} className="max-w-md mx-auto space-y-6">
+      <form onSubmit={handleSubmit} className="mx-auto max-w-md space-y-6">
         <FormInput
           label={t('user.name')}
           name="name"
@@ -130,12 +128,12 @@ export default function AddUser() {
         />
 
         <div>
-          <label className="block text-sm mb-1">Rol</label>
+          <label className="mb-1 block text-sm">Rol</label>
           <select
             name="role"
             value={formData.role}
             onChange={handleChange}
-            className="w-full p-2 border rounded dark:bg-neutral-800 dark:border-gray-600"
+            className="w-full rounded border p-2 dark:border-gray-600 dark:bg-neutral-800"
           >
             <option value="employee">{t('user.employee')}</option>
             <option value="admin">{t('user.admin')}</option>
