@@ -5,6 +5,8 @@ import {
   ComboboxOptions,
   ComboboxOption,
   ComboboxButton,
+  // opcional si más abajo usas <Portal>
+  // Portal,
 } from '@headlessui/react'
 import { useMemo, useState } from 'react'
 import { ChevronDown } from 'lucide-react'
@@ -12,8 +14,8 @@ import { ChevronDown } from 'lucide-react'
 export default function GlazeSelect({
   label,
   glazes = [],
-  selected, // string id | object {_id,...} | ''
-  onChange, // (id: string | '') => void
+  selected,
+  onChange,
   placeholderText = 'Buscar esmalte...',
   noneText = 'Sin esmalte',
   noResultsText = 'Sin resultados',
@@ -21,7 +23,6 @@ export default function GlazeSelect({
 }) {
   const [query, setQuery] = useState('')
 
-  // Normalize external selected to an ID (or '')
   const selectedId = useMemo(() => {
     if (!selected) return ''
     if (typeof selected === 'string') return selected
@@ -45,17 +46,21 @@ export default function GlazeSelect({
         {label}
       </label>
 
-      {/* Headless UI Combobox works best when value is the primitive we compare (id) */}
-      <Combobox value={selectedId} onChange={(val) => onChange(val)}>
+      <Combobox
+        value={selectedId}
+        onChange={(val) => {
+          onChange(val)
+          setQuery('') // 👈 limpia el filtro después de seleccionar
+        }}
+      >
         <div className="relative">
           <div className="flex items-center gap-2 rounded border p-2 dark:border-gray-700 dark:bg-neutral-900">
-            {/* Thumbnail or color square */}
             {selectedGlaze?.image ? (
               <img
                 src={selectedGlaze.image}
                 alt={selectedGlaze.name}
                 title={selectedGlaze.name}
-                className="h-6 w-6 rounded"
+                className="h-6 w-6 rounded object-cover"
               />
             ) : (
               <span
@@ -68,10 +73,13 @@ export default function GlazeSelect({
             <ComboboxInput
               aria-label={ariaLabelText}
               className="flex-1 bg-transparent text-sm text-black outline-none dark:text-white"
-              // IMPORTANT: let HeadlessUI render the visible value via displayValue
               displayValue={(id) => glazes.find((g) => g._id === id)?.name || ''}
               onChange={(e) => setQuery(e.target.value)}
               placeholder={placeholderText}
+              autoComplete="off" // 👈 ayuda en iOS/Android
+              autoCorrect="off"
+              spellCheck={false}
+              inputMode="search"
             />
 
             <ComboboxButton className="ui-open:rotate-180 ml-1 rounded p-1 transition">
@@ -79,11 +87,17 @@ export default function GlazeSelect({
             </ComboboxButton>
           </div>
 
-          <ComboboxOptions className="absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded border border-gray-300 bg-white shadow dark:border-gray-700 dark:bg-neutral-800">
-            {/* None option */}
+          {/* Si tu HeadlessUI es v2 puedes usar anchor="bottom start" aquí */}
+          <ComboboxOptions
+            // anchor="bottom start"  // 👈 (solo v2) posiciona bien y mejora toques
+            className="absolute z-50 mt-1 max-h-60 w-full touch-manipulation overflow-auto rounded border border-gray-300 bg-white shadow dark:border-gray-700 dark:bg-neutral-800"
+          >
+            {/* Opción "ninguno" como botón clickeable */}
             <ComboboxOption
+              as="button" // 👈 opción es un botón real
+              type="button"
               value=""
-              className="ui-active:bg-gray-100 ui-active:dark:bg-neutral-700 cursor-pointer px-4 py-2 text-sm"
+              className="ui-active:bg-gray-100 ui-active:dark:bg-neutral-700 block w-full cursor-pointer px-4 py-2 text-left text-sm"
             >
               {noneText}
             </ComboboxOption>
@@ -91,16 +105,20 @@ export default function GlazeSelect({
             {filteredGlazes.length > 0 ? (
               filteredGlazes.map((g) => (
                 <ComboboxOption
+                  as="button" // 👈 botón = taps fiables en móvil
+                  type="button"
                   key={g._id}
-                  value={g._id} // we always return the id
-                  className="ui-active:bg-gray-100 ui-active:dark:bg-neutral-700 flex cursor-pointer items-center gap-2 px-4 py-2 text-sm"
+                  value={g._id}
+                  className="ui-active:bg-gray-100 ui-active:dark:bg-neutral-700 block w-full cursor-pointer px-4 py-2 text-left text-sm"
                 >
-                  {g.image ? (
-                    <img src={g.image} alt={g.name} className="h-6 w-6 rounded" />
-                  ) : (
-                    <span className="h-6 w-6 rounded border" style={{ backgroundColor: g.hex }} />
-                  )}
-                  {g.name}
+                  <span className="flex items-center gap-2">
+                    {g.image ? (
+                      <img src={g.image} alt={g.name} className="h-6 w-6 rounded object-cover" />
+                    ) : (
+                      <span className="h-6 w-6 rounded border" style={{ backgroundColor: g.hex }} />
+                    )}
+                    {g.name}
+                  </span>
                 </ComboboxOption>
               ))
             ) : (
@@ -109,6 +127,15 @@ export default function GlazeSelect({
               </div>
             )}
           </ComboboxOptions>
+
+          {/* --- OPCIONAL SI AÚN TIENES TOQUES “FANTASMA” ---
+              Envuelve <ComboboxOptions> en <Portal> para sacarlo del contenedor y evitar
+              solapes/z-index raros en móviles:
+              
+              <Portal>
+                <ComboboxOptions ...>...</ComboboxOptions>
+              </Portal>
+          */}
         </div>
       </Combobox>
     </div>

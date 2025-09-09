@@ -1,4 +1,32 @@
 // src/utils/orderBuilder.js
+//Date Helpers
+// Parse 'YYYY-MM-DD' (local) → Date | undefined
+export function parseDateInput(s) {
+  if (!s) return undefined
+  if (s instanceof Date) return s // ya es Date
+  if (typeof s !== 'string') {
+    const d = new Date(s)
+    return isNaN(d) ? undefined : d
+  }
+  const m = s.match(/^(\d{4})-(\d{2})-(\d{2})$/)
+  if (!m) {
+    const d = new Date(s)
+    return isNaN(d) ? undefined : d
+  }
+  const [, yy, mm, dd] = m.map(Number)
+  return new Date(yy, mm - 1, dd)
+}
+
+// Date | ISO | epoch → 'YYYY-MM-DD' (para value del input date)
+export function toDateInputValue(val) {
+  if (!val) return ''
+  let d = val instanceof Date ? val : new Date(val)
+  if (isNaN(d)) return ''
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
+}
 
 // Helpers to split full name ,parse phone number and clean empty shipping addresses
 export function splitName(fullName = '') {
@@ -61,8 +89,8 @@ export function prefillFormFromDraft(draft = {}) {
     socialMedia: draft.customer?.socialMedia || { instagram: '', facebook: '' },
 
     // Dates & status
-    orderDate: draft.orderDate || '',
-    deliverDate: draft.deliverDate || '',
+    orderDate: toDateInputValue(draft.orderDate),
+    deliverDate: toDateInputValue(draft.deliverDate),
     status: ensureStatus(draft.status),
 
     // Payment
@@ -85,14 +113,31 @@ export function prefillFormFromDraft(draft = {}) {
 export function validateBaseForm(formData) {
   const errors = {}
 
-  if (!formData.name) errors.name = 'errors.customer.missingName'
-  if (!formData.lastName) errors.lastName = 'validation.requiredFields'
+  // Only letters (including accents), spaces, apostrophes and hyphens
+  const NAME_RE = /^[A-Za-zÁÉÍÓÚáéíóúÑñ\s'-]+$/
+
+  // First name: required + only letters
+  if (!formData.name?.trim()) {
+    errors.name = 'errors.customer.missingName'
+  } else if (!NAME_RE.test(formData.name.trim())) {
+    errors.name = 'validation.nameOnlyLetters'
+  }
+
+  // Last name: optional, but if present must be only letters
+  if (formData.lastName?.trim() && !NAME_RE.test(formData.lastName.trim())) {
+    errors.lastName = 'validation.lastNameOnlyLetters'
+  }
   if (!formData.status) errors.status = 'validation.requiredFields'
   if (!formData.orderDate) errors.orderDate = 'errors.order.missingDate'
 
   // Validate delivery date is not before the order date
-  if (formData.deliverDate && formData.orderDate && formData.deliverDate < formData.orderDate) {
-    errors.deliverDate = 'validation.invalidDeliveryDate'
+  // Validate delivery date is not before the order date
+  if (formData.deliverDate && formData.orderDate) {
+    const od = parseDateInput(formData.orderDate)
+    const dd = parseDateInput(formData.deliverDate)
+    if (dd < od) {
+      errors.deliverDate = 'validation.invalidDeliveryDate'
+    }
   }
 
   // Phone (optional) — must be 10 digits if present
@@ -151,8 +196,8 @@ export function buildBaseOrder(formData, opts = {}) {
   }
 
   // Normalize dates: if empty, omit field to let backend defaults kick in
-  const orderDate = formData.orderDate ? new Date(formData.orderDate) : undefined
-  const deliverDate = formData.deliverDate ? new Date(formData.deliverDate) : undefined
+  const orderDate = parseDateInput(formData.orderDate)
+  const deliverDate = parseDateInput(formData.deliverDate)
 
   // Normalize status to new enum (lowercase)
   const status = ensureStatus(formData.status)

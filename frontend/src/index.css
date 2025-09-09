@@ -11,15 +11,16 @@
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 
-  /* Layout helpers (adjust bottom bar height if needed) */
-  --bottom-bar-h: 56px;
+  /* Layout helpers (adjust bottom and top bar height if needed) */
+  --app-bar-h: 56px; /* tu AppBar mide h-14 → 3.5rem ≈ 56px */
+  --bottom-bar-h: 86px;
   --safe-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 /* 2) Base light colors */
-html,
-body {
+html, body, #root {
   height: 100%;
+  overflow: hidden; /* <— clave: el window ya NO scrollea */
 }
 body {
   margin: 0;
@@ -69,14 +70,23 @@ input[type='date']::-webkit-calendar-picker-indicator {
 
 /* 6) App shell helpers — do not affect theme colors */
 .app-shell {
-  min-height: 100svh;
+  min-height: 100dvh; /* iOS modernos / Android */
+  min-height: 100svh; /* soportado en varios */
+  min-height: 100vh;  /* fallback */
 }
 
 /* Single scroll area, never behind bottom bar */
 .app-main {
   flex: 1 1 auto;
   overflow-y: auto;
+  padding-top: var(--app-bar-h);
   padding-bottom: calc(var(--bottom-bar-h) + var(--safe-bottom));
+  
+  /* iOS suaviza y evita saltos raros */
+  -webkit-overflow-scrolling: touch;
+
+  /* Cuando el navegador intenta traer al foco, respeta la altura del AppBar */
+  scroll-padding-top: var(--app-bar-h);
 }
 
 /* If you have a fixed bottom bar (BottomNav), this prevents content from being hidden */
@@ -90,4 +100,12 @@ select,
 textarea,
 button {
   font-size: 16px;
+}
+
+/* Cuando un input gana foco, deja margen para no quedar oculto bajo el AppBar */
+input:focus,
+select:focus,
+textarea:focus,
+button:focus {
+  scroll-margin-top: var(--app-bar-h);
 }

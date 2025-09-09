@@ -44,7 +44,6 @@ export async function exportSelectedOrdersToPDF(orderIds) {
   }
 }
 
-// TODO: Implementar exportación real
 export async function exportSelectedOrdersToExcel(orderIds, fields) {
   if (!orderIds?.length) {
     return showError('order.noneSelected')
@@ -79,6 +78,70 @@ export async function exportSelectedOrdersToExcel(orderIds, fields) {
   }
 }
 
+// TODO
 export async function exportSelectedOrdersToWord(orderIds) {
   showError('order.exportWordPending')
+}
+
+// Export Glazes to CSV
+function pad2(n) {
+  return String(n).padStart(2, '0')
+}
+function todayStamp() {
+  const d = new Date()
+  return `${pad2(d.getDate())}-${pad2(d.getMonth() + 1)}-${d.getFullYear()}`
+}
+
+function csvCell(val) {
+  if (val == null) return ''
+  const s = String(val)
+  // escape quotes; wrap in quotes if contains comma/quote/newline
+  const needsQuotes = /[",\n]/.test(s)
+  const escaped = s.replace(/"/g, '""')
+  return needsQuotes ? `"${escaped}"` : escaped
+}
+
+function makeCSV(headers, rows) {
+  const head = headers.map(csvCell).join(',')
+  const body = rows.map((r) => r.map(csvCell).join(',')).join('\n')
+  return `${head}\n${body}`
+}
+
+/**
+ * Export an array of glazes (visible rows) to CSV on the client.
+ * @param {Array} glazes - array of glaze objects
+ */
+export async function exportGlazesToCSV(glazes) {
+  if (!Array.isArray(glazes) || glazes.length === 0) {
+    return showError('No glazes to export')
+  }
+
+  const toastId = showLoading('Exporting CSV…')
+  try {
+    const headers = ['Name', 'Code', 'Hex', 'Active', 'Image URL', 'Updated At', 'Created At', 'ID']
+    const rows = glazes.map((g) => [
+      g.name || '',
+      g.code || '',
+      g.hex || '',
+      g.isActive ? 'true' : 'false',
+      g.image || '',
+      g.updatedAt || '',
+      g.createdAt || '',
+      g._id || '',
+    ])
+
+    const csv = makeCSV(headers, rows)
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `glazes-${todayStamp()}.csv`
+    a.click()
+    URL.revokeObjectURL(url)
+    dismissToast(toastId)
+  } catch (err) {
+    console.error(err)
+    dismissToast(toastId)
+    showError('Export failed')
+  }
 }

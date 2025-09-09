@@ -1,7 +1,10 @@
 // src/components/AppBar.jsx
 export default function AppBar({ title, left, right, extra, progress }) {
   return (
-    <div className="z-50 w-full border-b border-gray-200 bg-white shadow-sm dark:border-neutral-700 dark:bg-neutral-900">
+    <div
+      className="fixed top-0 right-0 left-0 z-50 border-b border-gray-200 bg-white shadow-sm dark:border-neutral-700 dark:bg-neutral-900"
+      style={{ height: 'var(--app-bar-h)' }}
+    >
       <div className="mx-auto flex h-14 max-w-[95%] items-center justify-between px-4">
         {/* Left icon (e.g. X, ←, ☰) */}
         <div className="flex w-10 justify-start">{left}</div>

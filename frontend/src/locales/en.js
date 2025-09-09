@@ -46,6 +46,8 @@ export const en = {
     incompleteAddressBeforeAdding: 'Complete the current address before adding another one',
     incompleteShipping: 'Please complete all shipping address fields before adding a new one.',
     instagramFormat: 'Instagram handle must start with "@"',
+    nameOnlyLetters: 'First name can only contain letters.',
+    lastNameOnlyLetters: 'Last name can only contain letters.',
     invalidDeliveryDate: 'The delivery date must be after the order date.',
     phone: 'Phone is required.',
     positiveNumber: 'Value must be greater than 0',
@@ -100,6 +102,7 @@ export const en = {
     name: 'Glaze Name',
     code: 'Code (optional)',
     new: 'Create new glaze',
+    list: 'Glazes',
 
     updating: 'Updating glaze...',
     updateFailed: 'Failed to update glaze.',

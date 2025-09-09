@@ -1,4 +1,6 @@
 // utils/constants.js
+export const SCROLL_CONTAINER_SELECTOR = '#scrollable-content'
+
 export const HIDE_BARS_ROUTES = [
   //'/orders/new',
   //'/orders/new/products',

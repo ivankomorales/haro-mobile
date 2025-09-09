@@ -5,7 +5,7 @@ import FormInput from '../../components/FormInput'
 import FormActions from '../../components/FormActions'
 import FormAddress from '../../components/FormAddress'
 import { Menu, MenuButton, MenuItem, MenuItems, Switch } from '@headlessui/react'
-import { Instagram, Facebook, Plus } from 'lucide-react'
+import { Instagram, Facebook, Plus, ChevronDown } from 'lucide-react'
 import { showSuccess, showError } from '../../utils/toastUtils'
 import { getMessage as t } from '../../utils/getMessage'
 import { prefillFormFromDraft, validateBaseForm, buildBaseOrder } from '../../utils/orderBuilder'
@@ -228,7 +228,7 @@ export default function NewOrder() {
   }
 
   return (
-    <div className="min-h-screen bg-white pb-24 dark:bg-neutral-900 dark:text-gray-100">
+    <div className="h-full min-h-0 bg-white pb-24 dark:bg-neutral-900 dark:text-gray-100">
       <form onSubmit={handleBaseSubmit} className="mx-auto max-w-2xl space-y-6 px-4 pt-6">
         {/* Optional h1 for accessibility */}
         {/*<h1 className="text-center mb-8 text-xl font-semibold">
@@ -256,8 +256,8 @@ export default function NewOrder() {
         </div>
 
         {/* More info */}
-        <div className="rounded border p-4 dark:border-neutral-700">
-          <p className="mb-3 text-sm font-medium text-gray-800 dark:text-gray-200">
+        <div className="rounded border border-neutral-200 p-4 dark:border-neutral-700">
+          <p className="mb-3 text-sm font-medium text-gray-500 dark:text-gray-200">
             {t('order.moreInfo')}
           </p>
 
@@ -268,7 +268,7 @@ export default function NewOrder() {
                 name="countryCode"
                 value={formData.countryCode}
                 onChange={handleChange}
-                className="w-20 rounded border dark:border-gray-700 dark:bg-neutral-800"
+                className="w-20 rounded border border-neutral-200 dark:border-gray-700 dark:bg-neutral-800"
               >
                 <option value="+52">+52</option>
                 <option value="+1">+1</option>
@@ -299,83 +299,109 @@ export default function NewOrder() {
           </div>
 
           {/* Social media */}
-          <div className="mt-4 w-36">
-            <label className="mb-1 block text-sm font-medium text-gray-800 dark:text-gray-200">
+          <div className="mt-4 w-full md:max-w-md">
+            <label className="mb-1 block text-sm font-medium text-gray-500 dark:text-gray-200">
               {t('order.social')}
             </label>
 
-            <div className="mb-2 flex gap-1">
-              <Menu as="div" className="relative">
-                <MenuButton className="flex h-10 w-10 items-center justify-center rounded border dark:border-gray-600 dark:bg-neutral-800">
-                  {(() => {
-                    const Icon = getSocialIcon(currentSocialType)
-                    return <Icon size={24} />
-                  })()}
-                </MenuButton>
+            <Menu as="div" className="relative w-full">
+              {({ open }) => (
+                <>
+                  <div className="mb-2 flex items-stretch gap-2">
+                    {/* Menu button with social icon and animated chevron */}
+                    <div className="relative shrink-0">
+                      <MenuButton
+                        aria-label={t('order.social')}
+                        className="relative flex h-10 w-10 cursor-pointer items-center justify-center rounded border dark:border-gray-600 dark:bg-neutral-800"
+                      >
+                        {(() => {
+                          const Icon = getSocialIcon(currentSocialType)
+                          return <Icon size={24} />
+                        })()}
 
-                <MenuItems className="absolute z-10 mt-1 w-36 rounded border bg-white shadow dark:border-gray-700 dark:bg-neutral-800">
-                  {socialOptions.map((opt) => (
-                    <MenuItem
-                      as="button"
-                      type="button"
-                      key={opt.type}
-                      onClick={() => setTypeAndPrefill(opt.type)}
-                      className={({ focus }) =>
-                        `flex w-full items-center gap-2 px-2 py-1 text-left ${
-                          focus ? 'bg-gray-100 dark:bg-neutral-700' : ''
-                        }`
+                        {/* Animated chevron */}
+                        <ChevronDown
+                          size={14}
+                          className={`absolute right-0.5 bottom-0.5 transition-transform duration-200 ${
+                            open ? 'rotate-180' : 'rotate-0'
+                          } pointer-events-none opacity-70`}
+                        />
+                      </MenuButton>
+                    </div>
+
+                    {/* Social input */}
+                    <input
+                      type="text"
+                      placeholder={
+                        currentSocialType === 'instagram'
+                          ? '@username'
+                          : currentSocialType === 'facebook'
+                            ? '/username'
+                            : currentSocialType === 'tiktok'
+                              ? '@handle'
+                              : t('order.usernamePlaceholder') // Fallback translation if needed
                       }
+                      value={socialInput}
+                      onChange={(e) => setSocialInput(e.target.value)}
+                      onKeyDown={(e) =>
+                        e.key === 'Enter' && (e.preventDefault(), addOrUpdateSocial())
+                      }
+                      className="h-10 min-w-0 flex-1 rounded border border-neutral-400 px-3 text-sm dark:border-gray-600 dark:bg-neutral-800 dark:text-white"
+                    />
+
+                    {/* Add/Update button */}
+                    <button
+                      type="button"
+                      onClick={addOrUpdateSocial}
+                      className="shrink-0 rounded bg-gray-200 px-3 py-1 hover:bg-gray-300 dark:bg-neutral-700 dark:hover:bg-neutral-600"
+                      title={t('order.addUpdate')}
                     >
-                      <opt.icon size={16} />
-                      {opt.label}
-                    </MenuItem>
-                  ))}
-                </MenuItems>
-              </Menu>
+                      <Plus size={16} />
+                    </button>
+                  </div>
 
-              {/* Social input */}
-              <input
-                type="text"
-                placeholder={currentSocialType === 'instagram' ? '@username' : '/username'}
-                value={socialInput}
-                onChange={(e) => setSocialInput(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addOrUpdateSocial())}
-                className="h-10 flex-1 rounded border px-3 text-sm dark:border-gray-600 dark:bg-neutral-800 dark:text-white"
-              />
-
-              {/* Add button */}
-              <button
-                type="button"
-                onClick={addOrUpdateSocial}
-                className="shrink-0 rounded bg-gray-200 px-3 py-1 hover:bg-gray-300 dark:bg-neutral-700 dark:hover:bg-neutral-600"
-                title={t('order.addUpdate')}
-              >
-                <Plus size={16} />
-              </button>
-            </div>
+                  {/* Dropdown menu with social options */}
+                  <MenuItems className="absolute z-10 mt-1 w-36 rounded border bg-white shadow dark:border-gray-700 dark:bg-neutral-800">
+                    {socialOptions.map((opt) => (
+                      <MenuItem
+                        key={opt.type}
+                        as="button"
+                        type="button"
+                        onClick={() => setTypeAndPrefill(opt.type)}
+                        className="flex w-full items-center gap-2 px-2 py-1 text-left data-[headlessui-state=active]:bg-gray-100 data-[headlessui-state=active]:dark:bg-neutral-700"
+                      >
+                        <opt.icon size={16} />
+                        {opt.label}
+                      </MenuItem>
+                    ))}
+                  </MenuItems>
+                </>
+              )}
+            </Menu>
 
             {/* Social chips */}
-            <div className="flex flex-wrap gap-2">
-              {['instagram', 'facebook'].map((type) => {
+            <div className="mt-2 flex flex-wrap gap-2">
+              {['instagram', 'facebook', 'tiktok'].map((type) => {
                 const value = formData.socialMedia?.[type]
                 if (!value) return null
                 const Icon = getSocialIcon(type)
                 return (
                   <span
                     key={type}
-                    className="flex items-center gap-2 rounded-full bg-gray-100 px-3 py-1 text-sm dark:bg-neutral-700"
+                    className="flex items-center gap-2 rounded-full bg-gray-300 px-3 py-1 text-sm dark:bg-neutral-700"
                   >
                     <Icon size={14} />
                     {value}
+                    {/* Edit button */}
                     <button
                       type="button"
-                      className="text-xs underline"
+                      className="text-xs"
                       onClick={() => {
                         setTypeAndPrefill(type)
                         setTimeout(() => {
                           document
                             .querySelector(
-                              'input[placeholder="@username"], input[placeholder^="URL"]'
+                              'input[placeholder="@username"], input[placeholder^="/"], input[placeholder^="URL"]'
                             )
                             ?.focus()
                         }, 0)
@@ -383,6 +409,7 @@ export default function NewOrder() {
                     >
                       {t('order.editLabel')}
                     </button>
+                    {/* Remove button */}
                     <button
                       type="button"
                       onClick={() => removeSocial(type)}
@@ -398,7 +425,7 @@ export default function NewOrder() {
         </div>
 
         {/* Dates */}
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <div className="grid grid-cols-1 gap-4 sm:gap-32 md:grid-cols-2">
           <FormInput
             type="date"
             name="orderDate"
@@ -427,7 +454,7 @@ export default function NewOrder() {
         </div>
 
         {/* Status & deposit */}
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <div className="grid grid-cols-1 gap-4 sm:gap-32 md:grid-cols-2">
           <div>
             <label className="mb-1 block text-sm font-medium text-gray-800 dark:text-gray-200">
               {t('order.status')}
@@ -436,7 +463,7 @@ export default function NewOrder() {
               name="status"
               value={formData.status}
               onChange={handleChange}
-              className="h-10 w-full rounded border px-3 py-3 text-sm dark:border-gray-600 dark:bg-neutral-800 dark:text-white"
+              className="h-11 w-full rounded border border-neutral-300 px-3 py-1 text-sm dark:border-gray-600 dark:bg-neutral-800 dark:text-white"
             >
               <option value="new">{t('status.new')}</option>
               <option value="pending">{t('status.pending')}</option>

@@ -145,6 +145,40 @@ const deactivateGlaze = async (req, res, next) => {
 }; // end deactivateGlaze
 
 // ---------------------------------------------
+// 🟣 ACTIVATE GLAZE (PATCH /api/glazes/:id/activate)
+// ---------------------------------------------
+const activateGlaze = async (req, res, next) => {
+  try {
+    const glaze = await Glaze.findById(req.params.id);
+    if (!glaze) {
+      return next(new ApiError("Glaze not found", 404));
+    }
+
+    // If already active, return a 400 to avoid unnecessary writes
+    if (glaze.isActive) {
+      return next(new ApiError("Glaze is already active", 400));
+    }
+
+    // Flip the flag to active
+    glaze.isActive = true;
+    await glaze.save();
+
+    // Log Event
+    await logEvent({
+      event: "glaze_activated",
+      objectId: glaze._id,
+      description: `Glaze ${glaze.name} marked as active`,
+      req,
+    });
+
+    // Keep response shape simple and consistent
+    res.json({ message: "Glaze activated" });
+  } catch (err) {
+    next(new ApiError("Failed to activate glaze", 500));
+  }
+}; // end activateGlaze
+
+// ---------------------------------------------
 // 📦 EXPORT CONTROLLER METHODS
 // ---------------------------------------------
 module.exports = {
@@ -153,4 +187,5 @@ module.exports = {
   getGlazes,
   updateGlaze,
   deactivateGlaze,
+  activateGlaze,
 };

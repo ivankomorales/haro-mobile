@@ -35,10 +35,10 @@ export default function Sidebar() {
     }`
 
   return (
-    <div className="hidden h-screen w-56 flex-col border-r bg-white px-4 py-6 md:flex dark:border-neutral-800 dark:bg-neutral-900">
-      <div className="mb-6 text-center text-lg font-bold text-gray-800 dark:text-gray-100">
+    <div className="hidden h-[calc(100svh-var(--app-bar-h))] w-56 flex-col overflow-y-auto border-r bg-white px-4 py-6 pt-[var(--app-bar-h)] md:flex dark:border-neutral-800 dark:bg-neutral-900">
+      {/* <div className="mb-6 text-center text-lg font-bold text-gray-800 dark:text-gray-100">
         Haro Mobile
-      </div>
+      </div> */}
 
       <nav className="flex flex-col space-y-4 text-sm">
         <button onClick={() => handleNav('/home')} className={linkClass('/home')}>

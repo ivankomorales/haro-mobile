@@ -1,7 +1,39 @@
-// src/components/OrderDetailsCard.jsx
+// src/components/OrderDetailsCard.js
+import { useMemo } from 'react'
 import { Phone, Mail, Globe, AlertCircle, SquarePen } from 'lucide-react'
-//import { formatDMY } from "../../utils/date";
 import { format } from 'date-fns'
+import { makeGlazeMap, resolveGlazeFlexible } from '../utils/glazeUtils'
+
+/** Render a glaze thumbnail: image if present, otherwise a hex swatch */
+function GlazeThumb({ glaze }) {
+  // No glaze, nothing to show
+  if (!glaze) return null
+
+  // Prefer image when available
+  if (glaze.image) {
+    return (
+      <img
+        src={glaze.image}
+        alt={glaze.name || ''}
+        title={glaze.name || ''}
+        className="h-6 w-6 rounded border"
+      />
+    )
+  }
+
+  // Fallback to hex swatch
+  if (glaze.hex) {
+    return (
+      <span
+        title={glaze.name || glaze.hex}
+        className="inline-block h-6 w-6 rounded border"
+        style={{ background: glaze.hex }}
+      />
+    )
+  }
+
+  return null
+}
 
 export default function OrderDetailsCard({
   order = {},
@@ -20,23 +52,17 @@ export default function OrderDetailsCard({
   const {
     orderID = '',
     orderDate,
-    deliverDate,
+    deliverDate, // not currently shown; keep if you want to add it
     customer = {},
     deposit = 0,
     products = [],
     shipping = {},
   } = order
 
-  // Build a map for quick lookup
-  const glazeMap = new Map((glazes || []).map((g) => [g._id, g]))
-  const resolveGlaze = (value) => {
-    if (!value) return null
-    if (typeof value === 'string') return glazeMap.get(value) || null
-    if (typeof value === 'object' && value._id) return glazeMap.get(value._id) || value
-    return null
-  }
+  /** Fast glaze lookup map */
+  const glazeMap = useMemo(() => makeGlazeMap(glazes), [glazes])
 
-  // Billing
+  /** Billing totals (line price already includes qty) */
   const subtotal = products.reduce((acc, item) => acc + Number(item.price || 0), 0)
   const total = subtotal - deposit
 
@@ -58,6 +84,7 @@ export default function OrderDetailsCard({
         >
           <SquarePen className="h-4 w-4" />
         </button>
+
         <div className="space-y-1">
           <p className="font-semibold">
             {customer.name} {customer.lastName}
@@ -68,16 +95,26 @@ export default function OrderDetailsCard({
               <Phone className="h-4 w-4" /> {customer.phone}
             </div>
           )}
+
           {customer.email && (
             <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
               <Mail className="h-4 w-4" /> {customer.email}
             </div>
           )}
-          {customer.social && (
-            <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-              <Globe className="h-4 w-4" /> {customer.social}
-            </div>
-          )}
+
+          {/* If you want to show social media, your model uses customer.socialMedia */}
+          {customer.socialMedia &&
+            (customer.socialMedia.instagram || customer.socialMedia.facebook) && (
+              <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                <Globe className="h-4 w-4" />
+                <span>
+                  {customer.socialMedia.instagram || ''}
+                  {customer.socialMedia.instagram && customer.socialMedia.facebook ? ' · ' : ''}
+                  {customer.socialMedia.facebook || ''}
+                </span>
+              </div>
+            )}
+
           {shipping?.isRequired && (
             <div className="mt-2 flex items-center gap-1 text-sm text-red-600">
               <AlertCircle className="h-4 w-4" />
@@ -108,8 +145,11 @@ export default function OrderDetailsCard({
       {/* Products */}
       <div className="space-y-6">
         {products.map((product, index) => {
-          const gi = resolveGlaze(product.glazes?.interior)
-          const ge = resolveGlaze(product.glazes?.exterior)
+          // Resolve interior/exterior using shared utils; falls back to product flat fields
+          const gi = resolveGlazeFlexible(product.glazes?.interior, glazeMap, product, 'interior')
+          const ge = resolveGlazeFlexible(product.glazes?.exterior, glazeMap, product, 'exterior')
+
+          const count = [gi, ge].filter(Boolean).length
 
           return (
             <div
@@ -124,6 +164,7 @@ export default function OrderDetailsCard({
               </button>
 
               <p className="font-semibold">{product.label}</p>
+
               <p className="text-sm">
                 {(() => {
                   const label = product.quantity === 1 ? figureLabel : `${figureLabel}s`
@@ -133,31 +174,12 @@ export default function OrderDetailsCard({
 
               {(gi || ge) && (
                 <div className="flex items-center gap-2">
-                  {(() => {
-                    const count = [gi, ge].filter(Boolean).length
-                    return (
-                      <p className="text-sm font-medium">
-                        {glazeLabel}
-                        {count > 1 ? 's' : ''}:
-                      </p>
-                    )
-                  })()}
-                  {gi?.image && (
-                    <img
-                      src={gi.image}
-                      alt={gi.name}
-                      title={gi.name}
-                      className="h-6 w-6 rounded border"
-                    />
-                  )}
-                  {ge?.image && (
-                    <img
-                      src={ge.image}
-                      alt={ge.name}
-                      title={ge.name}
-                      className="h-6 w-6 rounded border"
-                    />
-                  )}
+                  <p className="text-sm font-medium">
+                    {glazeLabel}
+                    {count > 1 ? 's' : ''}:
+                  </p>
+                  <GlazeThumb glaze={gi} />
+                  <GlazeThumb glaze={ge} />
                 </div>
               )}
 

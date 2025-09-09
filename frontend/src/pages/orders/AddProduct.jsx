@@ -3,7 +3,6 @@ import { useEffect, useState, useRef } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { getAllGlazes } from '../../api/glazes'
 import FormInput from '../../components/FormInput'
-import GlazeSelect from '../../components/GlazeSelect'
 import { uploadToCloudinary } from '../../utils/uploadToCloudinary'
 import ImageUploader from '../../components/ImageUploader'
 import FormActions from '../../components/FormActions'
@@ -11,6 +10,7 @@ import { getMessage as t } from '../../utils/getMessage'
 import { showLoading, dismissToast, showError, showSuccess } from '../../utils/toastUtils'
 import { useRequireState } from '../../utils/useRequireState'
 import { getOriginPath } from '../../utils/navigationUtils'
+import GlazeTypeahead from '../../components/GlazeTypeahead'
 
 export default function AddProduct() {
   const navigate = useNavigate()
@@ -138,9 +138,9 @@ export default function AddProduct() {
           interiorHex: interior?.hex || '',
           exteriorName: exterior?.name || '',
           exteriorHex: exterior?.hex || '',
-          // optional:
-          // interiorImage: interior?.image || '',
-          // exteriorImage: exterior?.image || '',
+          // thumbnails for UI
+          interiorImage: interior?.image || '',
+          exteriorImage: exterior?.image || '',
         },
       }
       console.log('A) handleAddProduct -> newProduct.glazes:', newProduct.glazes)
@@ -249,6 +249,7 @@ export default function AddProduct() {
         state: {
           ...fullOrder,
           originPath: baseOrder.originPath ?? '/orders',
+          glazes,
         },
       })
     } catch (err) {
@@ -305,7 +306,7 @@ export default function AddProduct() {
   function getGlazeTriplet(glazeId, allGlazes) {
     if (!glazeId) return null
     const g = (allGlazes || []).find((x) => x._id === glazeId)
-    return g ? { id: g._id, name: g.name, hex: g.hex } : null
+    return g ? { id: g._id, name: g.name, hex: g.hex, image: g.image || g.url || null } : null
   }
 
   // Build final product payload that matches the new schema
@@ -325,6 +326,9 @@ export default function AddProduct() {
         interiorHex: gi ? gi.hex : null, // keep "#RRGGBB"
         exteriorName: ge ? ge.name : null,
         exteriorHex: ge ? ge.hex : null,
+        // UI-only fields to support thumbnails before saving
+        interiorImage: gi ? gi.image : null,
+        exteriorImage: ge ? ge.image : null,
       },
       decorations: {
         hasGold: !!(p.decorations && p.decorations.hasGold),
@@ -335,7 +339,26 @@ export default function AddProduct() {
           : ''
         ).trim(),
       },
-      images: (p.images || []).map(normalizeImage).filter(Boolean),
+      images: (p.images || [])
+        .map((img) => {
+          // Inline normalize to avoid extra imports
+          if (!img) return null
+          if (typeof img === 'string') return { url: img, alt: '', primary: false }
+          if (img && typeof img === 'object' && (img.url || img.secure_url || img.public_id)) {
+            return {
+              url: img.secure_url || img.url,
+              publicId: img.public_id || img.publicId,
+              width: img.width,
+              height: img.height,
+              format: img.format,
+              bytes: img.bytes,
+              alt: img.alt || '',
+              primary: !!img.primary,
+            }
+          }
+          return null
+        })
+        .filter(Boolean),
       // Preserve _id only in edit mode (if present)
       ...(p._id ? { _id: p._id } : {}),
     }
@@ -369,7 +392,7 @@ export default function AddProduct() {
           <div className="flex items-center justify-between">
             <div>
               <label className="text-sm">{t('product.qty')}:</label>
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-3">
                 <button
                   type="button"
                   onClick={() =>
@@ -398,7 +421,7 @@ export default function AddProduct() {
               </div>
             </div>
 
-            <div className="ml-auto">
+            <div className="ml-10">
               <FormInput
                 label={t('product.price')}
                 floating={false}
@@ -415,34 +438,26 @@ export default function AddProduct() {
             </div>
           </div>
 
-          {/* Esmaltes */}
+          {/* Glazes */}
           {formData.type !== 'figurine' && (
-            <details className="rounded bg-neutral-100 p-4 dark:bg-neutral-800">
+            <details className="relative overflow-visible rounded bg-neutral-100 p-4 dark:bg-neutral-800">
               <summary className="cursor-pointer text-sm font-medium dark:text-white">
                 {t('product.glazeTitle')}
               </summary>
               <div className="mt-4 space-y-2">
                 {formData.type !== 'plate' && (
-                  <GlazeSelect
+                  <GlazeTypeahead
                     label={t('product.glazeInt')}
                     glazes={glazes}
-                    selected={formData.glazeInterior}
-                    onChange={(value) => setFormData((prev) => ({ ...prev, glazeInterior: value }))}
-                    placeholderText={t('product.glazeSearch')} //Consider using a general i18n word
-                    noneText={t('product.glazeNone')}
-                    noResultsText={t('product.glazeNoResult')}
-                    ariaLabelText={t('product.glazeTitle')} //Consider using a general i18n word
+                    selectedId={formData.glazeInterior}
+                    onChange={(id) => setFormData((prev) => ({ ...prev, glazeInterior: id }))}
                   />
                 )}
-                <GlazeSelect
+                <GlazeTypeahead
                   label={t('product.glazeExt')}
                   glazes={glazes}
-                  selected={formData.glazeExterior}
-                  onChange={(value) => setFormData((prev) => ({ ...prev, glazeExterior: value }))}
-                  placeholderText={t('product.glazeSearch')}
-                  noneText={t('product.glazeNone')}
-                  noResultsText={t('labels.glaze.noResults')}
-                  ariaLabelText={t('product.glazeTitle')}
+                  selectedId={formData.glazeExterior}
+                  onChange={(id) => setFormData((prev) => ({ ...prev, glazeExterior: id }))}
                 />
               </div>
             </details>
@@ -502,6 +517,7 @@ export default function AddProduct() {
                     </div>
                   </div>
                   <button
+                    type="button"
                     onClick={() => handleRemoveProduct(i)}
                     className="ml-4 text-red-500 hover:text-red-700"
                   >

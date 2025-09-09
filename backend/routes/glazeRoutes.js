@@ -8,6 +8,7 @@ const {
   getGlazes,
   updateGlaze,
   deactivateGlaze,
+  activateGlaze,
 } = require("../controllers/glazeController");
 
 // Middlewares
@@ -43,5 +44,7 @@ router.put("/:id", verifyToken, requireAdmin, updateGlaze);
 
 // Deactivate a glaze (admin only)
 router.patch("/:id/deactivate", verifyToken, requireAdmin, deactivateGlaze);
+// Reactivate a glaze (admin only)
+router.patch("/:id/activate", verifyToken, requireAdmin, activateGlaze);
 
 module.exports = router;

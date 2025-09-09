@@ -1,6 +1,6 @@
 // src/pages/orders/OrderConfirmation.jsx
 import { useLocation, useNavigate } from 'react-router-dom'
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import OrderDetailsCard from '../../components/OrderDetailsCard'
 import { useRequireState } from '../../utils/useRequireState'
 import { getMessage as t } from '../../utils/getMessage'
@@ -8,8 +8,51 @@ import FormActions from '../../components/FormActions'
 import { showError, showSuccess, showLoading, dismissToast } from '../../utils/toastUtils'
 import { createOrder } from '../../api/orders'
 import { cleanAddresses } from '../../utils/orderBuilder'
+import { formatProductsWithLabels } from '../../utils/transformProducts'
+import { makeGlazeMap, ensureGlazeObjects } from '../../utils/glazeUtils'
+import { buildOrderPayload } from '../../utils/orderPayload'
+
+function summarizeProducts(products = []) {
+  return products.map((p, i) => ({
+    i,
+    type: p.type,
+    qty: p.quantity,
+    price: p.price,
+    gi_id: p?.glazes?.interior?._id ?? p?.glazes?.interior ?? null,
+    gi_name: p?.glazes?.interior?.name ?? p?.glazes?.interiorName ?? null,
+    gi_hex: p?.glazes?.interior?.hex ?? p?.glazes?.interiorHex ?? null,
+    ge_id: p?.glazes?.exterior?._id ?? p?.glazes?.exterior ?? null,
+    ge_name: p?.glazes?.exterior?.name ?? p?.glazes?.exteriorName ?? null,
+    ge_hex: p?.glazes?.exterior?.hex ?? p?.glazes?.exteriorHex ?? null,
+    images: Array.isArray(p.images) ? p.images.length : 0,
+  }))
+}
 
 // --- helpers (JS) ---
+// Hydrate products' glaze fields from the glazes list in state
+function hydrateGlazes(products = [], glazes = []) {
+  const idx = new Map((glazes || []).map((g) => [String(g._id ?? g.id ?? g.value), g]))
+  return (products || []).map((p) => {
+    const gi = p?.glazes?.interior
+    const ge = p?.glazes?.exterior
+    const giObj = gi && typeof gi === 'object' ? gi : idx.get(String(gi))
+    const geObj = ge && typeof ge === 'object' ? ge : idx.get(String(ge))
+    return {
+      ...p,
+      glazes: {
+        ...(p.glazes || {}),
+        interior: giObj?._id ?? gi ?? null,
+        exterior: geObj?._id ?? ge ?? null,
+        interiorName: p.glazes?.interiorName ?? giObj?.name ?? null,
+        interiorHex: p.glazes?.interiorHex ?? giObj?.hex ?? null,
+        exteriorName: p.glazes?.exteriorName ?? geObj?.name ?? null,
+        exteriorHex: p.glazes?.exteriorHex ?? geObj?.hex ?? null,
+        interiorImage: p.glazes?.interiorImage ?? giObj?.image ?? giObj?.url ?? null,
+        exteriorImage: p.glazes?.exteriorImage ?? geObj?.image ?? geObj?.url ?? null,
+      },
+    }
+  })
+}
 
 function normalizeImage(img) {
   if (!img) return null
@@ -41,39 +84,42 @@ function normalizeImage(img) {
   return null
 }
 
-function ensureStatus(s) {
-  const map = {
-    New: 'new',
-    Pending: 'pending',
-    'In Progress': 'inProgress',
-    Completed: 'completed',
-    Cancelled: 'cancelled',
-  }
-  if (!s) return 'new'
-  return map[s] || String(s).toLowerCase()
-}
-
 export default function OrderConfirmation() {
   const location = useLocation()
   const navigate = useNavigate()
   const order = location.state || null
   const glazes = order?.glazes || []
+  const glazeMap = useMemo(() => makeGlazeMap(glazes), [glazes])
 
   // Group and label products for display only
-  const groupedProducts = (order?.products || []).reduce((acc, p) => {
-    if (!acc[p.type]) acc[p.type] = []
-    acc[p.type].push(p)
-    return acc
-  }, {})
-  const labeledProducts = []
-  Object.entries(groupedProducts).forEach(([type, items]) => {
-    items.forEach((item, i) => {
-      labeledProducts.push({
-        ...item,
-        label: `${t(`product.${type}`)} ${i + 1}`,
-      })
-    })
-  })
+  // const groupedProducts = (order?.products || []).reduce((acc, p) => {
+  //   if (!acc[p.type]) acc[p.type] = []
+  //   acc[p.type].push(p)
+  //   return acc
+  // }, {})
+  // const labeledProducts = []
+  // Object.entries(groupedProducts).forEach(([type, items]) => {
+  //   items.forEach((item, i) => {
+  //     labeledProducts.push({
+  //       ...item,
+  //       label: `${t(`product.${type}`)} ${i + 1}`,
+  //     })
+  //   })
+  // })
+  // IMPORTANT: hydrate glaze labels & hex like in OrderDetails
+  // 1) hydrate products with glaze names/hex/images using the glazes list
+  const hydratedProducts = useMemo(
+    () => ensureGlazeObjects(order?.products || [], glazeMap),
+    [order?.products, glazeMap]
+  )
+
+  // 2) then format labels like in OrderDetails
+  const labeledProducts = useMemo(() => {
+    return formatProductsWithLabels(hydratedProducts, t, glazes)
+  }, [hydratedProducts, t, glazes])
+
+  // Build nested glaze objects so resolveGlaze() can render them
+  const uiReadyProducts = labeledProducts // already object-enriched
 
   useRequireState(
     (st) => st?.customer?.name && Array.isArray(st?.products) && st.products.length > 0,
@@ -85,6 +131,20 @@ export default function OrderConfirmation() {
 
   const originPath = order.originPath ?? '/orders'
   const [submitting, setSubmitting] = useState(false)
+
+  useEffect(() => {
+    // 1) Ver todo el objeto 'order'
+    console.log('CONF > order (raw):', order)
+
+    // 2) Resumen tabla de productos
+    console.table(summarizeProducts(order?.products || []))
+
+    // 3) Ver si traes lista de glazes separada
+    console.log('CONF > glazes list (state):', glazes)
+
+    // 4) Exponer para inspección manual en consola
+    window.__ORDER_CONF__ = order
+  }, [order, glazes])
 
   // Subtotal = sum of line prices (NOT qty * price)
   const totals = useMemo(() => {
@@ -126,64 +186,7 @@ export default function OrderConfirmation() {
       showLoading(t('loading.orderCreate'))
 
       // Build products compatible with new schema
-      const cleanProducts = (order.products || []).map((p) => {
-        const intId = p.glazes?.interior?._id || p.glazes?.interior || null
-        const extId = p.glazes?.exterior?._id || p.glazes?.exterior || null
-
-        const giName = p.glazes?.interiorName || p.glazes?.interior?.name || null
-        const giHex = p.glazes?.interiorHex || p.glazes?.interior?.hex || null
-        const geName = p.glazes?.exteriorName || p.glazes?.exterior?.name || null
-        const geHex = p.glazes?.exteriorHex || p.glazes?.exterior?.hex || null
-
-        return {
-          type: p.type,
-          quantity: Number(p.quantity || 0),
-          price: Number(p.price || 0), // line total
-          description: (p.description || '').trim(),
-          glazes: {
-            interior: intId,
-            exterior: extId,
-            interiorName: giName,
-            interiorHex: giHex,
-            exteriorName: geName,
-            exteriorHex: geHex,
-          },
-          decorations: {
-            hasGold: !!(p.decorations && p.decorations.hasGold),
-            hasName: !!(p.decorations && p.decorations.hasName),
-            outerDrawing: !!(p.decorations && p.decorations.outerDrawing),
-            customText: (p.decorations && p.decorations.customText
-              ? p.decorations.customText
-              : ''
-            ).trim(),
-          },
-          images: (p.images || []).map(normalizeImage).filter(Boolean),
-          ...(p._id ? { _id: p._id } : {}),
-        }
-      })
-
-      const cleanedAddresses = cleanAddresses(order.shipping?.addresses || [])
-      const payload = {
-        customer: {
-          name: order.customer.name,
-          lastName: order.customer.lastName,
-          email: order.customer.email || undefined,
-          phone: order.customer.phone,
-          socialMedia: order.customer.socialMedia,
-        },
-        // omit empty dates so backend default (+5 weeks) can apply
-        orderDate: order.orderDate ? new Date(order.orderDate) : undefined,
-        deliverDate: order.deliverDate ? new Date(order.deliverDate) : undefined,
-        status: ensureStatus(order.status),
-        deposit: Number(order.deposit || 0),
-        notes: order.notes || '',
-        shipping: {
-          isRequired: !!order.shipping?.isRequired && cleanedAddresses.length > 0,
-          addresses: cleanedAddresses,
-        },
-        products: cleanProducts,
-        // totals optional; backend can compute its own
-      }
+      const payload = buildOrderPayload({ ...order, products: hydratedProducts }, cleanAddresses)
 
       console.log('Payload being sent to createOrder:', payload)
       const saved = await createOrder(payload)
@@ -209,14 +212,14 @@ export default function OrderConfirmation() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col items-center bg-white px-4 py-6 dark:bg-neutral-900">
-      <h1 className="mb-4 text-xl font-semibold text-black dark:text-white">
+    <div className="flex min-h-screen flex-col items-center bg-white px-4 py-2 dark:bg-neutral-900">
+      <h1 className="text-xl font-semibold text-black dark:text-white">
         {t('order.confirm') || 'Confirm Order'}
       </h1>
 
       <div className="w-full max-w-2xl">
         <OrderDetailsCard
-          order={{ ...order, products: labeledProducts }}
+          order={{ ...order, products: uiReadyProducts }}
           glazes={glazes}
           t={t}
           onEditBase={handleEditBase}

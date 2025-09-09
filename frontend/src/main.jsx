@@ -6,8 +6,9 @@ import './index.css'
 import { AuthProvider } from './context/AuthContext'
 import { LayoutProvider } from './context/LayoutContext'
 import { BrowserRouter } from 'react-router-dom'
-import ScrollToTop from './components/ScrollToTop'
+import ScrollManager from './components/ScrollManager'
 import { registerSW } from 'virtual:pwa-register'
+import { SCROLL_CONTAINER_SELECTOR } from './utils/constants'
 
 registerSW({ immediate: true })
 
@@ -16,7 +17,8 @@ createRoot(document.getElementById('root')).render(
     <BrowserRouter>
       <AuthProvider>
         <LayoutProvider>
-          <ScrollToTop behavior="instant" />
+          {/* Mount once for the whole app, inside BrowserRouter */}
+          <ScrollManager selector={SCROLL_CONTAINER_SELECTOR} behavior="auto" respectBackForward />
           <App />
         </LayoutProvider>
       </AuthProvider>

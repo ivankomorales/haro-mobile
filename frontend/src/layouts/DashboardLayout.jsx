@@ -65,12 +65,12 @@ export default function DashboardLayout() {
   const showBottom = !isDesktop && !hideBars && !kbOpen
 
   return (
-    <div className="app-shell flex overflow-hidden bg-white text-black dark:bg-neutral-900 dark:text-white">
+    <div className="app-shell h-svh flex bg-white text-black dark:bg-neutral-900 dark:text-white">
       {/* Sidebar on Desktop */}
       {isDesktop && !hideBars && <SideBar />}
 
       {/* Main container */}
-      <div className="flex flex-1 flex-col overflow-hidden">
+       <div className="flex flex-1 min-h-0 flex-col">
         {/* AppBar fijo */}
         {!hideBars && (
           <AppBar
@@ -116,7 +116,7 @@ export default function DashboardLayout() {
         )}
 
         {/* Scrollable Content */}
-        <main id="scrollable-content" className="flex-1 overflow-y-auto">
+        <main id="scrollable-content" className="app-main flex-1 min-h-0 overflow-y-auto">
           <div className="mx-auto max-w-[92%] px-4 py-6">
             <Outlet />
           </div>

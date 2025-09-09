@@ -10,8 +10,15 @@ import fetchWithAuth from '../utils/fetchWithAuth'
  */
 // normalize 3rd arg so callers can pass either `navigate` or `{ navigate }`
 const ctx = (x) => (typeof x === 'function' ? { navigate: x } : x || {})
-
-export const getAllGlazes = (nav) => fetchWithAuth('/api/glazes', {}, ctx(nav))
+/**
+ * Fetch all glazes.
+ * @param {{navigate?: Function, includeInactive?: boolean}} opts
+ */
+export const getAllGlazes = (opts = {}) => {
+  const { navigate, includeInactive = false } = opts // default: active only (keeps AddProduct behavior)
+  const qs = includeInactive ? '?includeInactive=true' : ''
+  return fetchWithAuth(`/api/glazes${qs}`, {}, ctx(navigate))
+}
 
 /**
  * Fetch a single glaze by ID.
@@ -44,3 +51,13 @@ export const deactivateGlaze = (id, nav) =>
 
 export const updateGlaze = (id, glazeData, nav) =>
   fetchWithAuth(`/api/glazes/${id}`, { method: 'PUT', body: glazeData }, ctx(nav))
+
+/**
+ * Activate a glaze by ID.
+ *
+ * @param {string} id - Glaze ID to activate.
+ * @param {function|null} navigate
+ * @returns {Promise<any>}
+ */
+export const activateGlaze = (id, nav) =>
+  fetchWithAuth(`/api/glazes/${id}/activate`, { method: 'PATCH' }, ctx(nav))
