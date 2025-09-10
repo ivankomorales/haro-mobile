@@ -14,6 +14,7 @@
   /* Layout helpers (adjust bottom and top bar height if needed) */
   --app-bar-h: 56px; /* tu AppBar mide h-14 → 3.5rem ≈ 56px */
   --bottom-bar-h: 86px;
+  --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
 }
 
@@ -80,6 +81,7 @@ input[type='date']::-webkit-calendar-picker-indicator {
   flex: 1 1 auto;
   overflow-y: auto;
   padding-top: var(--app-bar-h);
+  padding-top: calc(var(--app-bar-h) + var(--safe-top)); 
   padding-bottom: calc(var(--bottom-bar-h) + var(--safe-bottom));
   
   /* iOS suaviza y evita saltos raros */
@@ -87,6 +89,13 @@ input[type='date']::-webkit-calendar-picker-indicator {
 
   /* Cuando el navegador intenta traer al foco, respeta la altura del AppBar */
   scroll-padding-top: var(--app-bar-h);
+
+  /* Evita “empujones” al enfocar inputs en iOS/Safari */
+  overscroll-behavior-y: contain;
+  /* Evita animaciones raras de scroll en foco/fecha */
+  scroll-behavior: auto;
+  /* Evita reflow por aparición/desaparición de scrollbars en desktop */
+  scrollbar-gutter: stable both-edges;
 }
 
 /* If you have a fixed bottom bar (BottomNav), this prevents content from being hidden */

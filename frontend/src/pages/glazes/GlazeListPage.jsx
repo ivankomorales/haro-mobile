@@ -181,7 +181,7 @@ export default function GlazeListPage() {
   }
 
   return (
-    <div className="space-y-4 p-4 pb-24 sm:pb-8">
+    <div className="h-full min-h-0 space-y-4 p-4">
       {/* Header */}
       <div className="space-y-2">
         <div className="flex items-center gap-2 sm:justify-end">
@@ -205,7 +205,7 @@ export default function GlazeListPage() {
             aria-label="New glaze"
             title="New glaze"
             className={[
-              // mobile: circular icon button
+              // mobile: icon button
               'inline-flex h-10 w-11 items-center justify-center rounded bg-black text-white',
               // desktop: regular pill with label
               'sm:h-auto sm:w-auto sm:rounded-md sm:px-3 sm:py-2 dark:bg-amber-500',
@@ -239,7 +239,7 @@ export default function GlazeListPage() {
         </div>
 
         {/* Export CSV aligned with chips; icon-only on mobile */}
-        <button
+        {/* <button
           type="button"
           onClick={() => exportGlazesToCSV(sorted)}
           aria-label="Export CSV"
@@ -248,7 +248,7 @@ export default function GlazeListPage() {
         >
           <Download className="h-4 w-4" />
           <span className="hidden sm:inline">Export CSV</span>
-        </button>
+        </button> */}
       </div>
 
       {/* Desktop table */}

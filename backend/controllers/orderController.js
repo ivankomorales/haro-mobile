@@ -54,7 +54,13 @@ const createOrder = async (req, res, next) => {
       { $inc: { seq: 1 } },
       { new: true, upsert: true }
     );
-    const orderID = `ORD-${String(counter.seq).padStart(4, "0")}`;
+    // BEFORE:
+    // const orderID = `ORD-${String(counter.seq).padStart(4, "0")}`;
+
+    // AFTER:
+    const seq = counter.seq; // e.g. 700
+    const displayNumber = seq * 10; // -> 7000
+    const orderID = `ORD#${displayNumber}`; // -> "ORD#7000"
 
     const allowedFields = [
       "status",
@@ -114,7 +120,7 @@ const getOrders = async (req, res, next) => {
     const filter = {};
 
     // Keep your current semantics: status=pending means the group new+pending+inProgress
-    if (raw && String(raw).toLowerCase() === 'pending') {
+    if (raw && String(raw).toLowerCase() === "pending") {
       filter.status = { $in: PENDING_GROUP };
     } else if (raw) {
       const canon = normalizeStatus(raw);
@@ -135,22 +141,22 @@ const getOrders = async (req, res, next) => {
     }
     if (Object.keys(orderDateFilter).length) filter.orderDate = orderDateFilter;
 
-    if (req.query.countOnly === 'true') {
+    if (req.query.countOnly === "true") {
       const count = await Order.countDocuments(filter);
       return res.json({ count });
     }
 
-    const sortOrder = req.query.sort === 'asc' ? 1 : -1;
+    const sortOrder = req.query.sort === "asc" ? 1 : -1;
     const limit = parseInt(req.query.limit, 10) || 0;
 
     const orders = await Order.find(filter)
-      .populate('customer')
+      .populate("customer")
       .sort({ orderDate: sortOrder })
       .limit(limit);
 
     res.json(orders);
   } catch (err) {
-    next(new ApiError('Error retrieving orders', 500));
+    next(new ApiError("Error retrieving orders", 500));
   }
 }; // end getOrders
 
@@ -194,13 +200,13 @@ const getOrdersByUser = async (req, res) => {
 const getOrdersByStatus = async (req, res) => {
   try {
     const canon = normalizeStatus(req.params.status);
-    if (!canon) return res.status(400).json({ message: 'Invalid status' });
+    if (!canon) return res.status(400).json({ message: "Invalid status" });
 
     const orders = await Order.find({ status: canon });
     res.json(orders);
   } catch (error) {
-    console.error('Error getting orders by status:', error);
-    res.status(500).json({ message: 'Server error' });
+    console.error("Error getting orders by status:", error);
+    res.status(500).json({ message: "Server error" });
   }
 }; // end getOrdersByStatus
 
@@ -262,7 +268,9 @@ const updateOrderStatus = async (req, res) => {
     const orderId = req.params.id;
 
     if (!canon) {
-      return res.status(400).json({ message: 'Status is required and must be valid' });
+      return res
+        .status(400)
+        .json({ message: "Status is required and must be valid" });
     }
 
     const updatedOrder = await Order.findByIdAndUpdate(
@@ -271,11 +279,12 @@ const updateOrderStatus = async (req, res) => {
       { new: true, runValidators: true }
     );
 
-    if (!updatedOrder) return res.status(404).json({ message: 'Order not found' });
+    if (!updatedOrder)
+      return res.status(404).json({ message: "Order not found" });
     res.json(updatedOrder);
   } catch (error) {
-    console.error('Error updating order status:', error);
-    res.status(500).json({ message: 'Server error' });
+    console.error("Error updating order status:", error);
+    res.status(500).json({ message: "Server error" });
   }
 }; // end updateOrderStatus
 
@@ -283,15 +292,17 @@ const updateOrderStatus = async (req, res) => {
 // 🟣 BULK STATUS UPDATE (PATCH /api/orders/bulk-status)
 // ---------------------------------------------
 const updateManyOrderStatus = async (req, res) => {
-  console.log('🟡 bulk status controller HIT');
-  console.log('📦 Body recibido:', req.body);
+  console.log("🟡 bulk status controller HIT");
+  console.log("📦 Body recibido:", req.body);
 
   try {
     const { orderIds, newStatus } = req.body;
     const canon = normalizeStatus(newStatus);
 
     if (!Array.isArray(orderIds) || orderIds.length === 0 || !canon) {
-      return res.status(400).json({ message: 'Missing orderIds or newStatus (invalid)' });
+      return res
+        .status(400)
+        .json({ message: "Missing orderIds or newStatus (invalid)" });
     }
 
     const result = await Order.updateMany(
@@ -300,13 +311,17 @@ const updateManyOrderStatus = async (req, res) => {
       { runValidators: true }
     );
 
-    res.json({ message: 'Bulk status update complete', result });
+    res.json({ message: "Bulk status update complete", result });
   } catch (error) {
-    console.error('❌ Error in bulk status update:', error.message, error.stack);
-    res.status(500).json({ message: 'Server error' });
+    console.error(
+      "❌ Error in bulk status update:",
+      error.message,
+      error.stack
+    );
+    res.status(500).json({ message: "Server error" });
   }
 };
- // end updateManyOrderStatus
+// end updateManyOrderStatus
 
 // ---------------------------------------------
 // 🟣 ADD ORDER NOTE (PATCH /api/orders/:id/notes)

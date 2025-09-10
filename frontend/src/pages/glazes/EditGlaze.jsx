@@ -149,88 +149,89 @@ export default function EditGlaze() {
   }
 
   return (
-    <div className="min-h-screen bg-white px-4 pt-10 pb-24 font-sans text-gray-800 dark:bg-neutral-900 dark:text-gray-100">
-      <form onSubmit={handleSubmit} className="mx-auto max-w-md space-y-6">
-        {/* Name + color */}
-        <div className="flex items-center gap-4">
-          <FormInput
-            label={t('glaze.name')}
-            name="name"
-            value={formData.name}
-            onChange={handleChange}
-            required
-          />
-
-          <div className="flex items-center gap-2">
-            <input
-              type="color"
-              name="hex"
-              value={formData.hex}
+    <div className="h-full min-h-0 bg-white px-4 font-sans text-gray-800 dark:bg-neutral-900 dark:text-gray-100">
+      <div className="pt-2 pb-4">
+        <form onSubmit={handleSubmit} className="mx-auto max-w-md space-y-6">
+          {/* Name + color */}
+          <div className="flex items-center gap-4">
+            <FormInput
+              label={t('glaze.name')}
+              name="name"
+              value={formData.name}
               onChange={handleChange}
-              className="h-10 w-10 cursor-pointer rounded border border-gray-300 dark:border-gray-600"
+              required
             />
-            <span className="w-16 text-sm text-gray-700 dark:text-gray-300">{formData.hex}</span>
           </div>
-        </div>
-
-        {/* Code optional */}
-        <FormInput
-          label={t('glaze.code')}
-          name="code"
-          value={formData.code}
-          onChange={handleChange}
-        />
-
-        {/* Current image preview ABOVE the drop zone */}
-        <div className="space-y-2">
-          <div className="text-sm font-medium">Image</div>
-
-          <div className="flex items-center gap-3">
-            {currentImage ? (
-              <img
-                src={currentImage}
-                alt={formData.name}
-                className="h-32 w-32 rounded-md border object-cover"
-              />
-            ) : (
-              <div
-                className="h-32 w-32 rounded-md border"
-                style={{ background: formData.hex }}
-                title={formData.hex}
-              />
-            )}
-          </div>
-
-          {/* Drop / pick new image (replaces on save) */}
-          <DropWrap
-            onFiles={(files) => setFormData((s) => ({ ...s, newImages: files }))}
-            className="mt-2"
-          >
-            <ImageUploader
-              multiple={false}
-              value={formData.newImages}
-              onChange={(imgs) => setFormData((s) => ({ ...s, newImages: imgs }))}
+          <div className="flex items-center gap-4">
+            {/* Code optional */}
+            <FormInput
+              label={t('glaze.code')}
+              name="code"
+              value={formData.code}
+              onChange={handleChange}
             />
-          </DropWrap>
-          <div className="text-xs text-neutral-500">
-            {formData.newImages?.length
-              ? 'A new image will replace the current one on save.'
-              : currentImage
-                ? 'Leave empty to keep current image.'
-                : 'No current image. You can upload one.'}
+            <div className="flex items-center gap-2">
+              <input
+                type="color"
+                name="hex"
+                value={formData.hex}
+                onChange={handleChange}
+                className="h-10 w-10 cursor-pointer rounded border border-gray-300 dark:border-gray-600"
+              />
+              <span className="w-16 text-sm text-gray-700 dark:text-gray-300">{formData.hex}</span>
+            </div>
           </div>
-        </div>
+          {/* Current image preview ABOVE the drop zone */}
+          <div className="space-y-2">
+            <div className="text-sm font-medium">Image</div>
 
-        {error && <div className="text-sm text-red-500">{error}</div>}
+            <div className="flex items-center gap-3">
+              {currentImage ? (
+                <img
+                  src={currentImage}
+                  alt={formData.name}
+                  className="h-32 w-32 rounded-md border object-cover"
+                />
+              ) : (
+                <div
+                  className="h-32 w-32 rounded-md border"
+                  style={{ background: formData.hex }}
+                  title={formData.hex}
+                />
+              )}
+            </div>
 
-        <FormActions
-          onSubmit={handleSubmit}
-          submitText={saving ? 'Saving…' : undefined}
-          submitDisabled={isSubmitDisabled}
-          cancelRedirect={returnTo || originPath || '/products/glazes'}
-          submitButtonText="Update"
-        />
-      </form>
+            {/* Drop / pick new image (replaces on save) */}
+            <DropWrap
+              onFiles={(files) => setFormData((s) => ({ ...s, newImages: files }))}
+              className="mt-2"
+            >
+              <ImageUploader
+                multiple={false}
+                value={formData.newImages}
+                onChange={(imgs) => setFormData((s) => ({ ...s, newImages: imgs }))}
+              />
+            </DropWrap>
+            <div className="text-xs text-neutral-500">
+              {formData.newImages?.length
+                ? 'A new image will replace the current one on save.'
+                : currentImage
+                  ? 'Leave empty to keep current image.'
+                  : 'No current image. You can upload one.'}
+            </div>
+          </div>
+
+          {error && <div className="text-sm text-red-500">{error}</div>}
+
+          <FormActions
+            onSubmit={handleSubmit}
+            submitText={saving ? 'Saving…' : undefined}
+            submitDisabled={isSubmitDisabled}
+            cancelRedirect={returnTo || originPath || '/products/glazes'}
+            submitButtonText="Update"
+          />
+        </form>
+      </div>
     </div>
   )
 }

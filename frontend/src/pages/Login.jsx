@@ -2,12 +2,24 @@ import { useState } from 'react'
 import { useAuth } from '../hooks/useAuth'
 import FormInput from '../components/FormInput'
 import { getMessage as t } from '../utils/getMessage'
+import { useEffect } from 'react'
 
 export default function Login() {
   const { login } = useAuth()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [errors, setErrors] = useState({})
+
+  useEffect(() => {
+    // hard reset in case the browser persisted something odd
+    try {
+      // window (no scroll anyway, but benign)
+      window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
+      // if a previous dashboard was still mounted in history, nuke its scroller position
+      const scroller = document.getElementById('scrollable-content')
+      if (scroller) scroller.scrollTop = 0
+    } catch {}
+  }, [])
 
   const handleSubmit = async (e) => {
     e.preventDefault()

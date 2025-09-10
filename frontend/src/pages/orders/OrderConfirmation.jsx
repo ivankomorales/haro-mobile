@@ -212,39 +212,41 @@ export default function OrderConfirmation() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col items-center bg-white px-4 py-2 dark:bg-neutral-900">
-      <h1 className="text-xl font-semibold text-black dark:text-white">
-        {t('order.confirm') || 'Confirm Order'}
-      </h1>
+    <div className="h-full min-h-0 bg-white dark:bg-neutral-900">
+      <div className="mx-auto max-w-2xl px-4 py-6">
+        <h1 className="mb-4 text-xl font-semibold text-black dark:text-white">
+          {t('order.confirm') || 'Confirm Order'}
+        </h1>
 
-      <div className="w-full max-w-2xl">
-        <OrderDetailsCard
-          order={{ ...order, products: uiReadyProducts }}
-          glazes={glazes}
-          t={t}
-          onEditBase={handleEditBase}
-          onEditProducts={handleEditProducts}
-          shippingRequired={t('order.shippingRequired')}
-          subtotalLabel={t('order.subtotal')}
-          advanceLabel={t('order.deposit')}
-          totalLabel={t('order.total')}
-          figureLabel={t('product.figure')}
-          glazeLabel={t('glaze.title')}
-          descriptionLabel={t('product.description')}
-        />
-      </div>
+        <div className="w-full">
+          <OrderDetailsCard
+            order={{ ...order, products: uiReadyProducts }}
+            glazes={glazes}
+            t={t}
+            onEditBase={handleEditBase}
+            onEditProducts={handleEditProducts}
+            shippingRequired={t('order.shippingRequired')}
+            subtotalLabel={t('order.subtotal')}
+            advanceLabel={t('order.deposit')}
+            totalLabel={t('order.total')}
+            figureLabel={t('product.figure')}
+            glazeLabel={t('glaze.title')}
+            descriptionLabel={t('product.description')}
+          />
+        </div>
 
-      <div className="mt-6 w-full max-w-2xl">
-        <FormActions
-          onSubmit={handleConfirm}
-          submitButtonText={submitting ? t('loading.order') : t('order.submit') || 'Create Order'}
-          cancelButtonText={t('formActions.cancel')}
-          confirmTitle={t('formActionsConfirm.confirmTitle')}
-          confirmMessage={t('formActions.confirmMessage')}
-          confirmText={t('formActions.confirmText')}
-          cancelText={t('formActions.cancelText')}
-          cancelRedirect={originPath}
-        />
+        <div className="mt-6 w-full">
+          <FormActions
+            onSubmit={handleConfirm}
+            submitButtonText={submitting ? t('loading.order') : t('order.submit') || 'Create Order'}
+            cancelButtonText={t('formActions.cancel')}
+            confirmTitle={t('formActionsConfirm.confirmTitle')}
+            confirmMessage={t('formActions.confirmMessage')}
+            confirmText={t('formActions.confirmText')}
+            cancelText={t('formActions.cancelText')}
+            cancelRedirect={originPath}
+          />
+        </div>
       </div>
     </div>
   )

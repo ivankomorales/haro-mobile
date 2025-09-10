@@ -1,6 +1,6 @@
 // components/FormInput.jsx
 import { useState } from 'react'
-import { Eye, EyeOff, Calendar } from 'lucide-react'
+import { Eye, EyeOff, Calendar, XCircle } from 'lucide-react'
 import DatePicker from 'react-datepicker'
 import 'react-datepicker/dist/react-datepicker.css'
 import { fromYMD, toYMD } from '../utils/date'
@@ -43,6 +43,7 @@ export default function FormInput({
   showToggle = false,
   floating = true,
   icon = null,
+  
   ...props
 }) {
   const [show, setShow] = useState(false)

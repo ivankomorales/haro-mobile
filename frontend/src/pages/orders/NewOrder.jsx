@@ -228,13 +228,8 @@ export default function NewOrder() {
   }
 
   return (
-    <div className="h-full min-h-0 bg-white pb-24 dark:bg-neutral-900 dark:text-gray-100">
-      <form onSubmit={handleBaseSubmit} className="mx-auto max-w-2xl space-y-6 px-4 pt-6">
-        {/* Optional h1 for accessibility */}
-        {/*<h1 className="text-center mb-8 text-xl font-semibold">
-          {isEditBase ? t('order.editTitle') : t('order.newTitle')}
-        </h1>*/}
-
+    <div className="h-full min-h-0 bg-white dark:bg-neutral-900 dark:text-gray-100">
+      <form onSubmit={handleBaseSubmit} className="mx-auto max-w-2xl space-y-6 px-4 py-6">
         {/* Name + Lastname */}
         <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
           <FormInput

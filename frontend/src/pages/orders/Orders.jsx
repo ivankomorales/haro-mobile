@@ -13,6 +13,7 @@ import OrderActionsBar from '../../components/OrderActionsBar'
 import StatusModal from '../../components/StatusModal'
 import OrdersFilters from '../../components/OrdersFilters'
 import { showError, showSuccess, showLoading, dismissToast } from '../../utils/toastUtils'
+import { XCircle, FileSpreadsheet, FileText, RotateCcw, X } from 'lucide-react'
 
 const DEFAULT_FILTERS = {
   status: 'all',
@@ -172,7 +173,7 @@ export default function Orders() {
   const clearAllChips = () => setFilters(DEFAULT_FILTERS)
 
   return (
-    <div className="min-h-screen bg-white text-black dark:bg-neutral-900 dark:text-white">
+    <div className="h-full min-h-0 bg-white pb-[max(1.5rem,var(--bottom-bar-h))] text-black dark:bg-neutral-900 dark:text-white">
       {/* Sticky header (full-bleed inside this component) */}
       <div className="sticky top-0 z-40">
         {/* Single background layer for the header; no shadow to avoid "card" look */}

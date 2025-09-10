@@ -43,9 +43,9 @@ export default function OrderActionsBar({
   }
 
   return (
-    <div className="relative mb-4 flex items-center justify-between rounded-none border-0 bg-transparent p-3 shadow-none">
+    <div className="relative flex items-center justify-between rounded-none border-0 bg-transparent p-3 shadow-none">
       {/* Checkbox + counters */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-4">
         <input
           ref={checkboxRef} // needed to control "indeterminate" state
           type="checkbox"

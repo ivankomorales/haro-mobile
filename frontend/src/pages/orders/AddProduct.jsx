@@ -365,8 +365,8 @@ export default function AddProduct() {
   }
 
   return (
-    <div className="min-h-screen bg-white pb-24 dark:bg-neutral-900 dark:text-gray-100">
-      <div className="mx-auto max-w-xl space-y-6 px-4 py-4">
+    <div className="h-full min-h-0 bg-white dark:bg-neutral-900 dark:text-gray-100">
+      <div className="mx-auto max-w-xl space-y-6 px-4 py-6">
         <h1 className="mb-8 text-center text-xl font-semibold">
           {isEdit ? t('product.edit') : t('product.title')}
         </h1>

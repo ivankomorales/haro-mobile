@@ -84,71 +84,61 @@ export default function AddGlaze() {
   }
 
   return (
-    <div className="min-h-screen bg-white px-4 pt-10 pb-24 font-sans text-gray-800 dark:bg-neutral-900 dark:text-gray-100">
-      {/* <button
-        onClick={() => navigate(-1)}
-        className="mb-4 flex items-center text-sm text-blue-600 dark:text-blue-400 hover:underline "
-      >
-        <ChevronLeft className="h-5 w-5 mr-1" />
-        {t('button.back')}
-      </button> */}
-      {/* Optional Title */}
-      {/* <h1 className="text-center mb-8 text-xl font-semibold">
-        {t('glaze.title')}
-      </h1> */}
-
-      <form onSubmit={handleSubmit} className="mx-auto max-w-md space-y-6">
-        {/* Name + color */}
-        <div className="flex items-center gap-4">
-          <FormInput
-            label={t('glaze.name')}
-            name="name"
-            value={formData.name}
-            onChange={handleChange}
-            required
-          />
-
-          <div className="flex items-center gap-2">
-            <input
-              type="color"
-              name="hex"
-              value={formData.hex}
+    <div className="h-full min-h-0 bg-white px-4 font-sans text-gray-800 dark:bg-neutral-900 dark:text-gray-100">
+      {/* AppBar already provides top offset via .app-main padding-top */}
+      {/* Avoid big extra top padding; add small spacing if needed */}
+      <div className="pt-2 pb-4">
+        <form onSubmit={handleSubmit} className="mx-auto max-w-md space-y-6">
+          <div className="flex items-center gap-4">
+            <FormInput
+              label={t('glaze.name')}
+              name="name"
+              value={formData.name}
               onChange={handleChange}
-              className="h-10 w-10 cursor-pointer rounded border border-gray-300 dark:border-gray-600"
+              required
             />
-            <span className="w-16 text-sm text-gray-700 dark:text-gray-300">{formData.hex}</span>
           </div>
-        </div>
+          <div className="flex items-center gap-4">
+            {/* Code optional */}
+            <FormInput
+              label={t('glaze.code')}
+              name="code"
+              value={formData.code}
+              onChange={handleChange}
+            />
+            <div className="flex items-center gap-2">
+              <input
+                type="color"
+                name="hex"
+                value={formData.hex}
+                onChange={handleChange}
+                className="h-10 w-10 cursor-pointer rounded border border-gray-300 dark:border-gray-600"
+              />
+              <span className="w-16 text-sm text-gray-700 dark:text-gray-300">{formData.hex}</span>
+            </div>
+          </div>
+          {/* Image */}
+          <DropWrap
+            onFiles={(files) => {
+              setFormData((s) => ({ ...s, images: files })) // keep your current submit flow
+            }}
+          >
+            <ImageUploader
+              multiple={false}
+              value={formData.images}
+              onChange={(imgs) => setFormData({ ...formData, images: imgs })}
+            />
+          </DropWrap>
 
-        {/* Code optional */}
-        <FormInput
-          label={t('glaze.code')}
-          name="code"
-          value={formData.code}
-          onChange={handleChange}
-        />
+          {error && <div className="text-sm text-red-500">{error}</div>}
+          {success && <div className="text-sm text-green-600">{success}</div>}
 
-        {/* Image */}
-        <DropWrap
-          onFiles={(files) => {
-            setFormData((s) => ({ ...s, images: files })) // keep your current submit flow
-          }}
-        >
-          <ImageUploader
-            multiple={false}
-            value={formData.images}
-            onChange={(imgs) => setFormData({ ...formData, images: imgs })}
+          <FormActions
+            onSubmit={handleSubmit}
+            cancelRedirect={returnTo || originPath || '/products/glazes'}
           />
-        </DropWrap>
-
-        {error && <div className="text-sm text-red-500">{error}</div>}
-        {success && <div className="text-sm text-green-600">{success}</div>}
-
-        <FormActions
-          onSubmit={handleSubmit}
-          cancelRedirect={returnTo || originPath || '/products/glazes'}
-        />
-      </form>
+        </form>
+      </div>
     </div>
   )
 }

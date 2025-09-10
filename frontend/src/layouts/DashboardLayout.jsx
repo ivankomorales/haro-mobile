@@ -68,7 +68,7 @@ export default function DashboardLayout() {
     <div className="app-shell h-svh flex bg-white text-black dark:bg-neutral-900 dark:text-white">
       {/* Sidebar on Desktop */}
       {isDesktop && !hideBars && <SideBar />}
-
+  {/* {isDesktop && !hideBars && <SideBar ordersCount={data?.pendingOrders ?? 0} />} TODO */}
       {/* Main container */}
        <div className="flex flex-1 min-h-0 flex-col">
         {/* AppBar fijo */}

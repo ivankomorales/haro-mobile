@@ -6,57 +6,134 @@ import { useConfirm } from '../context/ConfirmContext'
 import { getOriginPath } from '../utils/navigationUtils'
 import { useState } from 'react'
 
-export default function Sidebar() {
+/* -------------------------------------------
+   Styling helpers
+   - Taller items (py-3.5)
+   - Full-bleed backgrounds via -mx-3 on <nav>
+   - Active: left border + font-medium
+   - Section header never looks "selected"
+-------------------------------------------- */
+
+function cx(...args) {
+  return args.filter(Boolean).join(' ')
+}
+
+function navItemBase(active) {
+  return cx(
+    'w-full flex items-center gap-2 px-3 py-3.5 text-sm transition-colors',
+    'text-neutral-800 dark:text-neutral-100',
+    !active && '[&>svg]:opacity-70',
+    'hover:bg-neutral-100 dark:hover:bg-neutral-800',
+    active &&
+      'bg-neutral-200 dark:bg-neutral-800/70 font-medium border-l-2 border-neutral-400 dark:border-neutral-500'
+  )
+}
+
+function navSectionButton() {
+  // section header is never "selected" – only hover
+  return cx(
+    'w-full flex items-center justify-between px-3 py-3.5 text-sm transition-colors',
+    'text-neutral-800 dark:text-neutral-100',
+    'hover:bg-neutral-100 dark:hover:bg-neutral-800',
+    '[&>span>svg]:opacity-70'
+  )
+}
+
+// tiny label for groups
+function SectionLabel({ children }) {
+  return (
+    <div className="mt-4 mb-2 px-3 text-[10px] font-semibold tracking-wider text-neutral-500 uppercase dark:text-neutral-400">
+      {children}
+    </div>
+  )
+}
+
+export default function Sidebar({ ordersCount = 0 }) {
+  // ^ pass real value from props/store; defaults to 0
+
   const navigate = useNavigate()
   const location = useLocation()
   const confirm = useConfirm()
-
-  const isActive = (route) => location.pathname.startsWith(route)
-
   const [openProducts, setOpenProducts] = useState(true)
-  const sectionBtn =
-    'w-full flex items-center justify-between px-2 py-2 rounded-md font-semibold hover:bg-gray-100 dark:hover:bg-neutral-800'
 
   const handleNav = (path) => {
     smartNavigate(navigate, location.pathname, path, {
       confirm,
-      state: {
-        originPath: getOriginPath(location.pathname),
-      },
+      state: { originPath: getOriginPath(location.pathname) },
     })
   }
 
-  const linkClass = (route) =>
-    `flex items-center gap-2 px-2 py-3 rounded-md transition-colors ${
-      isActive(route)
-        ? 'text-black dark:text-white bg-blue-100 dark:bg-gray-500 shadow-md'
-        : 'text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-neutral-800'
-    }
-    }`
+  const isActive = (p) => location.pathname === p
 
   return (
-    <div className="hidden h-[calc(100svh-var(--app-bar-h))] w-56 flex-col overflow-y-auto border-r bg-white px-4 py-6 pt-[var(--app-bar-h)] md:flex dark:border-neutral-800 dark:bg-neutral-900">
-      {/* <div className="mb-6 text-center text-lg font-bold text-gray-800 dark:text-gray-100">
+    <div
+      className="hidden w-56 flex-col overflow-y-auto border-r bg-white px-3 md:flex dark:border-neutral-800 dark:bg-neutral-900"
+      style={{
+        // Push content below global AppBar + notch
+        paddingTop: 'calc(var(--app-bar-h) + env(safe-area-inset-top))',
+        // Fill remaining viewport height
+        height: 'calc(100dvh - var(--app-bar-h) - env(safe-area-inset-top))',
+      }}
+    >
+      <div className="mb-2 text-center text-lg font-bold text-gray-800 dark:text-gray-100">
         Haro Mobile
-      </div> */}
+      </div>
 
-      <nav className="flex flex-col space-y-4 text-sm">
-        <button onClick={() => handleNav('/home')} className={linkClass('/home')}>
+      {/* Full-bleed buttons inside */}
+      <nav className="-mx-3 flex flex-col space-y-0 text-sm">
+        <SectionLabel>Main</SectionLabel>
+
+        {/* Home */}
+        <button
+          type="button"
+          onClick={() => handleNav('/home')}
+          className={navItemBase(isActive('/home'))}
+        >
           <House className="h-5 w-5" />
           Home
         </button>
-        <button onClick={() => handleNav('/orders')} className={linkClass('/orders')}>
+
+        {/* Orders with badge (only if > 0) */}
+        <button
+          type="button"
+          onClick={() => handleNav('/orders')}
+          className={navItemBase(isActive('/orders'))}
+        >
           <ClipboardList className="h-5 w-5" />
           Orders
+          {ordersCount > 0 && (
+            // badge sits on the right
+            <span
+              className={cx(
+                'ml-auto inline-flex items-center rounded-full px-2 py-0.5 text-xs tabular-nums',
+                isActive('/orders')
+                  ? 'bg-neutral-300 text-neutral-800 dark:bg-neutral-700 dark:text-neutral-100'
+                  : 'bg-neutral-200 text-neutral-700 dark:bg-neutral-800/60 dark:text-neutral-200'
+              )}
+            >
+              {ordersCount}
+            </span>
+          )}
         </button>
-        <button onClick={() => handleNav('/profile')} className={linkClass('/profile')}>
+
+        {/* Users */}
+        <button
+          type="button"
+          onClick={() => handleNav('/profile')}
+          className={navItemBase(isActive('/profile'))}
+        >
           <UserRound className="h-5 w-5" />
           Users
         </button>
-        <div className="mt-2">
+
+        <SectionLabel>Catalog</SectionLabel>
+
+        {/* Products section (header never "selected") */}
+        <div>
           <button
+            type="button"
             onClick={() => setOpenProducts((v) => !v)}
-            className={sectionBtn}
+            className={navSectionButton()}
             aria-expanded={openProducts}
           >
             <span className="flex items-center gap-2">
@@ -67,10 +144,11 @@ export default function Sidebar() {
           </button>
 
           {openProducts && (
-            <div className="mt-1 space-y-1 pl-6">
+            <div className="space-y-0">
               <button
+                type="button"
                 onClick={() => handleNav('/products/glazes')}
-                className={linkClass('/products/glazes')}
+                className={cx('pl-8', navItemBase(isActive('/products/glazes')))}
               >
                 Glazes
               </button>
