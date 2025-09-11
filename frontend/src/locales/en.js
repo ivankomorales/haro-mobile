@@ -185,6 +185,9 @@ export const en = {
     updateError: 'No se pudo actualizar el estado.',
     empty: 'No orders found',
     loading: 'Loading orders',
+
+    entries: 'entries',
+    add: 'Add new',
   },
 
   // AddProduct
@@ -279,6 +282,9 @@ export const en = {
     back: 'Back',
 
     login: 'Log in',
+
+    clear: 'Clear',
+    apply: 'Apply',
   },
 
   // LOGIN
@@ -336,5 +342,42 @@ export const en = {
     image: 'Loading Image',
     order: 'Loading Order',
     orderCreate: 'Creating Order',
+  },
+
+  // pagination
+  pagination: {
+    previous: 'Previous',
+    next: 'Next',
+    rowsPerPage: 'Rows/page',
+    of: 'of',
+  },
+
+  // table
+  table: {
+    orderID: 'ORD#',
+    customer: 'Customer',
+    orderDate: 'Order date',
+    status: 'Status',
+    total: 'Total',
+  },
+
+  // chips
+  chip: {
+    remove: 'Remove',
+    removeAll: 'Remove All',
+  },
+
+  // filters and labels
+  filters: {
+    title: 'Filters',
+  },
+  labels: {
+    from: 'From',
+    to: 'To',
+    urgent: 'Urgent',
+    shippingRequired: 'Shipping required',
+    ignore: 'Ignore',
+    yes: 'Yes',
+    no: 'No',
   },
 }

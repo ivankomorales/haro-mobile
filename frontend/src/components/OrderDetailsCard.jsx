@@ -52,7 +52,7 @@ export default function OrderDetailsCard({
   const {
     orderID = '',
     orderDate,
-    deliverDate, // not currently shown; keep if you want to add it
+    deliverDate, // not currently shown
     customer = {},
     deposit = 0,
     products = [],

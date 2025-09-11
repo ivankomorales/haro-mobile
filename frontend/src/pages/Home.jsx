@@ -67,7 +67,7 @@ export default function Home() {
         <section className="mb-10">
           <h3 className="mb-2 text-lg font-medium">{t('home.recentTitle')}</h3>
           <ul className="space-y-2">
-            {recentOrders.map((order) => (
+            {recentOrders.slice(0, 5).map((order) => (
               <OrderCard
                 key={order.orderID || order._id}
                 order={{

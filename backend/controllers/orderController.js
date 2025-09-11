@@ -114,52 +114,202 @@ const createOrder = async (req, res, next) => {
 // ---------------------------------------------
 // 🟢 GET ALL ORDERS (GET /api/orders)
 // ---------------------------------------------
+// OrderController.getOrders (reemplaza el método actual)
+// comments in English only
 const getOrders = async (req, res, next) => {
   try {
-    const raw = req.query.status; // do not force lowercase blindly
+    // ------ pagination & sort ------
+    const page = Math.max(parseInt(req.query.page, 10) || 0, 0);
+    const limitRaw = parseInt(req.query.limit, 10) || 0;
+    const limit = Math.min(Math.max(limitRaw, 0), 100); // 0 means "no limit" in legacy branch
+
+    const sortParam = (req.query.sort || "orderDate:desc").trim();
+    const [sortField, sortDir] = sortParam.split(":");
+    const sortWhitelist = new Set([
+      "orderDate",
+      "createdAt",
+      "total",
+      "orderID",
+    ]);
+    const sort = sortWhitelist.has(sortField)
+      ? { [sortField]: sortDir === "asc" ? 1 : -1 }
+      : { orderDate: -1 };
+
+    // ------ filters ------
     const filter = {};
 
-    // Keep your current semantics: status=pending means the group new+pending+inProgress
+    // status group semantics unchanged
+    const raw = req.query.status;
     if (raw && String(raw).toLowerCase() === "pending") {
       filter.status = { $in: PENDING_GROUP };
     } else if (raw) {
       const canon = normalizeStatus(raw);
-      if (canon) {
-        filter.status = canon;
-      } else {
-        // Unknown status input -> return empty set or ignore filter. Here, ignore.
+      if (canon) filter.status = canon;
+    }
+
+    if (req.query.from || req.query.to) {
+      const od = {};
+      if (req.query.from) od.$gte = new Date(req.query.from);
+      if (req.query.to) {
+        const to = new Date(req.query.to);
+        to.setDate(to.getDate() + 1);
+        od.$lt = to;
       }
+      filter.orderDate = od;
     }
 
-    // orderDate range
-    const orderDateFilter = {};
-    if (req.query.from) orderDateFilter.$gte = new Date(req.query.from);
-    if (req.query.to) {
-      const toDate = new Date(req.query.to);
-      toDate.setDate(toDate.getDate() + 1);
-      orderDateFilter.$lt = toDate;
-    }
-    if (Object.keys(orderDateFilter).length) filter.orderDate = orderDateFilter;
+    if (req.query.urgent === "true") filter.isUrgent = true;
+    if (req.query.urgent === "false") filter.isUrgent = { $in: [false, null] };
 
+    if (req.query.shipping === "true") filter.shippingRequired = true;
+    if (req.query.shipping === "false")
+      filter.shippingRequired = { $in: [false, null] };
+
+    // quick count mode (kept)
     if (req.query.countOnly === "true") {
       const count = await Order.countDocuments(filter);
       return res.json({ count });
     }
 
-    const sortOrder = req.query.sort === "asc" ? 1 : -1;
-    const limit = parseInt(req.query.limit, 10) || 0;
+    // ------ text query over orderID + customer fields ------
+    const q = (req.query.q || "").trim();
+    const hasQ = q.length > 0;
+    const regex = hasQ
+      ? new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i")
+      : null;
 
-    const orders = await Order.find(filter)
-      .populate("customer")
-      .sort({ orderDate: sortOrder })
-      .limit(limit);
+    // ------ LEGACY BRANCH (no page) ------
+    if (!page) {
+      // keep existing behavior for Home "Recent Orders"
+      const docs = await Order.find(
+        hasQ
+          ? {
+              ...filter,
+              $or: [{ orderID: regex }],
+            }
+          : filter
+      )
+        .populate("customer")
+        .sort(sort)
+        .limit(limit);
 
-    res.json(orders);
+      // If you need q over customer.* in legacy, switch to aggregate; for Home it's fine.
+      return res.json(docs);
+    }
+
+    // ------ PAGINATED BRANCH (returns { data, meta, stats? }) ------
+    const baseMatch = filter;
+
+    const pipeline = [{ $match: baseMatch }];
+
+    pipeline.push(
+      {
+        $lookup: {
+          from: "customers", // ensure your collection is named "customers"
+          localField: "customer",
+          foreignField: "_id",
+          as: "customer",
+        },
+      },
+      { $unwind: { path: "$customer", preserveNullAndEmptyArrays: true } }
+    );
+
+    if (hasQ) {
+      pipeline.push({
+        $match: {
+          $or: [
+            { orderID: regex },
+            { "customer.name": regex },
+            { "customer.lastName": regex },
+            { "customer.email": regex },
+          ],
+        },
+      });
+    }
+
+    // ------ SPECIAL SORT HANDLING (before $facet) ------
+    // If sorting by "total", compute it first and then sort by that computed field.
+    if (sortField === "total") {
+      const sortAsc = sortDir === "asc" ? 1 : -1;
+
+      // Compute total = sum(products.price) - deposit (coerce to numbers)
+      pipeline.push({
+        $addFields: {
+          _subtotal: {
+            $sum: {
+              $map: {
+                input: { $ifNull: ["$products", []] },
+                as: "p",
+                in: { $toDouble: { $ifNull: ["$$p.price", 0] } },
+              },
+            },
+          },
+          _deposit: { $toDouble: { $ifNull: ["$deposit", 0] } },
+        },
+      });
+      pipeline.push({
+        $addFields: { total: { $subtract: ["$_subtotal", "$_deposit"] } },
+      });
+      pipeline.push({ $sort: { total: sortAsc } });
+    } else {
+      // Default sort for whitelisted fields (orderDate, createdAt, orderID)
+      pipeline.push({ $sort: sort });
+    }
+
+    // ------ FACET (pagination + total count) ------
+    pipeline.push({
+      $facet: {
+        data: [{ $skip: (page - 1) * limit }, { $limit: limit }],
+        total: [{ $count: "count" }],
+      },
+    });
+
+    const agg = await Order.aggregate(pipeline);
+    const data = agg[0]?.data || [];
+    const totalDocs = agg[0]?.total?.[0]?.count || 0;
+    const totalPages = Math.max(Math.ceil(totalDocs / limit), 1);
+
+    let stats = undefined;
+    if (req.query.includeStats === "true") {
+      const now = new Date();
+      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+      const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+
+      const s = await Order.aggregate([
+        { $match: { orderDate: { $gte: monthStart, $lt: monthEnd } } },
+        { $group: { _id: "$status", count: { $sum: 1 } } },
+      ]);
+
+      const by = Object.fromEntries(s.map((r) => [r._id, r.count]));
+      stats = {
+        month: {
+          total: s.reduce((a, b) => a + b.count, 0),
+          pending: (by.new || 0) + (by.pending || 0) + (by.inProgress || 0),
+          shipped: by.completed || 0, // adjust if you have a dedicated "shipped"
+          refunded: by.cancelled || 0, // adjust if you have a dedicated "refunded"
+        },
+      };
+    }
+
+    return res.json({
+      data,
+      meta: {
+        page,
+        limit,
+        totalDocs,
+        totalPages,
+        hasNextPage: page < totalPages,
+        hasPrevPage: page > 1,
+        sort: { [sortField]: sort[sortField] === 1 ? "asc" : "desc" },
+      },
+      ...(stats ? { stats } : {}),
+    });
   } catch (err) {
+    console.error("getOrders error:", err);
     next(new ApiError("Error retrieving orders", 500));
   }
-}; // end getOrders
-
+};
+// end getOrders
 // ---------------------------------------------
 // 🟢 GET ORDER BY ID (GET /api/orders/:id)
 // ---------------------------------------------

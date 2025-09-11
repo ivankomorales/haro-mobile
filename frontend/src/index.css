@@ -80,8 +80,8 @@ input[type='date']::-webkit-calendar-picker-indicator {
 .app-main {
   flex: 1 1 auto;
   overflow-y: auto;
-  padding-top: var(--app-bar-h);
-  padding-top: calc(var(--app-bar-h) + var(--safe-top)); 
+  
+  
   padding-bottom: calc(var(--bottom-bar-h) + var(--safe-bottom));
   
   /* iOS suaviza y evita saltos raros */

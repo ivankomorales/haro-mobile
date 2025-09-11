@@ -207,7 +207,7 @@ export default function GlazeListPage() {
             className={[
               // mobile: icon button
               'inline-flex h-10 w-11 items-center justify-center rounded bg-black text-white',
-              // desktop: regular pill with label
+              // desktop: regular button with label
               'sm:h-auto sm:w-auto sm:rounded-md sm:px-3 sm:py-2 dark:bg-amber-500',
               'hover:bg-neutral-800 dark:hover:bg-amber-600',
             ].join(' ')}

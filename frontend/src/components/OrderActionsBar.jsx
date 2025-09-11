@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/react'
-import { MoreVertical, FileText, FileSpreadsheet } from 'lucide-react'
+import { MoreVertical, FileText, FileSpreadsheet, ClockFading } from 'lucide-react'
 
 import ExcelModal from '../components/ExcelModal'
 import { exportSelectedOrdersToPDF, exportSelectedOrdersToExcel } from '../utils/exportUtils'
@@ -46,7 +46,7 @@ export default function OrderActionsBar({
     <div className="relative flex items-center justify-between rounded-none border-0 bg-transparent p-3 shadow-none">
       {/* Checkbox + counters */}
       <div className="flex items-center gap-4">
-        <input
+        {/* <input
           ref={checkboxRef} // needed to control "indeterminate" state
           type="checkbox"
           checked={allSelected}
@@ -62,12 +62,12 @@ export default function OrderActionsBar({
           aria-checked={isIndeterminate ? 'mixed' : undefined}
           className="h-4 w-4 disabled:cursor-not-allowed disabled:opacity-40"
           title={totalVisible === 0 ? 'No results to select' : ''}
-        />
+        /> */}
 
-        {/* Selected count */}
+        
         <span className="text-sm">{selectedOrders.length} selected</span>
 
-        {/* Total visible count */}
+        
         <span className="text-sm text-gray-500 dark:text-gray-400">• {totalVisible} results</span>
       </div>
 
@@ -80,7 +80,7 @@ export default function OrderActionsBar({
           className="rounded p-2 hover:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-transparent dark:hover:bg-neutral-700"
           title={hasSelection ? 'Export to PDF' : 'Select at least 1 order'}
         >
-          <FileText className="h-5 w-5" />
+          <FileText className="h-5 w-5 text-red-800" />
         </button>
 
         {/* Export to Excel button */}
@@ -90,18 +90,21 @@ export default function OrderActionsBar({
           className="rounded p-2 hover:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-transparent dark:hover:bg-neutral-700"
           title={hasSelection ? 'Export to Excel' : 'Select at least 1 order'}
         >
-          <FileSpreadsheet className="h-5 w-5" />
+          <FileSpreadsheet className="h-5 w-5 text-green-600" />
         </button>
 
         {/* Bulk status change button */}
-        <button
-          onClick={onBulkStatusChange}
-          disabled={!hasSelection}
-          className="ml-2 rounded bg-emerald-600 px-3 py-1 text-sm text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-emerald-600 disabled:opacity-50"
-          title={hasSelection ? 'Change status' : 'Select at least 1 order'}
-        >
-          Change status
-        </button>
+        <div className="">
+          <button
+            onClick={onBulkStatusChange}
+            disabled={!hasSelection}
+            className="ml-2 flex items-center gap-2 rounded bg-emerald-600 px-3 py-1 text-sm text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-emerald-600 disabled:opacity-50"
+            title={hasSelection ? 'Change status' : 'Select at least 1 order'}
+          >
+            <ClockFading className="h-5 w-5" />
+            Change status
+          </button>
+        </div>
       </div>
 
       {/* Mobile actions (menu) */}
@@ -116,8 +119,9 @@ export default function OrderActionsBar({
               <button
                 disabled={!hasSelection}
                 onClick={() => exportSelectedOrdersToPDF(selectedOrders)}
-                className="w-full px-4 py-2 text-left text-sm disabled:cursor-not-allowed disabled:opacity-50 data-[headlessui-state=active]:bg-gray-100 dark:data-[headlessui-state=active]:bg-neutral-700"
+                className="ml-1 flex w-full items-center gap-2 px-4 py-2 text-left text-sm disabled:cursor-not-allowed disabled:opacity-50 data-[headlessui-state=active]:bg-gray-100 dark:data-[headlessui-state=active]:bg-neutral-700"
               >
+                <FileText className="h-5 w-5 text-red-800" />
                 Export to PDF
               </button>
             </MenuItem>
@@ -126,8 +130,9 @@ export default function OrderActionsBar({
               <button
                 disabled={!hasSelection}
                 onClick={() => setExportOpen(true)}
-                className="w-full px-4 py-2 text-left text-sm disabled:cursor-not-allowed disabled:opacity-50 data-[headlessui-state=active]:bg-gray-100 dark:data-[headlessui-state=active]:bg-neutral-700"
+                className="ml-1 flex w-full items-center gap-2 px-4 py-2 text-left text-sm disabled:cursor-not-allowed disabled:opacity-50 data-[headlessui-state=active]:bg-gray-100 dark:data-[headlessui-state=active]:bg-neutral-700"
               >
+                <FileSpreadsheet className="h-5 w-5 text-green-600" />
                 Export to Excel
               </button>
             </MenuItem>
@@ -136,8 +141,9 @@ export default function OrderActionsBar({
               <button
                 disabled={!hasSelection}
                 onClick={onBulkStatusChange}
-                className="w-full px-4 py-2 text-left text-sm disabled:cursor-not-allowed disabled:opacity-50 data-[headlessui-state=active]:bg-gray-100 dark:data-[headlessui-state=active]:bg-neutral-700"
+                className="ml-1 flex w-full items-center gap-2 px-4 py-2 text-left text-sm disabled:cursor-not-allowed disabled:opacity-50 data-[headlessui-state=active]:bg-gray-100 dark:data-[headlessui-state=active]:bg-neutral-700"
               >
+                <ClockFading className="h-5 w-5" />
                 Change status
               </button>
             </MenuItem>

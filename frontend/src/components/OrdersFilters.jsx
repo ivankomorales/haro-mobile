@@ -1,6 +1,6 @@
 // comments in English only
 import { useEffect, useMemo, useState } from 'react'
-import { Filter } from 'lucide-react'
+import { SlidersHorizontal } from 'lucide-react'
 import FormInput from '../components/FormInput'
 import { UI_DMY, fromYMD } from '../utils/date' // <-- use fromYMD (no parseFlexible)
 
@@ -92,7 +92,7 @@ export default function OrdersFilters({
         aria-expanded={open}
         title={tt('filters.title')}
       >
-        <Filter className="h-5 w-5" />
+        <SlidersHorizontal className="h-5 w-5" />
         {activeCount > 0 && (
           <span className="ml-1 inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-blue-600 px-1.5 text-[11px] font-semibold text-white">
             {activeCount}

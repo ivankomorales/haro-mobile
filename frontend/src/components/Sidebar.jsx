@@ -67,7 +67,7 @@ export default function Sidebar({ ordersCount = 0 }) {
 
   return (
     <div
-      className="hidden w-56 flex-col overflow-y-auto border-r bg-white px-3 md:flex dark:border-neutral-800 dark:bg-neutral-900"
+      className="hidden w-56 flex-col overflow-y-auto border-r border-neutral-400 bg-white px-3 md:flex dark:border-neutral-800 dark:bg-neutral-900"
       style={{
         // Push content below global AppBar + notch
         paddingTop: 'calc(var(--app-bar-h) + env(safe-area-inset-top))',
