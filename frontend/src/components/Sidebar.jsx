@@ -5,7 +5,7 @@ import { smartNavigate } from '../utils/smartNavigate'
 import { useConfirm } from '../context/ConfirmContext'
 import { getOriginPath } from '../utils/navigationUtils'
 import { useState } from 'react'
-
+import { getMessage as t } from '../utils/getMessage'
 /* -------------------------------------------
    Styling helpers
    - Taller items (py-3.5)
@@ -20,7 +20,7 @@ function cx(...args) {
 
 function navItemBase(active) {
   return cx(
-    'w-full flex items-center gap-2 px-3 py-3.5 text-sm transition-colors',
+    'w-full flex items-center gap-2 px-7 py-3.5 text-sm transition-colors',
     'text-neutral-800 dark:text-neutral-100',
     !active && '[&>svg]:opacity-70',
     'hover:bg-neutral-100 dark:hover:bg-neutral-800',
@@ -32,7 +32,7 @@ function navItemBase(active) {
 function navSectionButton() {
   // section header is never "selected" – only hover
   return cx(
-    'w-full flex items-center justify-between px-3 py-3.5 text-sm transition-colors',
+    'w-full flex items-center justify-between px-7 py-3.5 text-sm transition-colors',
     'text-neutral-800 dark:text-neutral-100',
     'hover:bg-neutral-100 dark:hover:bg-neutral-800',
     '[&>span>svg]:opacity-70'
@@ -67,21 +67,19 @@ export default function Sidebar({ ordersCount = 0 }) {
 
   return (
     <div
-      className="hidden w-56 flex-col overflow-y-auto border-r border-neutral-400 bg-white px-3 md:flex dark:border-neutral-800 dark:bg-neutral-900"
+      className="flex h-full w-full flex-col overflow-y-auto bg-white px-3 dark:bg-neutral-900"
       style={{
-        // Push content below global AppBar + notch
         paddingTop: 'calc(var(--app-bar-h) + env(safe-area-inset-top))',
-        // Fill remaining viewport height
-        height: 'calc(100dvh - var(--app-bar-h) - env(safe-area-inset-top))',
+        
       }}
     >
       <div className="mb-2 text-center text-lg font-bold text-gray-800 dark:text-gray-100">
-        Haro Mobile
+        {t('app.name')}
       </div>
 
       {/* Full-bleed buttons inside */}
       <nav className="-mx-3 flex flex-col space-y-0 text-sm">
-        <SectionLabel>Main</SectionLabel>
+        <SectionLabel>{t('nav.main')}</SectionLabel>
 
         {/* Home */}
         <button
@@ -90,7 +88,7 @@ export default function Sidebar({ ordersCount = 0 }) {
           className={navItemBase(isActive('/home'))}
         >
           <House className="h-5 w-5" />
-          Home
+          {t('nav.home')}
         </button>
 
         {/* Orders with badge (only if > 0) */}
@@ -100,7 +98,7 @@ export default function Sidebar({ ordersCount = 0 }) {
           className={navItemBase(isActive('/orders'))}
         >
           <ClipboardList className="h-5 w-5" />
-          Orders
+          {t('nav.orders')}
           {ordersCount > 0 && (
             // badge sits on the right
             <span
@@ -123,10 +121,10 @@ export default function Sidebar({ ordersCount = 0 }) {
           className={navItemBase(isActive('/profile'))}
         >
           <UserRound className="h-5 w-5" />
-          Users
+          {t('nav.users')}
         </button>
 
-        <SectionLabel>Catalog</SectionLabel>
+        <SectionLabel>{t('nav.catalog')}</SectionLabel>
 
         {/* Products section (header never "selected") */}
         <div>
@@ -138,7 +136,7 @@ export default function Sidebar({ ordersCount = 0 }) {
           >
             <span className="flex items-center gap-2">
               <Package className="h-5 w-5" />
-              Products
+              {t('nav.products')}
             </span>
             <span className="text-xs">{openProducts ? '▾' : '▸'}</span>
           </button>
@@ -148,9 +146,9 @@ export default function Sidebar({ ordersCount = 0 }) {
               <button
                 type="button"
                 onClick={() => handleNav('/products/glazes')}
-                className={cx('pl-8', navItemBase(isActive('/products/glazes')))}
+                className={cx('pl-15', navItemBase(isActive('/products/glazes')))}
               >
-                Glazes
+                └── {t('glaze.list')}
               </button>
             </div>
           )}

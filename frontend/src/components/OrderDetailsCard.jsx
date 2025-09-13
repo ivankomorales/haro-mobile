@@ -70,7 +70,7 @@ export default function OrderDetailsCard({
     <div className="relative mx-auto w-full max-w-2xl space-y-6 rounded-xl bg-white p-4 text-black shadow-md dark:bg-neutral-900 dark:text-white">
       {/* Header */}
       <div className="space-y-1 text-center">
-        <p className="text-2xl font-bold">{orderID}</p>
+        {orderID && <p className="text-2xl font-bold">{orderID}</p>}
         <p className="text-sm text-gray-500 dark:text-gray-400">
           {orderDate ? format(orderDate, 'MMM dd, yyyy') : 'No date'}
         </p>

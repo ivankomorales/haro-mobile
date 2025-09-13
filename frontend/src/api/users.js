@@ -38,3 +38,26 @@ export const deleteUser = (id) => {
     method: 'DELETE',
   })
 }
+
+/**
+ * Get information about the currently authenticated user.
+ *
+ * @returns {Promise<any>}
+ */
+export const getMe = () => {
+  return fetchWithAuth('/api/users/me')
+}
+
+/**
+ * Update information of the currently authenticated user.
+ *
+ * @param {object} patch - Object containing the fields to update
+ * (e.g., { name?, lastName?, email?, avatarUrl? }).
+ * @returns {Promise<any>}
+ */
+export const updateMe = (patch) => {
+  return fetchWithAuth('/api/users/me', {
+    method: 'PATCH',
+    body: JSON.stringify(patch),
+  })
+}

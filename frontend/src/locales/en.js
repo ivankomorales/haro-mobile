@@ -2,6 +2,19 @@
 // Access these messages via utils/getMessage.js using dot notation keys
 
 export const en = {
+  app: {
+    name: 'Haro Mobile',
+  },
+
+  nav: {
+    main: 'Main',
+    home: 'Home',
+    orders: 'Orders',
+    users: 'Users',
+    catalog: 'Catalog',
+    products: 'Products',
+    // glazes: usa glaze.list existente
+  },
   // ─── ERRORS & VALIDATION ──────────────────────────────── (KEEP THESE)
   errors: {
     address: {
@@ -43,7 +56,7 @@ export const en = {
     address: 'Address is required.',
     city: 'City is required.',
     facebookFormat: 'Facebook username must start with "/"',
-    incompleteAddressBeforeAdding: 'Complete the current address before adding another one',
+    incompleteAddressBeforeAdding: 'Complete the current address before adding another one.',
     incompleteShipping: 'Please complete all shipping address fields before adding a new one.',
     instagramFormat: 'Instagram handle must start with "@"',
     nameOnlyLetters: 'First name can only contain letters.',
@@ -54,6 +67,7 @@ export const en = {
     requiredFields: 'Please fill all required fields.',
     zip: 'ZIP code is required.',
   },
+
   // ─── SUCCESS ─────────────────────────────────────────────
   success: {
     glaze: {
@@ -89,27 +103,47 @@ export const en = {
     validationError: 'Validation failed.',
     requestError: 'Request failed',
     unknownError: 'Server response could not be processed',
+    networkError: 'Network error. Please check your connection.',
     //OLD ONES
     emailRequired: 'Email is required.',
     missingFields: 'Please fill in all fields.',
     passwordRequired: 'Password is required.',
   },
+
   //  ─────────────────────────── PAGES  ───────────────────────────
   // GLAZES
-  // AddGlaze
   glaze: {
     title: 'Glaze',
     name: 'Glaze Name',
     code: 'Code (optional)',
-    new: 'Create new glaze',
-    list: 'Glazes',
-
+    new: 'New glaze', // ← NEW (actualizado)
+    list: 'Glazes', // ← NEW
     updating: 'Updating glaze...',
     updateFailed: 'Failed to update glaze.',
+
+    loading: 'Loading glazes...', // ← NEW
+    empty: 'No glazes', // ← NEW
+    searchPlaceholder: 'Search by name, code, hex…', // ← NEW
+
+    noCode: 'No code', // ← NEW
+    hex: 'Hex', // ← NEW
+    noHex: 'No hex', // ← NEW
+
+    confirm: {
+      activate: {
+        title: 'Activate glaze?', // ← NEW
+        message: 'This glaze will be marked as active and available for selection.', // ← NEW
+        confirm: 'Yes, activate', // ← NEW
+      },
+      deactivate: {
+        title: 'Deactivate glaze?', // ← NEW
+        message: 'This glaze will be marked as inactive and hidden from selection.', // ← NEW
+        confirm: 'Yes, deactivate', // ← NEW
+      },
+    },
   },
 
   // USERS
-  // AddUser
   user: {
     title: 'Create User',
     label: 'User',
@@ -122,13 +156,12 @@ export const en = {
     employee: 'Employee',
     admin: 'Admin',
   },
-  // UserProfile
 
   // ───────────────────── HOME ───────────────────────────
   home: {
     title: 'Home',
     pendingTitle: 'Pending Orders',
-    updatedAt: 'Last updated:', //Última actualización:
+    updatedAt: 'Last updated:',
     recentTitle: 'Recent Orders',
     status: 'Status',
     loading: 'Loading',
@@ -165,7 +198,7 @@ export const en = {
     addProduct: 'Add product',
     shippingRequired: 'Requires shipping',
     shippingAddress: 'Shipping address',
-    status: 'Order status',
+    status: 'Order Status',
 
     notes: 'Notes',
     datePlaceholder: 'DD/MM/YYYY',
@@ -175,19 +208,21 @@ export const en = {
 
     exportingPDF: 'Generating PDF...',
     exportingXLS: 'Exporting to Excel...',
-    noneSelected: 'No has seleccionado ningún pedido.',
-    exportError: 'Error al exportar los pedidos.',
-    exportExcelPending: 'La exportación a Excel aún no está disponible.',
-    exportWordPending: 'La exportación a Word aún no está disponible.',
+    noneSelected: 'You have not selected any orders.',
+    exportError: 'Failed to export orders.',
+    exportExcelPending: 'Excel export not available yet.',
+    exportWordPending: 'Word export not available yet.',
 
-    updatingStatus: 'Actualizando estado...',
-    statusUpdated: 'Estados actualizados correctamente.',
-    updateError: 'No se pudo actualizar el estado.',
+    updatingStatus: 'Updating status...',
+    statusUpdated: 'Statuses updated successfully.',
+    updateError: 'Failed to update status.',
     empty: 'No orders found',
-    loading: 'Loading orders',
+    loading: 'Loading Orders',
 
     entries: 'entries',
     add: 'Add new',
+
+    all: 'All Orders',
   },
 
   // AddProduct
@@ -195,8 +230,8 @@ export const en = {
     title: 'Add Product',
     edit: 'Edit Product',
     type: 'Type',
-    select: 'Select a product',
-    description: 'Description', // Consider using a general i18n
+    select: 'Select a Product',
+    description: 'Description',
 
     qty: 'Quantity',
     price: 'Price',
@@ -206,14 +241,14 @@ export const en = {
     glazeTitle: 'Glaze',
     glazeInt: 'Interior',
     glazeExt: 'Exterior',
-    glazeSearch: 'Search Glaze', //Consider using a general search: 'Type in to search'
-    glazeNone: 'No glaze',
-    glazeNoResult: 'No results', // Consider using a general noResults: 'No results'
+    glazeSearch: 'Search Glaze',
+    glazeNone: 'No Glaze',
+    glazeNoResult: 'No Results',
 
     images: 'Images',
 
-    addButton: 'Add Product', // moved to button.addProduct
-    added: 'Added products',
+    addButton: 'Add Product',
+    added: 'Added Products',
 
     figure: 'Figure',
     cup: 'Cup',
@@ -221,9 +256,10 @@ export const en = {
     plate: 'Plate',
     figurine: 'Figurine',
   },
+
   // ─────────────── SplitAction ──────────────────────
   splitAction: {
-    new: '+ New',
+    new: 'New',
     order: 'Order',
     user: 'User',
     glaze: 'Glaze',
@@ -231,7 +267,6 @@ export const en = {
 
   // ─────────────── STATUS ──────────────────────
   status: {
-    // Backend uses lowercase for status with camelCase
     label: 'Status',
     all: 'All',
     new: 'New',
@@ -240,13 +275,14 @@ export const en = {
     completed: 'Completed',
     cancelled: 'Cancelled',
     unknown: 'Unknown',
+    active: 'Active', // ← NEW
+    inactive: 'Inactive', // ← NEW
   },
 
-  // FORMACTIONS abv. fa
-  // Consider simplifying like keeping only formActions, formActionsCreate and formActionsEdit 3/8/2025 -Ivan
+  // FORM ACTIONS
   formActions: {
-    saveChanges: 'Save changes', //Duplicated on BUTTONS
-    cancel: 'Cancel', //Duplicated on BUTTONS
+    saveChanges: 'Save changes',
+    cancel: 'Cancel',
     confirmTitle: 'Are you sure?',
     confirmMessage: 'All data will be lost. Continue?',
     confirmText: 'Yes, exit',
@@ -268,13 +304,13 @@ export const en = {
     confirmMessage: 'Cancelling now will erase all your progress.',
   },
 
-  // BUTTONS
+  // BUTTONS / ACTIONS
   button: {
     confirm: 'Confirm',
     save: 'Save',
     cancel: 'Cancel',
     ok: 'OK',
-    search: 'Search', // Used as a Label as well
+    search: 'Search',
     close: 'Close',
 
     addProduct: 'Add Product',
@@ -285,22 +321,101 @@ export const en = {
 
     clear: 'Clear',
     apply: 'Apply',
+
+    edit: 'Edit', // ← NEW
+    activate: 'Activate', // ← NEW
+    deactivate: 'Deactivate', // ← NEW
+    exportPdf: 'Export PDF', // ← NEW
+    exportExcel: 'Export Excel', // ← NEW
+    changeStatus: 'Change Status', // ← NEW
   },
 
-  // LOGIN
-  login: {
-    email: 'Email address',
-    password: 'Password',
+  messages: {
+    selectAtLeastOneOrder: 'Select at least 1 order',
+  },
+
+  sort: {
+    by: 'Sort by', // ← NEW
+  },
+
+  // COMMONS
+  common: {
+    cancel: 'Cancel', // ← NEW
+    working: 'Working…', // ← NEW
+    na: 'N/A', // ← NEW
+  },
+
+  // pagination
+  pagination: {
+    previous: 'Previous',
+    next: 'Next',
+    rowsPerPage: 'Rows/page',
+    of: 'of',
+  },
+
+  // chips (includes tabs)
+  chip: {
+    remove: 'Remove',
+    removeAll: 'Remove All',
+    active: 'Active', // ← NEW
+    inactive: 'Inactive', // ← NEW
+    all: 'All', // ← NEW
+  },
+  // ─── TABLE HEADERS (unified) ─────────────────────────────
+  headers: {
+    // Glazes & general
+    image: 'Image',
+    name: 'Name',
+    code: 'Code',
+    hex: 'Hex',
+    status: 'Status',
+    actions: 'Actions',
+
+    // Orders-specific
+    orderID: 'ORD#',
+    customer: 'Customer',
+    orderDate: 'Order date',
+    total: 'Total',
+  },
+  filters: {
+    title: 'Filters',
+  },
+  labels: {
+    from: 'From',
+    to: 'To',
+    urgent: 'Urgent',
+    shippingRequired: 'Shipping Required',
+    ignore: 'Ignore',
+    yes: 'Yes',
+    no: 'No',
+  },
+
+  // ─── STATS ───────────────────────────
+  stats: {
+    thisMonth: 'This Month',
+    pending: 'Pending',
+    completed: 'Completed',
+    // ── NEW ──
+    inProgress: 'In Progress',
+    cancelled: 'Cancelled',
+    inRange: 'Orders (range)',
+    netSales: 'Net sales',
+    grossMinusDeposit: 'Gross − Deposit',
+    range: 'Range',
+    week: 'Last 7 days',
+    '15d': 'Last 15 days',
+    '30d': 'Last 30 days',
+    month: 'This month',
+    quarter: 'This quarter',
+    year: 'This year',
+    all: 'All time',
+    total: 'Total', // optional
   },
 
   // STATUSMODAL
   statusModal: {
     title: 'Change status',
-    subtitle: 'Select the new status', // ← clearer
-    // pending: 'Pending',            // ← remove this (misplaced)
-    current: 'Current', // ← add (future use)
-    multiple: 'Multiple statuses selected', // ← add (future use)
-    // noOtherStatuses: 'There are no other statuses available.', // ← optional
+    subtitle: 'Select the new status',
   },
 
   //EXCELMODAL
@@ -315,7 +430,7 @@ export const en = {
     export: 'Export',
     exportStarted: 'Export started!',
     noResults: 'No fields match your search.',
-    selectedCount: 'Selected', // <-- importante: incluye {{n}}
+    selectedCount: 'Selected:', // <-- importante: incluye {{n}}
   },
 
   fields: {
@@ -325,7 +440,7 @@ export const en = {
     customerEmail: 'Customer email',
     status: 'Status',
     isUrgent: 'Urgent?',
-    orderDate: 'Order date',
+    orderDate: 'Date',
     deliverDate: 'Delivery date',
     notes: 'Notes',
     productIndex: 'Product index',
@@ -336,48 +451,8 @@ export const en = {
     glazeExteriorName: 'Exterior glaze',
     glazeExteriorHex: 'Exterior glaze (hex)',
   },
-
-  // LOADING
-  loading: {
-    image: 'Loading Image',
-    order: 'Loading Order',
-    orderCreate: 'Creating Order',
-  },
-
-  // pagination
-  pagination: {
-    previous: 'Previous',
-    next: 'Next',
-    rowsPerPage: 'Rows/page',
-    of: 'of',
-  },
-
-  // table
-  table: {
-    orderID: 'ORD#',
-    customer: 'Customer',
-    orderDate: 'Order date',
-    status: 'Status',
-    total: 'Total',
-  },
-
-  // chips
-  chip: {
-    remove: 'Remove',
-    removeAll: 'Remove All',
-  },
-
-  // filters and labels
-  filters: {
-    title: 'Filters',
-  },
-  labels: {
-    from: 'From',
-    to: 'To',
-    urgent: 'Urgent',
-    shippingRequired: 'Shipping required',
-    ignore: 'Ignore',
-    yes: 'Yes',
-    no: 'No',
+  login: {
+    email: 'Email',
+    password: 'Password',
   },
 }

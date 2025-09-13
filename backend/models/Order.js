@@ -184,6 +184,9 @@ OrderSchema.index(
     name: "TextSearch_Notes_Products",
   }
 );
+// 8) Shipping required fast filter (paired with date for dashboards)
+OrderSchema.index({ "shipping.isRequired": 1, orderDate: -1 });
+
 
 // Virtual totals (whole pesos)
 OrderSchema.virtual("itemsTotal").get(function () {

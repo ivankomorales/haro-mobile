@@ -4,7 +4,7 @@ import { Fragment, useEffect, useMemo, useState } from 'react'
 import { getMessage as t } from '../utils/getMessage'
 import { showSuccess, showError } from '../utils/toastUtils'
 
-// === Helpers (puedes moverlos a utils/exportFields.js) ===
+// === Helpers (you can move them to utils/exportFields.js) ===
 const EXPORT_FIELDS_KEY = (userId) => `exportFields:${userId}`
 
 export const ALL_FIELDS = [
@@ -44,7 +44,7 @@ export function saveExportFields(userId, fields) {
   }
 }
 
-// === UI helper: etiquetas legibles (puedes i18n-izarlas con t(`fields.${key}`)) ===
+// === UI helper: readable labels (you can i18n-ize them with t(`fields.${key}`)) ===
 const DEFAULT_LABELS = {
   orderID: 'Order ID',
   customerName: 'Customer name',
@@ -68,14 +68,14 @@ export default function ExcelModal({
   open,
   onClose,
   onConfirm, // (selectedFields: string[]) => void
-  userId, // string | number (para guardar preferencias)
+  userId, // string | number (to save preferences)
 }) {
-  // ⬇️ hooks deben ir dentro del componente
+  // ⬇️ hooks must be inside the component
   const [selected, setSelected] = useState(ALL_FIELDS)
   const [search, setSearch] = useState('')
   const [lastSaved, setLastSaved] = useState(ALL_FIELDS)
 
-  // Cargar preferencias cuando se abre
+  // Load preferences when modal is opened
   useEffect(() => {
     if (open) {
       const fields = loadExportFields(userId)
@@ -96,13 +96,13 @@ export default function ExcelModal({
       if (prev.includes(field)) {
         return prev.filter((f) => f !== field)
       }
-      // insertar en la posición que le toca según ALL_FIELDS
+      // insert in the correct position according to ALL_FIELDS
       const idxInAll = ALL_FIELDS.indexOf(field)
       if (idxInAll === -1) return [...prev, field] // fallback
-      // busca el primer seleccionado que venga DESPUÉS en ALL_FIELDS
+      // find the first selected that comes AFTER in ALL_FIELDS
       const nextKey = ALL_FIELDS.slice(idxInAll + 1).find((k) => prev.includes(k))
-      if (!nextKey) return [...prev, field] // si no hay siguiente, va al final
-      // inserta antes de ese siguiente
+      if (!nextKey) return [...prev, field] // if no next one, append at the end
+      // insert before that next one
       const copy = [...prev]
       const insertAt = copy.indexOf(nextKey)
       copy.splice(insertAt, 0, field)
@@ -174,7 +174,7 @@ export default function ExcelModal({
                 {t ? t('exportModal.title') : 'Export to Excel / CSV'}
               </DialogTitle>
 
-              {/* Buscar campo */}
+              {/* Search field */}
               <div className="mt-4">
                 <input
                   type="text"
@@ -185,7 +185,7 @@ export default function ExcelModal({
                 />
               </div>
 
-              {/* Botones rápidos */}
+              {/* Quick actions */}
               <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center">
                 <div className="flex flex-wrap gap-2">
                   <button
@@ -209,7 +209,7 @@ export default function ExcelModal({
                 </span>
               </div>
 
-              {/* Lista de checkboxes */}
+              {/* Checkbox list */}
               <div className="mt-4 max-h-72 divide-y overflow-auto rounded border dark:divide-neutral-800 dark:border-neutral-700">
                 {filtered.map((key) => {
                   const label = t ? t(`fields.${key}`, DEFAULT_LABELS[key]) : DEFAULT_LABELS[key]
@@ -239,7 +239,7 @@ export default function ExcelModal({
                 )}
               </div>
 
-              {/* Acciones */}
+              {/* Action buttons */}
               <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:gap-3">
                 <button
                   onClick={onClose}

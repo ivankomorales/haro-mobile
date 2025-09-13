@@ -214,7 +214,7 @@ export default function OrderConfirmation() {
   return (
     <div className="h-full min-h-0 bg-white dark:bg-neutral-900">
       <div className="mx-auto max-w-2xl px-4 py-6">
-        <h1 className="mb-4 text-xl font-semibold text-black dark:text-white">
+        <h1 className="mb-4 text-center text-xl font-semibold text-black dark:text-white">
           {t('order.confirm') || 'Confirm Order'}
         </h1>
 

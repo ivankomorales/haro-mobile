@@ -8,6 +8,7 @@ const {
   getOrderById,
   getOrdersByUser,
   getOrdersByStatus,
+  getOrderStats,
   updateOrder,
   updateOrderStatus,
   updateManyOrderStatus,
@@ -42,6 +43,8 @@ router.get("/user/:userId", verifyOwnershipOrAdmin, getOrdersByUser);
 // Get orders by status
 router.get("/status/:status", requireAdmin, getOrdersByStatus);
 
+// Get orders stats
+router.get("/stats", requireAdmin, getOrderStats);
 //
 // 🟠 POST ROUTES
 //

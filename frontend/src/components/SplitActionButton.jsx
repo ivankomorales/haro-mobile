@@ -1,11 +1,10 @@
 // src/components/SplitActionButton.jsx
-
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { smartNavigate } from '../utils/smartNavigate'
 import { useConfirm } from '../context/ConfirmContext'
 import { getOriginPath } from '../utils/navigationUtils'
-
+import { ClipboardList, UserRound, Paintbrush, Plus } from 'lucide-react'
 /**
  * Reusable action button with dropdown support.
  *
@@ -32,6 +31,7 @@ export default function SplitActionButton({
   const navigate = useNavigate()
   const location = useLocation()
   const confirm = useConfirm()
+  const dropdownRef = useRef(null)
 
   const handleSelect = (path, context = {}) => {
     smartNavigate(navigate, location.pathname, path, {
@@ -41,8 +41,26 @@ export default function SplitActionButton({
     setOpen(false)
   }
 
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setOpen(false)
+      }
+    }
+
+    if (open) {
+      document.addEventListener('mousedown', handleClickOutside)
+    } else {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [open])
+
   return (
-    <div className="relative">
+    <div className="relative" ref={dropdownRef}>
       <div className="flex overflow-hidden rounded-md shadow">
         <button
           onClick={() =>
@@ -50,14 +68,15 @@ export default function SplitActionButton({
               state: { originPath: getOriginPath(location.pathname) },
             })
           }
-          className="bg-orange-600 px-4 py-2 text-sm font-medium text-white hover:bg-orange-700"
+          className="inline-flex bg-orange-600 px-4 py-2 text-sm font-medium text-white hover:bg-orange-700 dark:bg-pink-500 dark:hover:bg-pink-700"
         >
+          <Plus className='h-5 w-5'/>
           {labels.main}
         </button>
         {showSecondary && (
           <button
             onClick={() => setOpen((prev) => !prev)}
-            className="bg-orange-600 px-2 py-2 text-sm font-medium text-white hover:bg-orange-700"
+            className="bg-orange-600 px-2 py-2 text-sm font-medium text-white hover:bg-orange-700 dark:bg-pink-500 dark:hover:bg-pink-700"
           >
             ▼
           </button>
@@ -73,8 +92,9 @@ export default function SplitActionButton({
                   state: { originPath: getOriginPath(location.pathname) },
                 })
               }
-              className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-neutral-700"
+              className="flex w-full items-center gap-4 px-4 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-neutral-700"
             >
+              <ClipboardList className="h-5, w-5 text-gray-600 dark:text-gray-400" />
               {labels.order}
             </button>
           )}
@@ -85,8 +105,9 @@ export default function SplitActionButton({
                   state: { originPath: getOriginPath(location.pathname) },
                 })
               }
-              className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-neutral-700"
+              className="flex w-full items-center gap-4 px-4 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-neutral-700"
             >
+              <UserRound className="h-5, w-5 text-gray-600 dark:text-gray-400" />
               {labels.user}
             </button>
           )}
@@ -97,8 +118,9 @@ export default function SplitActionButton({
                   state: { originPath: getOriginPath(location.pathname) },
                 })
               }
-              className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-neutral-700"
+              className="flex w-full items-center gap-4 px-4 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-neutral-700"
             >
+              <Paintbrush className="h-5, w-5 text-gray-600 dark:text-gray-400" />
               {labels.glaze}
             </button>
           )}

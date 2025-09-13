@@ -7,6 +7,12 @@ const auditLogSchema = new mongoose.Schema({
   performedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" }, // who did it
   description: { type: String }, // freeform: "Admin updated role for John Doe"
   ipAddress: { type: String }, // optional: from req.ip
+  // objectType: {
+  //   type: String,
+  //   enum: ["Order", "Customer", "User", "Glaze", "Other"],
+  //   default: "Other",
+  //   index: true,
+  // },
   logLevel: {
     type: String,
     enum: ["info", "warn", "error", "critical"],

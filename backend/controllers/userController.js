@@ -39,7 +39,9 @@ const createUser = async (req, res, next) => {
     await logEvent({
       event: "user_created",
       objectId: newUser._id,
-      description: `User ${newUser.name} ${newUser.lastName || ""} (${newUser.email}) created by ${req.user.name || "System"}`,
+      description: `User ${newUser.name} ${newUser.lastName || ""} (${
+        newUser.email
+      }) created by ${req.user.name || "System"}`,
       req,
     });
 
@@ -48,6 +50,20 @@ const createUser = async (req, res, next) => {
     next(new ApiError("Error creating user", 500, err.message));
   }
 }; // end createUser
+
+// ---------------------------------------------
+// 🟢 GET CURRENT USER (GET /api/users/me)
+// ---------------------------------------------
+const getMe = async (req, res, next) => {
+  try {
+    // req.user viene de verifyToken (token tiene { id, role })
+    const user = await User.findById(req.user.id).select("-password");
+    if (!user) return next(new ApiError("User not found", 404));
+    res.json(user);
+  } catch (err) {
+    next(new ApiError("Error retrieving current user", 500));
+  }
+};
 
 // ---------------------------------------------
 // 🟢 GET ALL USERS (GET /api/users)
@@ -73,6 +89,54 @@ const getUserById = async (req, res, next) => {
     next(new ApiError("Error retrieving user", 500));
   }
 }; // end getUserById
+
+// ---------------------------------------------
+// 🔵 UPDATE CURRENT USER (PATCH /api/users/me)
+// ---------------------------------------------
+const updateMe = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user) return next(new ApiError("User not found", 404));
+
+    const allowed = ["name", "lastName", "avatarUrl", "email"]; // 👈 lo que permites tocar
+    const changes = [];
+
+    for (const k of allowed) {
+      if (k in req.body && req.body[k] !== user[k]) {
+        changes.push(`${k}: ${user[k] ?? "—"} → ${req.body[k]}`);
+        user[k] = req.body[k];
+      }
+    }
+
+    await user.save();
+
+    if (changes.length) {
+      await logEvent({
+        event: "me_updated",
+        objectId: user._id,
+        description: `User updated own profile: ${changes.join(", ")}`,
+        req,
+      });
+    }
+
+    res.json({
+      message: "Profile updated",
+      user: {
+        _id: user._id,
+        name: user.name,
+        lastName: user.lastName,
+        email: user.email,
+        role: user.role,
+        isActive: user.isActive,
+        avatarUrl: user.avatarUrl,
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt,
+      },
+    });
+  } catch (err) {
+    next(new ApiError("Error updating profile", 500));
+  }
+}; //end updateMe
 
 // ---------------------------------------------
 // 🔵 UPDATE USER (PUT /api/users/:id)
@@ -153,8 +217,10 @@ const deleteUser = async (req, res, next) => {
 // ---------------------------------------------
 module.exports = {
   createUser,
+  getMe ,
   getUsers,
   getUserById,
+  updateMe,
   updateUser,
   deleteUser,
 };

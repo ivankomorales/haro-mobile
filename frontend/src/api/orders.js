@@ -30,6 +30,7 @@ export async function getOrdersPage(params = {}) {
   if (params.urgent !== undefined && params.urgent !== '') qs.set('urgent', String(params.urgent))
   if (params.shipping !== undefined && params.shipping !== '')
     qs.set('shipping', String(params.shipping))
+  if (params.dateField) qs.set('dateField', params.dateField) // 'orderDate'|'deliverDate'|'createdAt'
   if (params.includeStats !== false) qs.set('includeStats', 'true')
 
   // ✅ Already parsed JSON; never call .json() here
@@ -40,6 +41,20 @@ export async function getOrdersPage(params = {}) {
     return { data: payload, meta: null, stats: null, legacy: true }
   }
   return payload // { data, meta, stats }
+}
+
+export async function getOrderStats(params = {}) {
+  const qs = new URLSearchParams()
+  if (params.range) qs.set('range', params.range)
+  if (params.from) qs.set('from', params.from) // YYYY-MM-DD
+  if (params.to) qs.set('to', params.to) // YYYY-MM-DD
+  if (params.dateField) qs.set('dateField', params.dateField) // orderDate|deliverDate|createdAt
+  if (params.status && params.status !== 'all') qs.set('status', params.status)
+  if (params.q) qs.set('q', params.q)
+  if (params.urgent !== undefined && params.urgent !== '') qs.set('urgent', String(params.urgent))
+  if (params.shipping !== undefined && params.shipping !== '')
+    qs.set('shipping', String(params.shipping))
+  return await fetchWithAuth(`/api/orders/stats?${qs.toString()}`)
 }
 
 export async function getOrderById(id) {

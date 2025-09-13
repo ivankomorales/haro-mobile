@@ -43,10 +43,8 @@ export default function Home() {
 
   return (
     <div className="h-full min-h-0 bg-white font-sans text-gray-800 dark:bg-neutral-900 dark:text-gray-100">
-      {/* Optional h1 for accessibility */}
-      {/*<h1 className="text-xl font-semibold mb-4">{t('home.title')}</h1>*/}
-
       <div className="mx-auto max-w-5xl px-4 py-6">
+        {/* Pending Orders Home Card */}
         <div className="mb-6 rounded-lg bg-white p-4 text-center shadow dark:bg-neutral-800">
           <h2 className="text-base text-gray-500 dark:text-gray-300">{t('home.pendingTitle')}</h2>
           <p className="my-2 text-3xl font-bold">{pendingCount}</p>

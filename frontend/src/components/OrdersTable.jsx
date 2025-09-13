@@ -34,7 +34,7 @@ function StatusPill({ value }) {
   const label = (() => {
     switch (value) {
       case 'new':
-        return 'New'
+        return 'New' //TODO i18n
       case 'pending':
         return 'Pending'
       case 'inProgress':
@@ -129,7 +129,7 @@ export default function OrdersTable({
   return (
     <div className="overflow-x-auto rounded-xl border border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-900">
       <table className="min-w-full border-collapse text-sm">
-        <thead className="bg-neutral-50 text-neutral-700 dark:bg-neutral-800 dark:text-neutral-200">
+        <thead className="bg-neutral-50 text-neutral-500 dark:bg-neutral-800 dark:text-neutral-200">
           <tr className="text-left">
             <th className="w-10 px-3 py-2">
               <IndeterminateCheckbox
@@ -139,20 +139,41 @@ export default function OrdersTable({
                 ariaLabel="Select all on this page"
               />
             </th>
-            <th className="px-3 py-2 font-semibold">{t('table.orderID') || 'ORD#'}</th>
-            <th className="px-3 py-2 font-semibold">{t('table.customer') || 'Customer'}</th>
             <th className="px-3 py-2 font-semibold">
               <SortHeader
-                label={t('table.orderDate') || 'Order date'}
+                label={t('headers.orderID') || 'ORD#'}
+                column="orderID"
+                sort={sort}
+                onSort={onSort}
+              />
+            </th>
+            <th className="px-3 py-2 font-semibold">
+              <SortHeader
+                label={t('headers.customer') || 'Customer'}
+                column="customer"
+                sort={sort}
+                onSort={onSort}
+              />
+            </th>
+            <th className="px-3 py-2 font-semibold">
+              <SortHeader
+                label={t('headers.orderDate') || 'Order date'}
                 column="orderDate"
                 sort={sort}
                 onSort={onSort}
               />
             </th>
-            <th className="px-3 py-2 font-semibold">{t('table.status') || 'Status'}</th>
+            <th className="px-3 py-2 font-semibold">
+              <SortHeader
+                label={t('headers.status') || 'Status'}
+                column="status"
+                sort={sort}
+                onSort={onSort}
+              />
+            </th>
             <th className="px-3 py-2 text-right font-semibold">
               <SortHeader
-                label={t('table.total') || 'Total'}
+                label={t('headers.total') || 'Total'}
                 column="total"
                 sort={sort}
                 onSort={onSort}
@@ -225,7 +246,6 @@ export default function OrdersTable({
           )}
         </tbody>
       </table>
-      
     </div>
   )
 }

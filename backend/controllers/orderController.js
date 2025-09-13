@@ -138,6 +138,16 @@ const getOrders = async (req, res, next) => {
     // ------ filters ------
     const filter = {};
 
+    // allow selecting which date field to filter by
+    const allowedDateFields = new Set([
+      "orderDate",
+      "deliverDate",
+      "createdAt",
+    ]);
+    const dateField = allowedDateFields.has(req.query.dateField)
+      ? req.query.dateField
+      : "orderDate";
+
     // status group semantics unchanged
     const raw = req.query.status;
     if (raw && String(raw).toLowerCase() === "pending") {
@@ -146,24 +156,29 @@ const getOrders = async (req, res, next) => {
       const canon = normalizeStatus(raw);
       if (canon) filter.status = canon;
     }
-
+    // normalize date range to [from 00:00, to+1day 00:00)
     if (req.query.from || req.query.to) {
-      const od = {};
-      if (req.query.from) od.$gte = new Date(req.query.from);
+      const dr = {};
+      if (req.query.from) {
+        const from = new Date(req.query.from);
+        from.setHours(0, 0, 0, 0);
+        dr.$gte = from;
+      }
       if (req.query.to) {
         const to = new Date(req.query.to);
+        to.setHours(0, 0, 0, 0);
         to.setDate(to.getDate() + 1);
-        od.$lt = to;
+        dr.$lt = to;
       }
-      filter.orderDate = od;
+      filter[dateField] = dr;
     }
 
     if (req.query.urgent === "true") filter.isUrgent = true;
     if (req.query.urgent === "false") filter.isUrgent = { $in: [false, null] };
 
-    if (req.query.shipping === "true") filter.shippingRequired = true;
+    if (req.query.shipping === "true") filter["shipping.isRequired"] = true;
     if (req.query.shipping === "false")
-      filter.shippingRequired = { $in: [false, null] };
+      filter["shipping.isRequired"] = { $in: [false, null] };
 
     // quick count mode (kept)
     if (req.query.countOnly === "true") {
@@ -308,8 +323,238 @@ const getOrders = async (req, res, next) => {
     console.error("getOrders error:", err);
     next(new ApiError("Error retrieving orders", 500));
   }
-};
-// end getOrders
+}; // end getOrders
+
+// ---------------------------------------------
+// 🟢 GET ORDER STATS (GET /api/orders/stats)
+// ---------------------------------------------
+const getOrderStats = async (req, res, next) => {
+  try {
+    // ---- date range parsing ----
+    const range = String(req.query.range || "month").toLowerCase();
+    const now = new Date();
+
+    function startOfMonth(d) {
+      return new Date(d.getFullYear(), d.getMonth(), 1);
+    }
+    function startOfQuarter(d) {
+      return new Date(d.getFullYear(), Math.floor(d.getMonth() / 3) * 3, 1);
+    }
+    function startOfYear(d) {
+      return new Date(d.getFullYear(), 0, 1);
+    }
+    function addDays(d, n) {
+      const x = new Date(d);
+      x.setDate(x.getDate() + n);
+      return x;
+    }
+
+    // Use [from, toExcl) window for $lt filtering
+    let from = req.query.from ? new Date(req.query.from) : null;
+    let toExcl = req.query.to ? new Date(req.query.to) : null;
+
+    if (!from || !toExcl) {
+      switch (range) {
+        case "week": {
+          const s = new Date(now);
+          s.setHours(0, 0, 0, 0);
+          from = addDays(s, -6); // last 7 days inclusive
+          toExcl = addDays(new Date(s), 1); // today end (exclusive next day)
+          break;
+        }
+        case "15d": {
+          const s = new Date(now);
+          s.setHours(0, 0, 0, 0);
+          from = addDays(s, -14);
+          toExcl = addDays(new Date(s), 1);
+          break;
+        }
+        case "30d": {
+          const s = new Date(now);
+          s.setHours(0, 0, 0, 0);
+          from = addDays(s, -29);
+          toExcl = addDays(new Date(s), 1);
+          break;
+        }
+        case "quarter": {
+          const s = startOfQuarter(now);
+          from = s;
+          toExcl = new Date(s.getFullYear(), s.getMonth() + 3, 1);
+          break;
+        }
+        case "year": {
+          const s = startOfYear(now);
+          from = s;
+          toExcl = new Date(s.getFullYear() + 1, 0, 1);
+          break;
+        }
+        case "all": {
+          from = new Date(0);
+          toExcl = addDays(new Date(now), 1);
+          break;
+        }
+        case "month":
+        default: {
+          const s = startOfMonth(now);
+          from = s;
+          toExcl = new Date(s.getFullYear(), s.getMonth() + 1, 1);
+          break;
+        }
+      }
+    } else {
+      // Normalize to [from 00:00, (to + 1 day) 00:00)
+      from.setHours(0, 0, 0, 0);
+      toExcl.setHours(0, 0, 0, 0);
+      toExcl = addDays(toExcl, 1);
+    }
+
+    // Which date field to filter by (default orderDate)
+    const allowedDateFields = new Set([
+      "orderDate",
+      "deliverDate",
+      "createdAt",
+    ]);
+    const dateField = allowedDateFields.has(req.query.dateField)
+      ? req.query.dateField
+      : "orderDate";
+
+    // ---- filters (mirror getOrders) ----
+    const filter = {};
+    // status or "pending" group
+    const raw = req.query.status;
+    if (raw && String(raw).toLowerCase() === "pending") {
+      filter.status = { $in: PENDING_GROUP };
+    } else if (raw) {
+      const canon = normalizeStatus(raw);
+      if (canon) filter.status = canon;
+    }
+
+    // date range
+    filter[dateField] = { $gte: from, $lt: toExcl };
+
+    // urgent
+    if (req.query.urgent === "true") filter.isUrgent = true;
+    if (req.query.urgent === "false") filter.isUrgent = { $in: [false, null] };
+
+    // shipping (⚠️ use schema path)
+    if (req.query.shipping === "true") filter["shipping.isRequired"] = true;
+    if (req.query.shipping === "false")
+      filter["shipping.isRequired"] = { $in: [false, null] };
+
+    // text query over orderID + customer fields (lookup only if q is present)
+    const q = (req.query.q || "").trim();
+    const hasQ = q.length > 0;
+    const regex = hasQ
+      ? new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i")
+      : null;
+
+    // ---- aggregation ----
+    const pipeline = [{ $match: filter }];
+
+    if (hasQ) {
+      pipeline.push(
+        {
+          $lookup: {
+            from: "customers",
+            localField: "customer",
+            foreignField: "_id",
+            as: "customer",
+          },
+        },
+        { $unwind: { path: "$customer", preserveNullAndEmptyArrays: true } },
+        {
+          $match: {
+            $or: [
+              { orderID: regex },
+              { "customer.name": regex },
+              { "customer.lastName": regex },
+              { "customer.email": regex },
+            ],
+          },
+        }
+      );
+    }
+
+    // Compute per-document subtotal & deposit (as numbers), then aggregate
+    pipeline.push(
+      {
+        $project: {
+          status: 1,
+          _subtotal: {
+            $sum: {
+              $map: {
+                input: { $ifNull: ["$products", []] },
+                as: "p",
+                in: { $toDouble: { $ifNull: ["$$p.price", 0] } },
+              },
+            },
+          },
+          _deposit: { $toDouble: { $ifNull: ["$deposit", 0] } },
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          total: { $sum: 1 },
+          new: { $sum: { $cond: [{ $eq: ["$status", "new"] }, 1, 0] } },
+          pending: { $sum: { $cond: [{ $eq: ["$status", "pending"] }, 1, 0] } },
+          inProgress: {
+            $sum: { $cond: [{ $eq: ["$status", "inProgress"] }, 1, 0] },
+          },
+          completed: {
+            $sum: { $cond: [{ $eq: ["$status", "completed"] }, 1, 0] },
+          },
+          cancelled: {
+            $sum: { $cond: [{ $eq: ["$status", "cancelled"] }, 1, 0] },
+          },
+          gross: { $sum: "$_subtotal" },
+          deposit: { $sum: "$_deposit" },
+        },
+      }
+    );
+
+    const agg = await Order.aggregate(pipeline);
+    const r = agg?.[0] || {
+      total: 0,
+      new: 0,
+      pending: 0,
+      inProgress: 0,
+      completed: 0,
+      cancelled: 0,
+      gross: 0,
+      deposit: 0,
+    };
+
+    const result = {
+      range: {
+        from: from.toISOString(),
+        to: new Date(toExcl.getTime() - 1).toISOString(), // inclusive display
+        dateField,
+        label: range,
+      },
+      count: {
+        total: r.total || 0,
+        new: r.new || 0,
+        pending: r.pending || 0,
+        inProgress: r.inProgress || 0,
+        completed: r.completed || 0,
+        cancelled: r.cancelled || 0,
+        pendingGroup: (r.new || 0) + (r.pending || 0) + (r.inProgress || 0),
+      },
+      totals: {
+        gross: Math.round(r.gross || 0),
+        deposit: Math.round(r.deposit || 0),
+        net: Math.round((r.gross || 0) - (r.deposit || 0)),
+      },
+    };
+
+    return res.json(result);
+  } catch (err) {
+    console.error("getOrderStats error:", err);
+    next(new ApiError("Error retrieving order stats", 500));
+  }
+}; // end of getOrderStats
+
 // ---------------------------------------------
 // 🟢 GET ORDER BY ID (GET /api/orders/:id)
 // ---------------------------------------------
@@ -534,6 +779,7 @@ module.exports = {
   getOrders,
   getOrderById,
   getOrdersByUser,
+  getOrderStats,
   getOrdersByStatus,
   updateOrder,
   updateOrderStatus,

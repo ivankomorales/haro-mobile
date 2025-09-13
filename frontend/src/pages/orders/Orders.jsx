@@ -13,9 +13,21 @@ import OrderActionsBar from '../../components/OrderActionsBar'
 import StatusModal from '../../components/StatusModal'
 import OrdersFilters from '../../components/OrdersFilters'
 import { showError, showSuccess, showLoading, dismissToast } from '../../utils/toastUtils'
-import { Trash2, XCircle, Plus, FileSpreadsheet, FileText, RotateCcw, X } from 'lucide-react'
+import {
+  Trash2,
+  XCircle,
+  Plus,
+  FileSpreadsheet,
+  FileText,
+  RotateCcw,
+  X,
+  Calendar,
+} from 'lucide-react'
 import PaginationBar from '../../components/PaginationBar'
 import OrdersTable from '../../components/OrdersTable'
+import TableSkeleton from '../../components/TableSkeleton'
+import { useOrderStats } from '../../hooks/useOrderStats'
+import StatCards from '../../components/StatCards'
 
 const DEFAULT_FILTERS = {
   status: 'all',
@@ -60,6 +72,20 @@ export default function Orders() {
       return Array.from(set)
     })
   }
+
+  // Stat Cards
+  const {
+    stats: agg,
+    loading: statsLoading,
+    refresh: refreshStats,
+    range,
+    setRange,
+  } = useOrderStats({
+    filters,
+    search,
+    range: 'month', // default
+    dateField: 'orderDate', // or 'deliverDate' if you prefer
+  })
 
   // header setup
   useEffect(() => {
@@ -227,17 +253,17 @@ export default function Orders() {
   }, [orders, selectedOrders])
 
   // bulk status change (server)
-  const handleBulkStatusUpdate = async (newStatus) => {
+  async function handleBulkStatusUpdate(newStatus) {
     const toastId = showLoading('order.updatingStatus')
     try {
       await updateManyOrderStatus(selectedOrders, newStatus)
-      // optimistic update for current page
       setOrders((prev) =>
         prev.map((o) => (selectedOrders.includes(o._id) ? { ...o, status: newStatus } : o))
       )
       setSelectedOrders([])
       dismissToast(toastId)
       showSuccess('order.statusUpdated')
+      refreshStats() // <── refresh stat cards only
     } catch (err) {
       console.error(err)
       dismissToast(toastId)
@@ -245,19 +271,68 @@ export default function Orders() {
     }
   }
 
+  // Simple mobile cards skeleton
+  function MobileOrdersSkeleton({ count = 8 }) {
+    return (
+      <div>
+        <div className="mt-10 h-4 w-1/2 rounded bg-neutral-200 dark:bg-neutral-700" />
+        <ul className="space-y-3 pt-2 pb-14 sm:pt-6">
+          {Array.from({ length: count }).map((_, i) => (
+            <li key={i} className="rounded border border-neutral-200 p-3 dark:border-neutral-800">
+              <div className="flex animate-pulse items-center gap-3">
+                {/* Left: avatar / color box */}
+                <div className="h-5 w-5 rounded-md border bg-neutral-200 dark:bg-neutral-700" />
+
+                <div className="flex w-full items-center justify-between">
+                  {/* LEFT: name + date */}
+                  <div className="min-w-0 flex-1 pr-3">
+                    {/* Nombre */}
+                    <div
+                      className="h-4 w-2/3 rounded bg-neutral-200 dark:bg-neutral-700"
+                      aria-hidden="true"
+                    />
+                    {/* Fecha */}
+                    <div
+                      className="mt-1 h-3 w-24 rounded bg-neutral-200 dark:bg-neutral-700"
+                      aria-hidden="true"
+                    />
+                  </div>
+
+                  {/* RIGHT: order id + status (bloque que NO se encoge) */}
+                  <div className="flex shrink-0 flex-col items-end gap-2 whitespace-nowrap">
+                    {/* ORD#6010 */}
+                    <div
+                      className="h-4 w-24 rounded bg-neutral-200 dark:bg-neutral-700"
+                      aria-hidden="true"
+                    />
+                    {/* Pill de estado */}
+                    <div
+                      className="h-6 w-28 rounded-full bg-neutral-200 dark:bg-neutral-700"
+                      aria-hidden="true"
+                    />
+                  </div>
+                </div>
+              </div>
+            </li>
+          ))}
+        </ul>
+      </div>
+    )
+  }
+
   return (
-    <div className="h-full p-8 min-h-0 border bg-white pb-[calc(var(--bottom-bar-h,0px)+3.25rem)] text-black lg:pb-6 dark:bg-neutral-900 dark:text-white">
+    <div className="h-full min-h-0 rounded-xl bg-white p-6 pb-[calc(var(--bottom-bar-h,0px)+3.25rem)] text-black lg:pb-6 dark:bg-neutral-900 dark:text-white">
       {/* Subheader (mobile sticky, desktop static) */}
-      <div className="sticky top-[var(--appbar-h,0px)] z-30 border-gray-200 bg-white lg:static lg:top-auto lg:z-auto dark:border-neutral-800 dark:bg-neutral-900">
-        <div className="px-2 py-2">
+      <div className="sticky z-30 border-gray-200 bg-white lg:static lg:top-auto lg:z-auto dark:border-neutral-800 dark:bg-neutral-900">
+        <div className="px-2 py-0">
           {/* Row 1: Subtitle + Add */}
           <div className="flex items-center justify-between gap-2">
-            <h2 className="text-base font-semibold">{t('orders.all') || 'All Orders'}</h2>
+            <h2 className="mb-3 text-xl font-semibold">{t('order.all') || 'All Orders'}</h2>
 
             <button
               type="button"
               onClick={() =>
-                navigate('/orders/add', {
+                navigate('/orders/new', {
                   state: {
                     originPath: location?.pathname,
                     from: location?.pathname,
@@ -268,8 +343,8 @@ export default function Orders() {
               aria-label={t('order.add') || 'Add new order'}
               title={t('order.add') || 'Add new order'}
               className={[
-                'inline-flex items-center rounded-md border border-neutral-200 bg-white px-3 py-2 text-sm font-medium',
-                'hover:bg-neutral-100 dark:border-neutral-700 dark:bg-neutral-900 dark:hover:bg-neutral-800',
+                'mb-3 inline-flex items-center rounded-md border border-neutral-200 bg-black px-3 py-2 text-sm font-medium text-white',
+                'hover:bg-neutral-800 dark:border-neutral-700 dark:bg-indigo-500 dark:hover:bg-indigo-800',
               ].join(' ')}
             >
               <Plus className="h-5 w-5 sm:mr-2" />
@@ -277,39 +352,33 @@ export default function Orders() {
             </button>
           </div>
 
-          {/* Row 2: Stat cards (3) */}
-          <div className="mt-2 grid grid-cols-3 gap-2 sm:gap-3">
-            {/* Card 1: Orders this month */}
-            <div className="rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm dark:border-neutral-800 dark:bg-neutral-900">
-              <div className="opacity-70">{t('stats.thisMonth') || 'Orders this month'}</div>
-              {stats?.month ? (
-                <div className="mt-1 text-lg font-semibold tabular-nums">{stats.month.total}</div>
-              ) : (
-                <div className="mt-1 h-6 w-12 animate-pulse rounded bg-neutral-200 dark:bg-neutral-700" />
-              )}
-            </div>
+          {/* tiny range selector; optional to move inside OrdersFilters later */}
+          <div className="relative inline-block">
+            {/* Ícono superpuesto */}
+            <Calendar
+              className="pointer-events-none absolute top-1/2 left-2 h-4 w-4 -translate-y-1/2 text-neutral-500 dark:text-neutral-400"
+              aria-hidden="true"
+            />
 
-            {/* Card 2: Pending */}
-            <div className="rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm dark:border-neutral-800 dark:bg-neutral-900">
-              <div className="opacity-70">{t('stats.pending') || 'Pending'}</div>
-              {stats?.month ? (
-                <div className="mt-1 text-lg font-semibold tabular-nums">{stats.month.pending}</div>
-              ) : (
-                <div className="mt-1 h-6 w-12 animate-pulse rounded bg-neutral-200 dark:bg-neutral-700" />
-              )}
-            </div>
-
-            {/* Card 3: Completed */}
-            <div className="rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm dark:border-neutral-800 dark:bg-neutral-900">
-              <div className="opacity-70">{t('stats.completed') || 'Completed'}</div>
-              {stats?.month ? (
-                <div className="mt-1 text-lg font-semibold tabular-nums">
-                  {stats.month.shipped /* completed */}
-                </div>
-              ) : (
-                <div className="mt-1 h-6 w-12 animate-pulse rounded bg-neutral-200 dark:bg-neutral-700" />
-              )}
-            </div>
+            <select
+              className="rounded-md border border-neutral-200 bg-stone-50 py-1 pr-8 pl-8 text-neutral-600 dark:border-neutral-700 dark:bg-neutral-700 dark:text-neutral-400"
+              value={range}
+              onChange={(e) => setRange(e.target.value)}
+              title={t('stats.range') || 'Range'}
+            >
+              <option value="week">{t('stats.week') || 'Last 7 days'}</option>
+              <option value="15d">{t('stats.15d') || 'Last 15 days'}</option>
+              <option value="30d">{t('stats.30d') || 'Last 30 days'}</option>
+              <option value="month">{t('stats.month') || 'This month'}</option>
+              <option value="quarter">{t('stats.quarter') || 'This quarter'}</option>
+              <option value="year">{t('stats.year') || 'This year'}</option>
+              <option value="all">{t('stats.all') || 'All time'}</option>
+            </select>
+          </div>
+          {/* Row 2: Stat cards + range selector */}
+          <div className="mt-2 flex items-center justify-between gap-2">
+            <StatCards stats={agg} loading={statsLoading} t={t} size="sm" className="flex-1" />
+            <div className="shrink-0"></div>
           </div>
 
           {/* Row 3: Search + Filters */}
@@ -329,7 +398,7 @@ export default function Orders() {
                 <button
                   type="button"
                   onClick={() => setSearch('')}
-                  aria-label={t('clear') || 'Clear'}
+                  aria-label={t('button.clear') || 'Clear'}
                   className="absolute top-1/2 right-2 -translate-y-1/2 rounded p-1 text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-800"
                 >
                   <XCircle className="h-5 w-5" />
@@ -338,6 +407,7 @@ export default function Orders() {
             </div>
             {/* Filters */}
             <OrdersFilters
+              t={t}
               value={filters}
               onChange={(v) => {
                 setPage(1)
@@ -358,9 +428,9 @@ export default function Orders() {
                   <button
                     onClick={() => clearChip(c.key)}
                     className="inline-flex h-5 w-5 items-center justify-center rounded-full hover:bg-neutral-200 dark:hover:bg-neutral-700"
-                    title={t('clear') || 'Clear'}
+                    title={t('button.clear') || 'Clear'}
                   >
-                    ×
+                    <X className="h-3 w-3" />
                   </button>
                 </span>
               ))}
@@ -372,33 +442,53 @@ export default function Orders() {
               </button>
             </div>
           )}
-
         </div>
       </div>
 
-      <div className="p-2">
-        {/* Optional: stat cards from `stats` */}
-        {stats?.month && (
-          <div className="mb-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
-            {/* render four small cards with stats.month.total/pending/shipped/refunded */}
-          </div>
-        )}
+      {/* Table Actions Bar */}
+      <OrderActionsBar
+        selectedOrders={selectedOrders}
+        allVisibleOrders={orders} // server-paged slice
+        onClearSelection={() => setSelectedOrders([])}
+        onSelectAll={(ids) => setSelectedOrders(ids)}
+        onBulkStatusChange={() => setShowStatusModal(true)}
+        t={t}
+      />
+      <div className="p-0">
         {/* Loading */}
         {loading ? (
-          <p>{t('order.loading')}</p>
+          <>
+            {/* Desktop skeleton (table) */}
+            <div className="hidden lg:block">
+              <TableSkeleton
+                rows={limit}
+                columns={[
+                  'w-10', // Checkbox
+                  'w-32', // Order #
+                  'flex-1', // Customer
+                  'w-36', // Date
+                  'w-32', // Status
+                  'w-28', // Total
+                  'w-28', // Actions
+                ]}
+                header
+                approxRowHeight={56} // match your real row height
+                showSpinner
+                spinnerLabel="Cargando órdenes..."
+              />
+            </div>
+
+            {/* Mobile skeleton (cards) */}
+            <div className="lg:hidden">
+              <MobileOrdersSkeleton count={Math.min(limit, 10)} />
+            </div>
+          </>
         ) : orders.length === 0 ? (
           <p>{t('order.empty')}</p>
         ) : (
           <>
             {/* Desktop: table */}
             <div className="hidden lg:block">
-              <OrderActionsBar
-                selectedOrders={selectedOrders}
-                allVisibleOrders={orders} // server-paged slice
-                onClearSelection={() => setSelectedOrders([])}
-                onSelectAll={(ids) => setSelectedOrders(ids)}
-                onBulkStatusChange={() => setShowStatusModal(true)}
-              />
               <OrdersTable
                 orders={orders}
                 selectedIds={selectedOrders}
@@ -428,13 +518,6 @@ export default function Orders() {
 
             {/* Mobile: keep cards */}
             <div className="lg:hidden">
-              <OrderActionsBar
-                selectedOrders={selectedOrders}
-                allVisibleOrders={orders} // server-paged slice
-                onClearSelection={() => setSelectedOrders([])}
-                onSelectAll={(ids) => setSelectedOrders(ids)}
-                onBulkStatusChange={() => setShowStatusModal(true)}
-              />
               <ul className="space-y-3 pt-2 pb-14 sm:pt-6">
                 {orders.map((order) => (
                   <OrderCard
@@ -478,6 +561,14 @@ export default function Orders() {
               setLimit(val)
             }}
             variant="auto" // sticky on mobile, block on desktop
+            leftContent={
+              selectedOrders.length > 0 &&
+              <span className="text-sm">
+                {selectedOrders.length} selected
+                <span className="mx-1 opacity-70">•</span>
+                {meta.totalDocs} results
+              </span>
+            }
           />
         )}
 
