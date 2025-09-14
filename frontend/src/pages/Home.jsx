@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom'
 import { getMessage as t } from '../utils/getMessage'
 import { useLayout } from '../context/LayoutContext'
 import { OrderCard } from '../components/OrderCard'
-import { STATUS_COLORS, STATUS_TEXT_COLORS, STATUS_LABELS } from '../utils/orderStatusUtils'
+
 import OrderDetailsModal from '../components/OrderDetailsModal'
 
 export default function Home() {
@@ -70,7 +70,6 @@ export default function Home() {
                 key={order.orderID || order._id}
                 order={{
                   ...order,
-                  statusLabel: t(`status.${STATUS_LABELS[order.status] || 'unknown'}`),
                 }}
                 onClick={async () => {
                   // Lazy-load glazes only when user opens an order
@@ -85,6 +84,7 @@ export default function Home() {
                   }
                   setSelectedOrder(order)
                 }}
+                t={t}
               />
             ))}
           </ul>

@@ -110,6 +110,15 @@ export const en = {
     passwordRequired: 'Password is required.',
   },
 
+  // COMPONENTS
+  //BOTTOM NAV BAR
+  navBar: {
+    home: 'Home',
+    orders: 'Orders',
+    newOrder: 'New Order',
+    glazes: 'Glazes',
+    profile: 'Profile',
+  },
   //  ─────────────────────────── PAGES  ───────────────────────────
   // GLAZES
   glaze: {
@@ -248,8 +257,7 @@ export const en = {
     images: 'Images',
 
     addButton: 'Add Product',
-    added: 'Added Products',
-
+    
     figure: 'Figure',
     cup: 'Cup',
     handmadeCup: 'Handmade Cup',
@@ -400,6 +408,7 @@ export const en = {
     cancelled: 'Cancelled',
     inRange: 'Orders (range)',
     netSales: 'Net sales',
+
     grossMinusDeposit: 'Gross − Deposit',
     range: 'Range',
     week: 'Last 7 days',

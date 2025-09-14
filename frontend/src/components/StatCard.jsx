@@ -1,3 +1,4 @@
+import { Spinner } from './Spinner' //
 // src/components/StatCard.jsx
 export default function StatCard({
   title,
@@ -18,9 +19,13 @@ export default function StatCard({
     >
       <div className="text-center opacity-70 sm:text-left">{title}</div>
       {loading ? (
-        <div className="mx-auto mt-2 h-6 w-8 animate-pulse rounded bg-neutral-200 dark:bg-neutral-700" />
+        <div className="mt-2 flex justify-center sm:justify-start">
+          <Spinner size={24} className="text-neutral-500 dark:text-neutral-300" />
+        </div>
       ) : (
-        <div className="mt-2 text-center sm:text-left sm:pl-2 text-2xl sm:text-4xl font-semibold tabular-nums">{value}</div>
+        <div className="mt-2 text-center text-2xl font-semibold tabular-nums sm:pl-2 sm:text-left sm:text-3xl">
+          {value}
+        </div>
       )}
       {subtitle ? <div className="mt-0.5 text-right text-xs opacity-70">{subtitle}</div> : null}
     </div>

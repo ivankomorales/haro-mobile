@@ -343,8 +343,8 @@ export default function Orders() {
               aria-label={t('order.add') || 'Add new order'}
               title={t('order.add') || 'Add new order'}
               className={[
-                'mb-3 inline-flex items-center rounded-md border border-neutral-200 bg-black px-3 py-2 text-sm font-medium text-white',
-                'hover:bg-neutral-800 dark:border-neutral-700 dark:bg-indigo-500 dark:hover:bg-indigo-800',
+                'mb-3 inline-flex items-center rounded-md border border-blue-200 bg-blue-600 px-3 py-2 text-sm font-medium text-white',
+                'hover:bg-blue-700 dark:border-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700',
               ].join(' ')}
             >
               <Plus className="h-5 w-5 sm:mr-2" />
@@ -377,7 +377,13 @@ export default function Orders() {
           </div>
           {/* Row 2: Stat cards + range selector */}
           <div className="mt-2 flex items-center justify-between gap-2">
-            <StatCards stats={agg} loading={statsLoading} t={t} size="sm" className="flex-1" />
+            <StatCards
+              stats={agg ?? stats} // usa hook si existe; si no, las del backend
+              loading={statsLoading || loading} // si cualquiera está cargando, muestra skeleton
+              t={t}
+              size="sm"
+              className="flex-1"
+            />
             <div className="shrink-0"></div>
           </div>
 
@@ -539,6 +545,7 @@ export default function Orders() {
                       const labeled = formatProductsWithLabels(order.products, t, glazes || [])
                       setSelectedOrder({ ...order, products: labeled })
                     }}
+                    t={t}
                   />
                 ))}
               </ul>
@@ -562,12 +569,13 @@ export default function Orders() {
             }}
             variant="auto" // sticky on mobile, block on desktop
             leftContent={
-              selectedOrders.length > 0 &&
-              <span className="text-sm">
-                {selectedOrders.length} selected
-                <span className="mx-1 opacity-70">•</span>
-                {meta.totalDocs} results
-              </span>
+              selectedOrders.length > 0 && (
+                <span className="text-sm">
+                  {selectedOrders.length} selected
+                  <span className="mx-1 opacity-70">•</span>
+                  {meta.totalDocs} results
+                </span>
+              )
             }
           />
         )}

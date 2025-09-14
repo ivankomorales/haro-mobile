@@ -13,9 +13,10 @@ export default function GlazeTypeahead({
   glazes = [], // [{_id, name, image?, hex?}]
   selectedId = '',
   onChange, // (id: string | '') => void
-  placeholder = 'Buscar esmalte...',
-  noneText = 'Sin esmalte',
-  noResultsText = 'Sin resultados',
+  placeholder = 'Buscar esmalte...', //product.glazeSearch
+  noneText = 'Sin esmalte', //product.glazeNone
+  noResultsText = 'Sin resultados', //product.glazeNoResult
+  t,
 }) {
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
@@ -94,7 +95,7 @@ export default function GlazeTypeahead({
               setOpen(true)
             }}
             onFocus={() => setOpen(true)}
-            placeholder={selectedGlaze?.name || placeholder}
+            placeholder={selectedGlaze?.name || t('product.glazeSearch')}
             className="flex-1 bg-transparent text-sm text-black outline-none dark:text-white"
             autoComplete="off"
             autoCorrect="off"
@@ -127,7 +128,7 @@ export default function GlazeTypeahead({
               }}
               className="ui-active:bg-gray-100 dark:ui-active:bg-neutral-700 block w-full cursor-pointer px-4 py-2 text-left text-sm"
             >
-              {noneText}
+              {t('product.glazeNone')}
             </button>
 
             {filtered.length > 0 ? (
@@ -154,7 +155,7 @@ export default function GlazeTypeahead({
               ))
             ) : (
               <div className="px-4 py-2 text-sm text-gray-500 dark:text-gray-300">
-                {noResultsText}
+                {t('product.glazeNoResult')}
               </div>
             )}
           </div>

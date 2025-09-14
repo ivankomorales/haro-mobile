@@ -226,10 +226,10 @@ export default function GlazeListPage() {
             title={t('glaze.new')}
             className={[
               // mobile: icon button
-              'inline-flex h-10 w-11 items-center justify-center rounded bg-black text-white',
+              'inline-flex h-10 w-11 items-center justify-center rounded bg-blue-600 text-white',
               // desktop: regular button with label
-              'sm:h-auto sm:w-auto sm:rounded-md sm:px-3 sm:py-2 dark:bg-indigo-500',
-              'hover:bg-neutral-800 dark:hover:bg-indigo-800',
+              'sm:h-auto sm:w-auto sm:rounded-md sm:px-3 sm:py-2 dark:bg-blue-600',
+              'hover:bg-blue-700 dark:hover:bg-blue-800',
             ].join(' ')}
           >
             <Plus className="h-5 w-5 sm:mr-2" />
@@ -583,8 +583,8 @@ function TabButton({ active, onClick, label }) {
       className={[
         'rounded-full px-3 py-1 text-sm',
         active
-          ? 'bg-black text-white dark:bg-indigo-500'
-          : 'bg-neutral-200 text-neutral-800 hover:bg-neutral-300 dark:bg-neutral-800 dark:text-neutral-200 dark:hover:bg-indigo-800',
+          ? 'bg-gray-400 text-white dark:bg-gray-700'
+          : 'bg-neutral-200 text-neutral-800 hover:bg-neutral-300 dark:bg-neutral-800 dark:text-neutral-200 dark:hover:bg-gray-700',
       ].join(' ')}
     >
       {label}

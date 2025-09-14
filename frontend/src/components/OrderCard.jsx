@@ -1,13 +1,12 @@
 // src/components/OrderCard.jsx
 import React from 'react'
-import { STATUS_LABELS, STATUS_COLORS, STATUS_TEXT_COLORS } from '../utils/orderStatusUtils'
+import { getStatusLabel, getStatusClasses } from '../utils/orderStatusUtils'
 
-function OrderCardBase({ order, selectable = false, isSelected = false, onSelect, onClick }) {
+function OrderCardBase({ order, selectable = false, isSelected = false, onSelect, onClick, t }) {
   // --- status mapping (canonical -> UI label/colors) ---
   const status = order?.status
-  const label = STATUS_LABELS[status] ?? 'Unknown'
-  const bg = STATUS_COLORS[status] ?? 'bg-neutral-300'
-  const textColor = STATUS_TEXT_COLORS[status] ?? 'text-neutral-900'
+  const label = getStatusLabel(status, t)
+  const chipClasses = getStatusClasses(status)
 
   // --- prefer business date (orderDate) over createdAt ---
   const whenRaw = order?.orderDate ?? order?.createdAt
@@ -52,7 +51,7 @@ function OrderCardBase({ order, selectable = false, isSelected = false, onSelect
           </p>
 
           <span
-            className={`inline-flex items-center rounded px-2 py-0.5 text-xs font-semibold whitespace-nowrap ${bg} ${textColor} max-w-[180px] truncate`}
+            className={`${chipClasses} max-w-[180px] truncate`}
             title={label} // full label on hover if truncated
           >
             {label}

@@ -11,6 +11,7 @@ import { showLoading, dismissToast, showError, showSuccess } from '../../utils/t
 import { useRequireState } from '../../utils/useRequireState'
 import { getOriginPath } from '../../utils/navigationUtils'
 import GlazeTypeahead from '../../components/GlazeTypeahead'
+import { Trash2, SquarePen } from 'lucide-react'
 
 export default function AddProduct() {
   const navigate = useNavigate()
@@ -451,6 +452,7 @@ export default function AddProduct() {
                     glazes={glazes}
                     selectedId={formData.glazeInterior}
                     onChange={(id) => setFormData((prev) => ({ ...prev, glazeInterior: id }))}
+                    t={t}
                   />
                 )}
                 <GlazeTypeahead
@@ -458,6 +460,7 @@ export default function AddProduct() {
                   glazes={glazes}
                   selectedId={formData.glazeExterior}
                   onChange={(id) => setFormData((prev) => ({ ...prev, glazeExterior: id }))}
+                  t={t}
                 />
               </div>
             </details>
@@ -491,14 +494,15 @@ export default function AddProduct() {
             //disabled={!isFormValid()}
             className={`w-full rounded py-2 font-semibold transition-colors duration-200 ${
               isFormValid()
-                ? 'bg-black text-white hover:bg-neutral-800'
-                : 'cursor-not-allowed bg-gray-300 text-gray-500'
+                ? 'bg-blue-600 text-white hover:bg-blue-800'
+                : 'cursor-not-allowed bg-gray-300 text-gray-400'
             }`}
           >
             + {t('product.addButton')}
           </button>
         )}
 
+        {/* Added Products Section */}
         {products.length > 0 && (
           <>
             <h2 className="mt-6 mb-2 text-sm font-semibold text-gray-600 dark:text-gray-200">
@@ -521,7 +525,7 @@ export default function AddProduct() {
                     onClick={() => handleRemoveProduct(i)}
                     className="ml-4 text-red-500 hover:text-red-700"
                   >
-                    ✕
+                    <Trash2 className="h-5 w-5" />
                   </button>
                 </li>
               ))}

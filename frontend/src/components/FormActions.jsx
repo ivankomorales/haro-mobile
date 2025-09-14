@@ -43,7 +43,7 @@ export default function FormActions({
       <button
         type="button"
         onClick={() => setIsCancelOpen(true)}
-        className="w-full rounded bg-gray-200 py-2 text-gray-700 hover:bg-gray-300 sm:w-auto sm:px-4 dark:bg-neutral-700 dark:text-gray-200 dark:hover:bg-neutral-600"
+        className="w-full rounded bg-gray-200 py-2 text-gray-700 hover:bg-gray-300 sm:w-auto sm:px-4 dark:bg-neutral-600 dark:text-gray-200 dark:hover:bg-neutral-700"
       >
         {cancelButtonText}
       </button>
@@ -66,8 +66,8 @@ export default function FormActions({
         className={[
           'w-full rounded py-2 text-white transition sm:w-auto sm:px-4',
           isSubmitDisabled
-            ? 'cursor-not-allowed bg-neutral-400 opacity-60'
-            : 'bg-black hover:bg-neutral-800 dark:bg-amber-500',
+            ? 'cursor-not-allowed bg-bluee-800 opacity-60'
+            : 'bg-blue-600 hover:bg-blue-700 dark:bg-blue-600',
         ].join(' ')}
       >
         {submitLoading ? 'Saving…' : submitButtonText}

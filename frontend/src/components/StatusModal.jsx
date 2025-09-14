@@ -2,6 +2,7 @@
 import { Dialog, DialogTitle, DialogPanel, Transition, TransitionChild } from '@headlessui/react'
 import { Fragment, useEffect, useMemo, useState } from 'react'
 import { getMessage as t } from '../utils/getMessage'
+import { STATUS, STATUS_I18N_KEYS } from '../utils/orderStatusUtils'
 
 export default function StatusModal({
   open,
@@ -18,7 +19,10 @@ export default function StatusModal({
   }, [open, currentStatus])
 
   // Optional: stable order for options (avoid relying on object key order)
-  const STATUS_ORDER = useMemo(() => ['new', 'pending', 'inProgress', 'completed', 'cancelled'], [])
+  const STATUS_ORDER = useMemo(
+    () => [STATUS.NEW, STATUS.PENDING, STATUS.IN_PROGRESS, STATUS.COMPLETED, STATUS.CANCELLED],
+    []
+  )
 
   const handleConfirm = () => {
     onConfirm(newStatus)
@@ -70,8 +74,7 @@ export default function StatusModal({
                 >
                   {STATUS_ORDER.map((status) => (
                     <option key={status} value={status}>
-                      {/* If you prefer English labels from STATUS_LABELS, use STATUS_LABELS[status] instead of t(...) */}
-                      {t(`status.${status}`)}
+                      {t(STATUS_I18N_KEYS[status] || 'status.unknown')}
                     </option>
                   ))}
                 </select>

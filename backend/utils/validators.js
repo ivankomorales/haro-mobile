@@ -121,8 +121,8 @@ const validateOrder = [
 
   //Product: Figures quantity
   body("products.*.quantity")
-    .isNumeric()
-    .withMessage("Product quantity must be a number")
+    .isInt({ min: 1 })
+    .withMessage("Product quantity must be an integer >= 1")
     .toInt(),
 
   body("products.*.price")

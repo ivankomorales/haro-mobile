@@ -97,14 +97,14 @@ export default function AccountMenu({
       <button
         ref={buttonRef}
         onClick={() => setOpen((v) => !v)}
-        className="h-8 w-8 overflow-hidden rounded-full focus:ring-2 focus:ring-amber-500/50 focus:outline-none"
+        className="h-10 w-10 overflow-hidden rounded-full focus:ring-2 focus:ring-amber-500/50 focus:outline-none"
         aria-haspopup="menu"
         aria-expanded={open ? 'true' : 'false'}
         aria-label="Account menu"
         title="Account"
       >
         {/* Mini avatar en el AppBar */}
-        <div className="h-full w-full rounded-full bg-neutral-200 text-neutral-700 dark:bg-neutral-800 dark:text-neutral-200">
+        <div className="h-full w-full rounded-full bg-neutral-200 text-neutral-700 dark:bg-neutral-600 dark:text-neutral-200">
           {previewUrl ? (
             <img
               src={previewUrl}

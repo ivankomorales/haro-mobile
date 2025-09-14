@@ -77,7 +77,7 @@ export default function OrderActionsBar({
           <button
             onClick={onBulkStatusChange}
             disabled={!hasSelection}
-            className="ml-2 flex items-center gap-2 rounded bg-emerald-600 px-3 py-1 text-sm text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-emerald-600 disabled:opacity-50 dark:bg-teal-500 dark:disabled:bg-teal-600"
+            className="ml-2 flex items-center gap-2 rounded bg-gray-600 px-3 py-1 text-sm text-white hover:bg-gray-700 disabled:cursor-not-allowed disabled:bg-gray-600 disabled:opacity-50 dark:bg-gray-500 dark:disabled:bg-gray-600"
             title={hasSelection ? t('button.changeStatus') : t('messages.selectAtLeastOneOrder')}
           >
             <ClockFading className="h-5 w-5" />

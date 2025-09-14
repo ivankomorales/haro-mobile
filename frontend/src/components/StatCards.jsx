@@ -31,25 +31,28 @@ export default function StatCards({
         title: t?.('stats.inRange') || 'Orders (range)',
         value: count?.total ?? 0,
       },
-      {
-        key: 'pending',
-        title: t?.('stats.pending') || 'Pending',
-        value: count?.pendingGroup ?? 0,
-      },
+
       {
         key: 'completed',
         title: t?.('stats.completed') || 'Completed',
         value: count?.completed ?? 0,
       },
       {
+        key: 'pending',
+        title: t?.('stats.pending') || 'Pending',
+        value: count?.pendingGroup ?? 0,
+      },
+      {
         key: 'netSales',
         title: t?.('stats.netSales') || 'Net sales',
-        value: totals?.net ?? 0,
-        subtitle: t?.('stats.grossMinusDeposit') || 'Gross − Deposit',
+        value: new Intl.NumberFormat('es-MX', {
+          style: 'currency',
+          currency: 'MXN',
+        }).format(totals?.net ?? 0),
+        // subtitle: t?.('stats.grossMinusDeposit') || 'Gross − Deposit',
       },
-      
     ],
-    [count?.completed, count?.pendingGroup, count?.total, totals?.net, t]
+    [stats, t]
   )
 
   const [i, setI] = useState(0)

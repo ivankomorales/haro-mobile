@@ -68,7 +68,7 @@ export default function SplitActionButton({
               state: { originPath: getOriginPath(location.pathname) },
             })
           }
-          className="inline-flex bg-orange-600 px-4 py-2 text-sm font-medium text-white hover:bg-orange-700 dark:bg-pink-500 dark:hover:bg-pink-700"
+          className="inline-flex bg-gray-600 px-4 py-2 text-sm font-medium text-white hover:bg-gray-700 dark:bg-gray-500 dark:hover:bg-gray-700"
         >
           <Plus className='h-5 w-5'/>
           {labels.main}
@@ -76,7 +76,7 @@ export default function SplitActionButton({
         {showSecondary && (
           <button
             onClick={() => setOpen((prev) => !prev)}
-            className="bg-orange-600 px-2 py-2 text-sm font-medium text-white hover:bg-orange-700 dark:bg-pink-500 dark:hover:bg-pink-700"
+            className="bg-gray-600 px-2 py-2 text-sm font-medium text-white hover:bg-gray-700 dark:bg-gray-500 dark:hover:bg-gray-700"
           >
             ▼
           </button>

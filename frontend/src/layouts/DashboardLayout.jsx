@@ -167,7 +167,7 @@ export default function DashboardLayout() {
           </main>
 
           {/* Bottom navigation on mobile */}
-          {showBottom && <BottomNavBar />}
+          {showBottom && <BottomNavBar t={t}/>}
         </div>
       </div>
     </div>

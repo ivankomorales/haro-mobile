@@ -20,8 +20,10 @@ const ProductItemSchema = new mongoose.Schema(
     type: { type: String, required: true, trim: true }, // or enum/ref later
     quantity: { type: Number, required: true, min: 1 },
     price: { type: Number, required: true, min: 0 },
+    discount: { type: Number, min: 0, default: 0 },
     description: { type: String, trim: true },
-
+    // Figures = Number of sculptures in each product
+    figures: { type: Number, min: 1, default: 1 },
     // Both refs and denormalized cache for easy display/export
     glazes: {
       interior: { type: mongoose.Schema.Types.ObjectId, ref: "Glaze" },
@@ -186,7 +188,6 @@ OrderSchema.index(
 );
 // 8) Shipping required fast filter (paired with date for dashboards)
 OrderSchema.index({ "shipping.isRequired": 1, orderDate: -1 });
-
 
 // Virtual totals (whole pesos)
 OrderSchema.virtual("itemsTotal").get(function () {
