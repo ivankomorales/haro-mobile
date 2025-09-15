@@ -113,7 +113,9 @@ const OrderSchema = new mongoose.Schema(
     isUrgent: { type: Boolean, default: false, index: true },
 
     notes: { type: String, trim: true },
-
+    // Totales materializados (para listas rápidas y ordenamientos)
+    subtotal: { type: Number, default: 0, min: 0, index: true }, // suma de líneas
+    total: { type: Number, default: 0, min: 0, index: true }, // subtotal - deposit
     products: {
       type: [ProductItemSchema],
       validate: [(arr) => arr.length > 0, "At least one product is required."],
@@ -176,6 +178,8 @@ OrderSchema.index({ status: 1, deliverDate: 1 });
 //    Example: Order.find().sort({ deliverDate: 1 })
 OrderSchema.index({ deliverDate: 1 });
 
+OrderSchema.index({ total: -1 });
+
 // 7) (Text index) Full-text search in notes and product descriptions
 //    NOTE: MongoDB allows only **one** text index per collection.
 //    Adjust weights to prioritize "notes" over "products.description".
@@ -198,6 +202,15 @@ OrderSchema.virtual("totalDue").get(function () {
   return this.itemsTotal - (this.deposit || 0);
 });
 
+// (Opcional) Mantén virtuales si te sirven para retrocompatibilidad,
+// pero ahora confía en subtotal/total persistidos:
+OrderSchema.virtual("itemsTotal").get(function () {
+  return this.subtotal ?? 0;
+});
+OrderSchema.virtual("totalDue").get(function () {
+  return this.total ?? 0;
+});
+
 // Shipping guard
 OrderSchema.pre("validate", function (next) {
   if (this.shipping?.isRequired) {
@@ -210,6 +223,21 @@ OrderSchema.pre("validate", function (next) {
 
 // Urgency rule: auto if deliverDate - orderDate < 4 weeks
 OrderSchema.pre("save", function (next) {
+  // Recalcular subtotal/total en cualquier save()
+  const safeNum = (v, d = 0) => (Number.isFinite(Number(v)) ? Number(v) : d);
+  const products = Array.isArray(this.products) ? this.products : [];
+
+  const lineSum = products.reduce((acc, p) => {
+    const qty = Math.max(1, safeNum(p.quantity, 1));
+    const price = Math.max(0, safeNum(p.price, 0));
+    const disc = Math.max(0, safeNum(p.discount, 0));
+    const unit = Math.max(price - disc, 0);
+    return acc + qty * unit;
+  }, 0);
+
+  this.subtotal = Math.round(lineSum);
+  this.total = Math.round(lineSum - safeNum(this.deposit, 0));
+
   if (this.orderDate && this.deliverDate) {
     const ms = this.deliverDate.getTime() - this.orderDate.getTime();
     const weeks = ms / (1000 * 60 * 60 * 24 * 7);

@@ -167,8 +167,8 @@ export default function OrderDetailsCard({
 
               <p className="text-sm">
                 {(() => {
-                  const label = product.quantity === 1 ? figureLabel : `${figureLabel}s`
-                  return `${product.quantity} ${label}`
+                  const label = product.figures === 1 ? figureLabel : `${figureLabel}s`
+                  return `${product.figures} ${label}`
                 })()}
               </p>
 

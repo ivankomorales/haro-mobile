@@ -1,4 +1,5 @@
 const Order = require("../models/Order");
+const Customer = require("../models/Customer");
 const Counter = require("../models/Counter");
 const { findOrCreateCustomer } = require("./customerController");
 const ApiError = require("../utils/ApiError");
@@ -242,34 +243,8 @@ const getOrders = async (req, res, next) => {
       });
     }
 
-    // ------ SPECIAL SORT HANDLING (before $facet) ------
-    // If sorting by "total", compute it first and then sort by that computed field.
-    if (sortField === "total") {
-      const sortAsc = sortDir === "asc" ? 1 : -1;
-
-      // Compute total = sum(products.price) - deposit (coerce to numbers)
-      pipeline.push({
-        $addFields: {
-          _subtotal: {
-            $sum: {
-              $map: {
-                input: { $ifNull: ["$products", []] },
-                as: "p",
-                in: { $toDouble: { $ifNull: ["$$p.price", 0] } },
-              },
-            },
-          },
-          _deposit: { $toDouble: { $ifNull: ["$deposit", 0] } },
-        },
-      });
-      pipeline.push({
-        $addFields: { total: { $subtract: ["$_subtotal", "$_deposit"] } },
-      });
-      pipeline.push({ $sort: { total: sortAsc } });
-    } else {
-      // Default sort for whitelisted fields (orderDate, createdAt, orderID)
-      pipeline.push({ $sort: sort });
-    }
+    // Sorting directo; ya tenemos "total" persistido
+    pipeline.push({ $sort: sort });
 
     // ------ FACET (pagination + total count) ------
     pipeline.push({
@@ -475,21 +450,12 @@ const getOrderStats = async (req, res, next) => {
       );
     }
 
-    // Compute per-document subtotal & deposit (as numbers), then aggregate
     pipeline.push(
       {
         $project: {
           status: 1,
-          _subtotal: {
-            $sum: {
-              $map: {
-                input: { $ifNull: ["$products", []] },
-                as: "p",
-                in: { $toDouble: { $ifNull: ["$$p.price", 0] } },
-              },
-            },
-          },
-          _deposit: { $toDouble: { $ifNull: ["$deposit", 0] } },
+          subtotal: { $toDouble: { $ifNull: ["$subtotal", 0] } },
+          deposit: { $toDouble: { $ifNull: ["$deposit", 0] } },
         },
       },
       {
@@ -507,8 +473,8 @@ const getOrderStats = async (req, res, next) => {
           cancelled: {
             $sum: { $cond: [{ $eq: ["$status", "cancelled"] }, 1, 0] },
           },
-          gross: { $sum: "$_subtotal" },
-          deposit: { $sum: "$_deposit" },
+          gross: { $sum: "$subtotal" },
+          deposit: { $sum: "$deposit" },
         },
       }
     );
@@ -611,11 +577,98 @@ const getOrdersByStatus = async (req, res) => {
 const updateOrder = async (req, res, next) => {
   try {
     const order = await Order.findById(req.params.id);
-    if (!order) {
-      return next(new ApiError("Order not found", 404));
-    }
+    if (!order) return next(new ApiError("Order not found", 404));
 
     const originalStatus = order.status;
+
+    // ────────────────────────────────────────────────────────────────────────────
+    // PRE-VALIDATIONS (cheap checks before mutating the document)
+    // ────────────────────────────────────────────────────────────────────────────
+
+    // 1) Shipping: if required, must include at least one complete address
+    if (req.body?.shipping?.isRequired) {
+      const addrs = req.body.shipping?.addresses || [];
+      if (!Array.isArray(addrs) || addrs.length === 0) {
+        return next(new ApiError("Add at least one shipping address.", 400));
+      }
+      const bad = addrs.find(
+        (a) => !a?.address || !a?.city || !a?.zip || !a?.phone
+      );
+      if (bad)
+        return next(new ApiError("Complete the shipping address fields.", 400));
+    }
+
+    // 2) Deposit: if present, must be a number >= 0 (normalize to Number)
+    if (Object.prototype.hasOwnProperty.call(req.body, "deposit")) {
+      const d = Number(req.body.deposit);
+      if (Number.isNaN(d) || d < 0) {
+        return next(new ApiError("Deposit must be a positive number", 400));
+      }
+      req.body.deposit = d;
+    }
+
+    // 3) Products: if present, basic field checks per item
+    if (Object.prototype.hasOwnProperty.call(req.body, "products")) {
+      const prods = req.body.products;
+      if (!Array.isArray(prods) || prods.length === 0) {
+        return next(new ApiError("Add at least one product.", 400));
+      }
+      for (let i = 0; i < prods.length; i++) {
+        const p = prods[i] || {};
+        const q = Number(p.quantity ?? 0);
+        const f = Number(p.figures ?? 0);
+        const price = Number(p.price ?? -1);
+        const disc = Number(p.discount ?? 0);
+        if (!p.type)
+          return next(
+            new ApiError(`Product #${i + 1}: type is required.`, 400)
+          );
+        if (!(q >= 1))
+          return next(
+            new ApiError(`Product #${i + 1}: quantity must be ≥ 1.`, 400)
+          );
+        if (!(f >= 1))
+          return next(
+            new ApiError(`Product #${i + 1}: figures must be ≥ 1.`, 400)
+          );
+        if (!(price >= 0))
+          return next(
+            new ApiError(`Product #${i + 1}: price must be ≥ 0.`, 400)
+          );
+        if (disc < 0 || disc > price) {
+          return next(
+            new ApiError(
+              `Product #${i + 1}: discount must be between 0 and price.`,
+              400
+            )
+          );
+        }
+      }
+    }
+
+    // ────────────────────────────────────────────────────────────────────────────
+    // CUSTOMER PATCH (if provided): update the referenced Customer document
+    // ────────────────────────────────────────────────────────────────────────────
+    if (req.body.customer) {
+      const c = req.body.customer;
+      const customerPatch = {};
+      if (c.name != null) customerPatch.name = c.name;
+      if (c.lastName != null) customerPatch.lastName = c.lastName;
+      if (c.email != null) customerPatch.email = c.email;
+      if (c.phone != null) customerPatch.phone = c.phone;
+      if (c.countryCode != null) customerPatch.countryCode = c.countryCode;
+      if (c.socialMedia != null) customerPatch.socialMedia = c.socialMedia;
+
+      await Customer.findByIdAndUpdate(order.customer, customerPatch, {
+        new: true,
+        runValidators: true, // ensure Customer schema validation
+      });
+    }
+
+    // ────────────────────────────────────────────────────────────────────────────
+    // ASSIGN ALLOWED FIELDS ONLY
+    // (Mongoose subdocs/arrays have change tracking; no markModified needed)
+    // ────────────────────────────────────────────────────────────────────────────
     const allowedFields = [
       "status",
       "deposit",
@@ -625,20 +678,25 @@ const updateOrder = async (req, res, next) => {
       "orderDate",
       "deliverDate",
     ];
-
     for (const key of allowedFields) {
       if (req.body[key] !== undefined) {
         order[key] = req.body[key];
       }
     }
 
+    // ────────────────────────────────────────────────────────────────────────────
+    // SAVE with schema validation
+    // (save() triggers validators; no need for markModified on typed subdocs)
+    // ────────────────────────────────────────────────────────────────────────────
     await order.save();
 
+    // ────────────────────────────────────────────────────────────────────────────
+    // AUDIT LOG (minimal example)
+    // ────────────────────────────────────────────────────────────────────────────
     const changes = [];
     if (req.body.status && req.body.status !== originalStatus) {
       changes.push(`status: ${originalStatus} → ${req.body.status}`);
     }
-
     if (changes.length > 0) {
       await logEvent({
         event: "order_updated",
@@ -648,11 +706,13 @@ const updateOrder = async (req, res, next) => {
       });
     }
 
-    res.json(order);
+    return res.json(order);
   } catch (err) {
-    next(new ApiError("Error updating order", 500));
+    // Bubble up the real error to the global error handler
+    return next(err);
   }
-}; // end updateOrder
+};
+// end updateOrder
 
 // ---------------------------------------------
 // 🟣 UPDATE ORDER STATUS ONLY (PATCH /api/orders/:id/status)

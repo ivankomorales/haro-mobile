@@ -83,7 +83,7 @@ export default function Orders() {
   } = useOrderStats({
     filters,
     search,
-    range: 'month', // default
+    range: 'all', // default
     dateField: 'orderDate', // or 'deliverDate' if you prefer
   })
 
@@ -321,7 +321,7 @@ export default function Orders() {
   }
 
   return (
-    <div className="h-full min-h-0 rounded-xl bg-white p-6 pb-[calc(var(--bottom-bar-h,0px)+3.25rem)] text-black lg:pb-6 dark:bg-neutral-900 dark:text-white">
+    <div className="h-full min-h-0 rounded-xl bg-white p-5 pb-[calc(var(--bottom-bar-h,0px)+3.25rem)] text-black lg:pb-6 dark:bg-neutral-900 dark:text-white">
       {/* Subheader (mobile sticky, desktop static) */}
       <div className="sticky z-30 border-gray-200 bg-white lg:static lg:top-auto lg:z-auto dark:border-neutral-800 dark:bg-neutral-900">
         <div className="px-2 py-0">

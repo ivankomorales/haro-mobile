@@ -86,7 +86,10 @@ export async function updateManyOrderStatus(orderIds, newStatus) {
       'Content-Type': 'application/json',
     },
   })
-
   // ✅ If any error, fetchWithAuth throws exception
   return data
+}
+
+export async function cancelOrderById(id) {
+  return await fetchWithAuth(`/api/orders/${id}`, { method: 'DELETE' })
 }

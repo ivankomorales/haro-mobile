@@ -202,19 +202,15 @@ export default function EditGlaze() {
             </div>
 
             {/* Drop / pick new image (replaces on save) */}
-            <DropWrap
-              onFiles={(files) => setFormData((s) => ({ ...s, newImages: files }))}
-              className="mt-2"
-            >
-              <ImageUploader
-                multiple={false}
-                value={formData.newImages}
-                onChange={(imgs) => setFormData((s) => ({ ...s, newImages: imgs }))}
-              />
-            </DropWrap>
+            <ImageUploader
+              multiple={false}
+              value={formData.newImages}
+              onChange={(imgs) => setFormData((s) => ({ ...s, newImages: imgs }))}
+            />
+
             <div className="text-xs text-neutral-500">
               {formData.newImages?.length
-                ? 'A new image will replace the current one on save.'
+                ? 'A new image will replace the current one on save.' //TODO i18n
                 : currentImage
                   ? 'Leave empty to keep current image.'
                   : 'No current image. You can upload one.'}

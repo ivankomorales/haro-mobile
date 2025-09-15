@@ -1,9 +1,12 @@
 // comments in English only
 import { useEffect, useMemo, useRef } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { getStatusLabel, getStatusClasses } from '../utils/orderStatusUtils'
 import { getMessage as t } from '../utils/getMessage'
 import { formatDMY } from '../utils/date'
-import { ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react'
+import { ArrowUpDown, ArrowUp, ArrowDown, Pencil, Trash2 } from 'lucide-react'
+import { cancelOrderById } from '../api/orders' // NEW HELPER
+import { showError, showSuccess } from '../utils/toastUtils'
 
 function IndeterminateCheckbox({ checked, indeterminate, onChange, ariaLabel }) {
   const ref = useRef(null)
@@ -24,10 +27,17 @@ function IndeterminateCheckbox({ checked, indeterminate, onChange, ariaLabel }) 
 }
 
 function getOrderTotal(order) {
+  if (typeof order?.total === 'number') return order.total
+  // Fallback (por si entra uno sin backfill):
   const items = Array.isArray(order?.products) ? order.products : []
-  const subtotal = items.reduce((acc, it) => acc + Number(it?.price ?? 0), 0)
-  //const deposit = Number(order?.deposit ?? 0)
-  return subtotal //- deposit
+  const subtotal = items.reduce((acc, p) => {
+    const qty = Number(p?.quantity ?? 1)
+    const price = Number(p?.price ?? 0)
+    const disc = Number(p?.discount ?? 0)
+    return acc + qty * Math.max(price - disc, 0)
+  }, 0)
+  const deposit = Number(order?.deposit ?? 0)
+  return Math.round(subtotal - deposit)
 }
 
 function StatusPill({ value }) {
@@ -81,6 +91,8 @@ export default function OrdersTable({
   onSort,
   currency = 'MXN',
 }) {
+  const navigate = useNavigate()
+
   const pageIds = useMemo(() => orders.map((o) => o._id), [orders])
   const selectedOnPage = useMemo(
     () => orders.filter((o) => selectedIds.includes(o._id)).length,
@@ -165,6 +177,25 @@ export default function OrdersTable({
               const customerName =
                 `${o.customer?.name ?? ''} ${o.customer?.lastName ?? ''}`.trim() || '—'
               const dateStr = o.orderDate ? formatDMY(new Date(o.orderDate)) : '—'
+
+              // Edit Order
+              const handleEdit = () => {
+                navigate(`/orders/${o._id}/edit`) // o '/orders/:id/edit-products'
+              }
+
+              // Delete Order (soft-delete)
+              const handleDelete = async () => {
+                const ok = window.confirm(t('confirm.cancelOrder') || 'Cancel this order?')
+                if (!ok) return
+                try {
+                  await cancelOrderById(o._id)
+                  showSuccess('success.order.cancelled')
+                  // ideal: refrescar lista desde el padre; si no, emite un callback por props
+                } catch (e) {
+                  showError('error.cancellingOrder')
+                }
+              }
+
               return (
                 <tr
                   key={o._id}
@@ -209,6 +240,34 @@ export default function OrdersTable({
                     <span className="font-medium tabular-nums">
                       {fmtCurrency(getOrderTotal(o))}
                     </span>
+                  </td>
+
+                  {/* Actions */}
+                  <td className="px-3 py-2 align-middle">
+                    <div className="flex items-center justify-end gap-2">
+                      <button
+                        type="button"
+                        title={t('button.edit')}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleEdit()
+                        }}
+                        className="rounded p-1 text-blue-600 hover:bg-neutral-100 hover:text-blue-800 dark:hover:bg-neutral-700"
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </button>
+                      <button
+                        type="button"
+                        title={t('button.delete') || 'Delete'}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleDelete()
+                        }}
+                        className="rounded p-1 text-red-600 hover:bg-neutral-100 dark:hover:bg-neutral-700"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               )

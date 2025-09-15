@@ -119,16 +119,46 @@ const validateOrder = [
     .withMessage("Product type is required")
     .trim(),
 
-  //Product: Figures quantity
+  //Product: Figures quantity changes to product qty
+  // Product: quantity >= 1
   body("products.*.quantity")
     .isInt({ min: 1 })
     .withMessage("Product quantity must be an integer >= 1")
     .toInt(),
 
+  // Product: price >= 1
   body("products.*.price")
-    .isNumeric()
-    .withMessage("Product price must be a number")
+    .isFloat({ min: 1 })
+    .withMessage("Product price must be a number >= 1")
     .toFloat(),
+
+  // Product: discount >= 0 y <= price (si viene)
+  body("products.*.discount")
+    .optional({ checkFalsy: true })
+    .isFloat({ min: 0 })
+    .withMessage("Discount must be a number >= 0")
+    .toFloat()
+    .custom((value, { req, path }) => {
+      // path será algo como "products.0.discount" → sacamos el índice
+      const match = path.match(/^products\.(\d+)\./);
+      const idx = match ? Number(match[1]) : null;
+      const price = idx != null ? Number(req.body.products[idx]?.price) : NaN;
+
+      if (Number.isNaN(price)) {
+        // Si no hay price, dejamos que otra regla lo marque; aquí no reventamos
+        return true;
+      }
+      if (value > price) {
+        throw new Error("Discount cannot be greater than price");
+      }
+      return true;
+    }),
+
+  // Product: figures >= 1
+  body("products.*.figures")
+    .isInt({ min: 1 })
+    .withMessage("Figures must be an integer >= 1")
+    .toInt(),
 
   body("products.*.description")
     .optional()

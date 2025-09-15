@@ -24,7 +24,7 @@ export function useRequireState(check, redirectTo, buildState) {
     }
 
     /**
-     * Note: If your linter complains about "exhaustive-deps",
+     * Note: If the linter complains about "exhaustive-deps",
      * you can wrap `check` and `buildState` in useCallback in the calling component,
      * or disable the rule for this line.
      * eslint-disable-next-line react-hooks/exhaustive-deps

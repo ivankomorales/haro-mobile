@@ -46,8 +46,7 @@ export default function NewOrder() {
     // Payment
     deposit: '',
     // Shipping
-    shipping: false,
-    addresses: [],
+    shipping: { isRequired: false, addresses: [] },
     // Notes
     notes: '',
   })
@@ -83,11 +82,14 @@ export default function NewOrder() {
 
   // Shipping toggle
   const handleToggleShipping = () => {
-    setFormData((prev) => ({
-      ...prev,
-      shipping: !prev.shipping,
-      addresses: !prev.shipping ? [{ address: '', city: '', zip: '', phone: '' }] : [],
-    }))
+    setFormData((prev) => {
+      const shipping = !prev.shipping
+      return {
+        ...prev,
+        shipping,
+        addresses: shipping ? (prev.addresses ?? []) : [], // al apagar, vacía
+      }
+    })
   }
 
   // Add or update social media manually
@@ -228,320 +230,352 @@ export default function NewOrder() {
   }
 
   return (
-    <div className="h-full min-h-0 bg-white dark:bg-neutral-900 dark:text-gray-100">
-      <form onSubmit={handleBaseSubmit} className="mx-auto max-w-2xl space-y-6 px-4 py-6">
-        {/* Name + Lastname */}
-        <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
-          <FormInput
-            label={t('order.name')}
-            name="name"
-            value={formData.name}
-            onChange={handleChangeAndClearError}
-            error={errors.name}
-            errorFormatter={t}
-          />
-          <FormInput
-            label={t('order.lastName')}
-            name="lastName"
-            value={formData.lastName}
-            onChange={handleChangeAndClearError}
-            error={errors.lastName}
-            errorFormatter={t}
-          />
-        </div>
+    <div className="h-full min-h-0 bg-white text-black dark:bg-neutral-900 dark:text-gray-100">
+      <form
+        onSubmit={handleBaseSubmit}
+        className="mx-auto mb-[var(--bottom-bar-h)] max-w-2xl space-y-6 px-4 py-6 sm:mb-2"
+      >
+        {/* ───────────────────────────── Customer Info ───────────────────────────── */}
+        <section className="rounded-xl border border-neutral-200/70 bg-white shadow-sm ring-1 ring-black/5 dark:border-neutral-700 dark:bg-neutral-900/60 dark:ring-white/5">
+          {/* Section header */}
+          <div className="border-b border-neutral-200 px-4 py-3 dark:border-neutral-700">
+            <h2 className="text-base font-semibold tracking-wide">
+              {t('order.section.customerInfo') || 'Customer Info'}
+            </h2>
+            <p className="mt-0.5 text-xs text-neutral-500 dark:text-neutral-400">
+              {t('order.section.customerInfoHint') ||
+                'Basic customer details and social information.'}
+            </p>
+          </div>
 
-        {/* More info */}
-        <div className="rounded border border-neutral-200 p-4 dark:border-neutral-700">
-          <p className="mb-3 text-sm font-medium text-gray-500 dark:text-gray-200">
-            {t('order.moreInfo')}
-          </p>
-
-          {/* Phone & email */}
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <div className="flex gap-2">
-              <select
-                name="countryCode"
-                value={formData.countryCode}
-                onChange={handleChange}
-                className="w-20 rounded border border-neutral-200 dark:border-gray-700 dark:bg-neutral-800"
-              >
-                <option value="+52">+52</option>
-                <option value="+1">+1</option>
-                <option value="+54">+54</option>
-              </select>
+          {/* Section body */}
+          <div className="space-y-5 p-4">
+            {/* Name + Lastname */}
+            <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
               <FormInput
-                label={t('order.phone')}
-                name="phone"
-                type="tel"
-                pattern="\d{10}"
-                maxLength={10}
-                value={formData.phone}
+                label={t('order.name')}
+                name="name"
+                value={formData.name}
                 onChange={handleChangeAndClearError}
-                error={errors.phone}
+                error={errors.name}
+                errorFormatter={t}
+              />
+              <FormInput
+                label={t('order.lastName')}
+                name="lastName"
+                value={formData.lastName}
+                onChange={handleChangeAndClearError}
+                error={errors.lastName}
                 errorFormatter={t}
               />
             </div>
 
-            <FormInput
-              label={t('order.email')}
-              name="email"
-              type="email"
-              value={formData.email}
-              onChange={handleChangeAndClearError}
-              error={errors.email}
-              errorFormatter={t}
-            />
-          </div>
+            {/* Phone & email */}
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              {/* Phone group (country code + number) */}
+              <div className="flex gap-2">
+                <select
+                  name="countryCode"
+                  aria-label={t('order.countryCode') || 'Country code'}
+                  value={formData.countryCode}
+                  onChange={handleChange}
+                  className="h-11 w-24 rounded-md border border-neutral-300 bg-white px-2 text-sm dark:border-neutral-700 dark:bg-neutral-800 dark:text-white"
+                >
+                  <option value="+52">+52</option>
+                  <option value="+1">+1</option>
+                  <option value="+54">+54</option>
+                </select>
 
-          {/* Social media */}
-          <div className="mt-4 w-full md:max-w-md">
-            <label className="mb-1 block text-sm font-medium text-gray-500 dark:text-gray-200">
-              {t('order.social')}
-            </label>
+                <FormInput
+                  label={t('order.phone')}
+                  name="phone"
+                  type="tel"
+                  pattern="\d{10}"
+                  maxLength={10}
+                  value={formData.phone}
+                  onChange={handleChangeAndClearError}
+                  error={errors.phone}
+                  errorFormatter={t}
+                />
+              </div>
 
-            <Menu as="div" className="relative w-full">
-              {({ open }) => (
-                <>
-                  <div className="mb-2 flex items-stretch gap-2">
-                    {/* Menu button with social icon and animated chevron */}
-                    <div className="relative shrink-0">
-                      <MenuButton
-                        aria-label={t('order.social')}
-                        className="relative flex h-10 w-10 cursor-pointer items-center justify-center rounded border dark:border-gray-600 dark:bg-neutral-800"
+              <FormInput
+                label={t('order.email')}
+                name="email"
+                type="email"
+                value={formData.email}
+                onChange={handleChangeAndClearError}
+                error={errors.email}
+                errorFormatter={t}
+              />
+            </div>
+
+            {/* Social media (kept your logic, just placed inside the section) */}
+            <div className="w-full md:max-w-md">
+              <label className="mb-1 block text-sm font-medium text-neutral-700 dark:text-neutral-200">
+                {t('order.social')}
+              </label>
+
+              <Menu as="div" className="relative w-full">
+                {({ open }) => (
+                  <>
+                    <div className="mb-2 flex items-stretch gap-2">
+                      {/* Menu button with social icon and animated chevron */}
+                      <div className="relative shrink-0">
+                        <MenuButton
+                          aria-label={t('order.social')}
+                          className="relative flex h-10 w-10 cursor-pointer items-center justify-center rounded-md border border-neutral-300 bg-white dark:border-neutral-700 dark:bg-neutral-800"
+                        >
+                          {(() => {
+                            const Icon = getSocialIcon(currentSocialType)
+                            return <Icon size={20} />
+                          })()}
+                          <ChevronDown
+                            size={14}
+                            className={`pointer-events-none absolute right-0.5 bottom-0.5 opacity-70 transition-transform duration-200 ${open ? 'rotate-180' : 'rotate-0'}`}
+                          />
+                        </MenuButton>
+                      </div>
+
+                      {/* Social input */}
+                      <input
+                        type="text"
+                        placeholder={
+                          currentSocialType === 'instagram'
+                            ? '@username'
+                            : currentSocialType === 'facebook'
+                              ? '/username'
+                              : currentSocialType === 'tiktok'
+                                ? '@handle'
+                                : t('order.usernamePlaceholder')
+                        }
+                        value={socialInput}
+                        onChange={(e) => setSocialInput(e.target.value)}
+                        onKeyDown={(e) =>
+                          e.key === 'Enter' && (e.preventDefault(), addOrUpdateSocial())
+                        }
+                        className="h-10 min-w-0 flex-1 rounded-md border border-neutral-300 bg-white px-3 text-sm dark:border-neutral-700 dark:bg-neutral-800 dark:text-white"
+                      />
+
+                      {/* Add/Update button */}
+                      <button
+                        type="button"
+                        onClick={addOrUpdateSocial}
+                        className="shrink-0 rounded-md bg-neutral-200 px-3 py-1 text-sm hover:bg-neutral-300 dark:bg-neutral-700 dark:text-white dark:hover:bg-neutral-600"
+                        title={t('order.addUpdate')}
                       >
-                        {(() => {
-                          const Icon = getSocialIcon(currentSocialType)
-                          return <Icon size={24} />
-                        })()}
-
-                        {/* Animated chevron */}
-                        <ChevronDown
-                          size={14}
-                          className={`absolute right-0.5 bottom-0.5 transition-transform duration-200 ${
-                            open ? 'rotate-180' : 'rotate-0'
-                          } pointer-events-none opacity-70`}
-                        />
-                      </MenuButton>
+                        <Plus size={16} />
+                      </button>
                     </div>
 
-                    {/* Social input */}
-                    <input
-                      type="text"
-                      placeholder={
-                        currentSocialType === 'instagram'
-                          ? '@username'
-                          : currentSocialType === 'facebook'
-                            ? '/username'
-                            : currentSocialType === 'tiktok'
-                              ? '@handle'
-                              : t('order.usernamePlaceholder') // Fallback translation if needed
-                      }
-                      value={socialInput}
-                      onChange={(e) => setSocialInput(e.target.value)}
-                      onKeyDown={(e) =>
-                        e.key === 'Enter' && (e.preventDefault(), addOrUpdateSocial())
-                      }
-                      className="h-10 min-w-0 flex-1 rounded border border-neutral-400 px-3 text-sm dark:border-gray-600 dark:bg-neutral-800 dark:text-white"
-                    />
+                    {/* Dropdown menu */}
+                    <MenuItems className="absolute z-10 mt-1 w-40 overflow-hidden rounded-md border border-neutral-200 bg-white shadow-lg dark:border-neutral-700 dark:bg-neutral-800">
+                      {socialOptions.map((opt) => (
+                        <MenuItem
+                          key={opt.type}
+                          as="button"
+                          type="button"
+                          onClick={() => setTypeAndPrefill(opt.type)}
+                          className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm data-[headlessui-state=active]:bg-neutral-100 data-[headlessui-state=active]:dark:bg-neutral-700"
+                        >
+                          <opt.icon size={16} />
+                          {opt.label}
+                        </MenuItem>
+                      ))}
+                    </MenuItems>
+                  </>
+                )}
+              </Menu>
 
-                    {/* Add/Update button */}
-                    <button
-                      type="button"
-                      onClick={addOrUpdateSocial}
-                      className="shrink-0 rounded bg-gray-200 px-3 py-1 hover:bg-gray-300 dark:bg-neutral-700 dark:hover:bg-neutral-600"
-                      title={t('order.addUpdate')}
+              {/* Social chips */}
+              <div className="mt-2 flex flex-wrap gap-2">
+                {['instagram', 'facebook', 'tiktok'].map((type) => {
+                  const value = formData.socialMedia?.[type]
+                  if (!value) return null
+                  const Icon = getSocialIcon(type)
+                  return (
+                    <span
+                      key={type}
+                      className="flex items-center gap-2 rounded-full bg-neutral-200 px-3 py-1 text-sm dark:bg-neutral-700"
                     >
-                      <Plus size={16} />
-                    </button>
-                  </div>
-
-                  {/* Dropdown menu with social options */}
-                  <MenuItems className="absolute z-10 mt-1 w-36 rounded border bg-white shadow dark:border-gray-700 dark:bg-neutral-800">
-                    {socialOptions.map((opt) => (
-                      <MenuItem
-                        key={opt.type}
-                        as="button"
+                      <Icon size={14} />
+                      {value}
+                      {/* Edit */}
+                      <button
                         type="button"
-                        onClick={() => setTypeAndPrefill(opt.type)}
-                        className="flex w-full items-center gap-2 px-2 py-1 text-left data-[headlessui-state=active]:bg-gray-100 data-[headlessui-state=active]:dark:bg-neutral-700"
+                        className="text-xs underline-offset-2 hover:underline"
+                        onClick={() => {
+                          setTypeAndPrefill(type)
+                          setTimeout(() => {
+                            document
+                              .querySelector(
+                                'input[placeholder="@username"], input[placeholder^="/"], input[placeholder^="URL"]'
+                              )
+                              ?.focus()
+                          }, 0)
+                        }}
                       >
-                        <opt.icon size={16} />
-                        {opt.label}
-                      </MenuItem>
-                    ))}
-                  </MenuItems>
-                </>
-              )}
-            </Menu>
-
-            {/* Social chips */}
-            <div className="mt-2 flex flex-wrap gap-2">
-              {['instagram', 'facebook', 'tiktok'].map((type) => {
-                const value = formData.socialMedia?.[type]
-                if (!value) return null
-                const Icon = getSocialIcon(type)
-                return (
-                  <span
-                    key={type}
-                    className="flex items-center gap-2 rounded-full bg-gray-300 px-3 py-1 text-sm dark:bg-neutral-700"
-                  >
-                    <Icon size={14} />
-                    {value}
-                    {/* Edit button */}
-                    <button
-                      type="button"
-                      className="text-xs"
-                      onClick={() => {
-                        setTypeAndPrefill(type)
-                        setTimeout(() => {
-                          document
-                            .querySelector(
-                              'input[placeholder="@username"], input[placeholder^="/"], input[placeholder^="URL"]'
-                            )
-                            ?.focus()
-                        }, 0)
-                      }}
-                    >
-                      {t('order.editLabel')}
-                    </button>
-                    {/* Remove button */}
-                    <button
-                      type="button"
-                      onClick={() => removeSocial(type)}
-                      className="text-xs text-red-600 hover:underline"
-                    >
-                      ×
-                    </button>
-                  </span>
-                )
-              })}
+                        {t('order.editLabel')}
+                      </button>
+                      {/* Remove */}
+                      <button
+                        type="button"
+                        onClick={() => removeSocial(type)}
+                        className="text-xs text-red-600 underline-offset-2 hover:underline"
+                      >
+                        ×
+                      </button>
+                    </span>
+                  )
+                })}
+              </div>
             </div>
           </div>
-        </div>
+        </section>
 
-        {/* Dates */}
-        <div className="grid grid-cols-1 gap-4 sm:gap-32 md:grid-cols-2">
-          <FormInput
-            type="date"
-            name="orderDate"
-            label="Order date"
-            placeholder={t('order.datePlaceholder')}
-            value={formData.orderDate}
-            onChange={handleChangeAndClearError}
-            error={errors.orderDate}
-            errorFormatter={t}
-            icon="calendar"
-            floating={false}
-          />
-
-          <FormInput
-            type="date"
-            name="deliverDate"
-            label="Delivery date"
-            placeholder={t('order.datePlaceholder')}
-            value={formData.deliverDate}
-            onChange={handleChangeAndClearError}
-            error={errors.deliverDate}
-            errorFormatter={t}
-            icon="calendar"
-            floating={false}
-          />
-        </div>
-
-        {/* Status & deposit */}
-        <div className="grid grid-cols-1 gap-4 sm:gap-32 md:grid-cols-2">
-          <div>
-            <label className="mb-1 block text-sm font-medium text-gray-800 dark:text-gray-200">
-              {t('order.status')}
-            </label>
-            <select
-              name="status"
-              value={formData.status}
-              onChange={handleChange}
-              className="h-11 w-full rounded border border-neutral-300 px-3 py-1 text-sm dark:border-gray-600 dark:bg-neutral-800 dark:text-white"
-            >
-              <option value="new">{t('status.new')}</option>
-              <option value="pending">{t('status.pending')}</option>
-              <option value="inProgress">{t('status.inProgress')}</option>
-              <option value="completed">{t('status.completed')}</option>
-              <option value="cancelled">{t('status.cancelled')}</option>
-            </select>
+        {/* ───────────────────────────── Order Info ─────────────────────────────── */}
+        <section className="rounded-xl border border-neutral-200/70 bg-white shadow-sm ring-1 ring-black/5 dark:border-neutral-700 dark:bg-neutral-900/60 dark:ring-white/5">
+          {/* Section header */}
+          <div className="border-b border-neutral-200 px-4 py-3 dark:border-neutral-700">
+            <h2 className="text-base font-semibold tracking-wide">
+              {t('order.section.orderInfo') || 'Order Info'}
+            </h2>
+            <p className="mt-0.5 text-xs text-neutral-500 dark:text-neutral-400">
+              {t('order.section.orderInfoHint') ||
+                'Dates, status, payment and shipping preferences.'}
+            </p>
           </div>
 
-          <div>
-            <FormInput
-              label={t('order.deposit')}
-              name="deposit"
-              type="number"
-              value={formData.deposit}
-              onChange={handleChangeAndClearError}
-              prefix="$"
-              min={0}
-              step="1"
-              placeholder="0"
-              error={errors.deposit}
-              errorFormatter={t}
-              floating={false}
-              onWheel={(e) => e.target.blur()} // Remove focus when using mousewheel
-            />
+          {/* Section body */}
+          <div className="space-y-5 p-4">
+            {/* Dates */}
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <FormInput
+                type="date"
+                name="orderDate"
+                label={t('order.orderDate') || 'Order date'}
+                placeholder={t('order.datePlaceholder')}
+                value={formData.orderDate}
+                onChange={handleChangeAndClearError}
+                error={errors.orderDate}
+                errorFormatter={t}
+                icon="calendar"
+                floating={false}
+              />
+              <FormInput
+                type="date"
+                name="deliverDate"
+                label={t('order.deliveryDate') || 'Delivery date'}
+                placeholder={t('order.datePlaceholder')}
+                value={formData.deliverDate}
+                onChange={handleChangeAndClearError}
+                error={errors.deliverDate}
+                errorFormatter={t}
+                icon="calendar"
+                floating={false}
+              />
+            </div>
+
+            {/* Status & deposit */}
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div>
+                <label className="mb-1 block text-sm font-medium text-neutral-700 dark:text-neutral-200">
+                  {t('order.status')}
+                </label>
+                <select
+                  name="status"
+                  value={formData.status}
+                  onChange={handleChange}
+                  className="h-11 w-full rounded-md border border-neutral-300 bg-white px-3 text-sm dark:border-neutral-700 dark:bg-neutral-800 dark:text-white"
+                >
+                  <option value="new">{t('status.new')}</option>
+                  <option value="pending">{t('status.pending')}</option>
+                  <option value="inProgress">{t('status.inProgress')}</option>
+                  <option value="completed">{t('status.completed')}</option>
+                  <option value="cancelled">{t('status.cancelled')}</option>
+                </select>
+              </div>
+
+              <FormInput
+                label={t('order.deposit')}
+                name="deposit"
+                type="number"
+                value={formData.deposit}
+                onChange={handleChangeAndClearError}
+                prefix="$"
+                min={0}
+                step="1"
+                placeholder="0"
+                error={errors.deposit}
+                errorFormatter={t}
+                floating={false}
+                onWheel={(e) => e.target.blur()} // Prevent accidental scroll change
+              />
+            </div>
+
+            {/* Shipping toggle */}
+            <div className="flex items-center justify-between rounded-lg border border-dashed border-neutral-300 p-3 dark:border-neutral-700">
+              <div className="space-y-0.5">
+                <p className="text-sm font-medium">{t('order.shippingRequired')}?</p>
+                <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                  {t('order.shippingHint') || 'Enable to add one or more shipping addresses.'}
+                </p>
+              </div>
+              <Switch
+                checked={formData.shipping}
+                onChange={handleToggleShipping}
+                className={`${
+                  formData.shipping ? 'bg-green-500' : 'bg-neutral-300 dark:bg-neutral-700'
+                } relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200`}
+              >
+                <span
+                  className={`${
+                    formData.shipping ? 'translate-x-6' : 'translate-x-1'
+                  } inline-block h-4 w-4 transform rounded-full bg-white transition-transform`}
+                />
+              </Switch>
+            </div>
+
+            {/* Addresses (conditional) */}
+            {formData.shipping && (
+              <FormAddress
+                addresses={formData.addresses}
+                onAdd={addAddress}
+                onRemove={removeAddress}
+                onChange={updateAddress}
+                errors={errors.addresses || []}
+                errorFormatter={t}
+                shippingAddress={t('order.shippingAddress')}
+                addButton={t('order.addAddress')}
+                addressInputTexts={{
+                  address: t('order.address'),
+                  city: t('order.city'),
+                  zip: t('order.zip'),
+                  phone: t('order.phoneShipping'),
+                  remove: t('order.remove'),
+                }}
+              />
+            )}
+
+            {/* Notes */}
+            <div>
+              <FormInput
+                label={t('order.notes')}
+                name="notes"
+                value={formData.notes}
+                onChange={handleChangeAndClearError}
+                maxLength={200}
+                error={errors.notes}
+                errorFormatter={t}
+              />
+              <p className="-mt-4 text-right text-xs text-neutral-400">
+                {formData.notes.length}/200
+              </p>
+            </div>
           </div>
-        </div>
+        </section>
 
-        {/* Shipping toggle */}
-        <div className="flex flex-col items-center gap-2">
-          <label className="text-sm font-medium text-gray-800 dark:text-gray-200">
-            {t('order.shippingRequired')} ?
-          </label>
-          <Switch
-            checked={formData.shipping}
-            onChange={handleToggleShipping}
-            className={`${
-              formData.shipping ? 'bg-green-500' : 'bg-gray-300'
-            } relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200`}
-          >
-            <span
-              className={`${
-                formData.shipping ? 'translate-x-6' : 'translate-x-1'
-              } inline-block h-4 w-4 transform rounded-full bg-white transition-transform`}
-            />
-          </Switch>
-        </div>
-
-        {/* Addresses */}
-        {formData.shipping && (
-          <FormAddress
-            addresses={formData.addresses}
-            onAdd={addAddress}
-            onRemove={removeAddress}
-            onChange={updateAddress}
-            errors={errors.addresses || []}
-            errorFormatter={t}
-            //
-            shippingAddress={t('order.shippingAddress')}
-            addButton={t('order.addAddress')}
-            addressInputTexts={{
-              address: t('order.address'),
-              city: t('order.city'),
-              zip: t('order.zip'),
-              phone: t('order.phoneShipping'),
-              remove: t('order.remove'),
-            }}
-          />
-        )}
-
-        {/* Notes */}
-        <FormInput
-          label={t('order.notes')}
-          name="notes"
-          value={formData.notes}
-          onChange={handleChangeAndClearError}
-          maxLength={200}
-          error={errors.notes}
-          errorFormatter={t}
-        />
-        <p className="-mt-4 text-right text-xs text-gray-400">{formData.notes.length}/200</p>
-
-        {/* Actions Buttons - Cancel Confirm */}
+        {/* ───────────────────────────── Actions ─────────────────────────────── */}
         <FormActions
           onSubmit={handleBaseSubmit}
           submitButtonText={isEditBase ? t('formActions.saveChanges') : t('button.addProduct')}

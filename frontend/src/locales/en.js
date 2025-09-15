@@ -46,9 +46,12 @@ export const en = {
       nameRequired: 'User name is required.',
     },
     product: {
-      typeRequired: 'Type is required.',
       priceInvalid: 'Invalid price.',
       addFailed: 'Failed to add product.',
+      figuresRequired: 'Figures must be at least 1.',
+      discountInvalid: 'Discount cannot exceed price.',
+      priceInvalid: 'Price must be greater than 0.',
+      typeRequired: 'Product type is required.',
     },
   },
 
@@ -82,10 +85,12 @@ export const en = {
       baseCreated: 'Base order (draft) created.',
       created: 'Order created successfully.',
       socialAdded: 'Social media added',
-      updated: 'Order updated!',
+      updated: 'Order Updated!',
+      cancelled: 'Order Cancelled',
     },
     product: {
       added: 'Product added successfully!',
+      updated: 'Product updated!',
     },
     user: {
       created: 'User created successfully.',
@@ -180,7 +185,7 @@ export const en = {
   order: {
     title: 'Orders',
     label: 'Order',
-
+    // ─── Customer Info ──────────────────────────────────────────
     name: 'First Name',
     lastName: 'Last Name',
     phone: 'Phone',
@@ -195,18 +200,12 @@ export const en = {
     social: 'Social Media',
     editLabel: 'Edit',
     submit: 'Confirm',
-    addAddress: '+ Add Address',
-    address: 'Address',
-    city: 'City',
-    zip: 'ZIP code',
-    phoneShipping: 'Phone (shipping)',
 
     remove: 'Remove',
     newTitle: 'New Order',
     editTitle: 'Edit Order',
     addProduct: 'Add product',
-    shippingRequired: 'Requires shipping',
-    shippingAddress: 'Shipping address',
+
     status: 'Order Status',
 
     notes: 'Notes',
@@ -232,6 +231,32 @@ export const en = {
     add: 'Add new',
 
     all: 'All Orders',
+    // ─── Sections ──────────────────────────────────────────
+    section: {
+      customerInfo: 'Customer Info',
+      customerInfoHint: 'Basic customer details and social information.',
+      orderInfo: 'Order Info',
+      orderInfoHint: 'Dates, status, payment and shipping preferences.',
+    },
+
+    // ─── Shipping ──────────────────────────────────────────
+    shippingHint: 'Enable to add one or more shipping addresses.',
+    shippingEmptyTitle: 'No addresses yet',
+    shippingEmptyHint: 'Add at least one shipping address if delivery is required.',
+    shippingRequired: 'Requires shipping',
+    shippingAddress: 'Shipping address',
+    addAddress: '+ Add Address',
+    address: 'Address',
+    city: 'City',
+    zip: 'ZIP code',
+    phoneShipping: 'Phone (shipping)',
+
+    // ─── Dates (if not already defined) ────────────────────
+    orderDate: 'Order date',
+    deliveryDate: 'Delivery date',
+
+    // ─── Country code selector ─────────────────────────────
+    countryCode: 'Country code',
   },
 
   // AddProduct
@@ -241,11 +266,13 @@ export const en = {
     type: 'Type',
     select: 'Select a Product',
     description: 'Description',
-
+    product: 'Item',
     qty: 'Quantity',
     price: 'Price',
     pricePrefix: '$',
+    discount: 'Discount',
     added: 'Product added',
+    addedOther: 'Products added',
 
     glazeTitle: 'Glaze',
     glazeInt: 'Interior',
@@ -257,14 +284,34 @@ export const en = {
     images: 'Images',
 
     addButton: 'Add Product',
-    
+
     figure: 'Figure',
     cup: 'Cup',
     handmadeCup: 'Handmade Cup',
     plate: 'Plate',
     figurine: 'Figurine',
+    //Section
+    section: {
+      customerInfo: 'Customer Info',
+      productInfo: 'Product Info',
+      productInfoHint: 'Select the type, quantity, and price.',
+      productDetails: 'Product Details',
+      productDetailsHint: 'Adjust figure count, glazes, and personalization.',
+    },
+    figuresCountLabel: 'No. of Figures:',
+    glazes: 'Glazes',
+    decorations: 'Decorations & Personalization',
+    hasGoldHint: 'Applied on edges and details.',
+    hasNameHint: 'Add a short name to the piece.',
+    hasGold: 'Gold Details',
+    hasName: 'Personalized Name',
   },
 
+  cart: {
+    empty: 'No products added yet.',
+    subtotal: 'Subtotal',
+    summary: 'Order Summary',
+  },
   // ─────────────── SplitAction ──────────────────────
   splitAction: {
     new: 'New',
@@ -317,6 +364,7 @@ export const en = {
     confirm: 'Confirm',
     save: 'Save',
     cancel: 'Cancel',
+    cancelEdit: 'Cancel Edit',
     ok: 'OK',
     search: 'Search',
     close: 'Close',
@@ -344,6 +392,12 @@ export const en = {
 
   sort: {
     by: 'Sort by', // ← NEW
+  },
+
+  // ARIA
+  aria: {
+    editProduct: 'Edit product',
+    removeProduct: 'Remove product',
   },
 
   // COMMONS

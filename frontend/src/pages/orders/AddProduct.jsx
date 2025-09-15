@@ -11,7 +11,9 @@ import { showLoading, dismissToast, showError, showSuccess } from '../../utils/t
 import { useRequireState } from '../../utils/useRequireState'
 import { getOriginPath } from '../../utils/navigationUtils'
 import GlazeTypeahead from '../../components/GlazeTypeahead'
-import { Trash2, SquarePen } from 'lucide-react'
+import AddedProductsCart from '../../components/AddedProductsCart'
+import { toProductPayload } from '../../utils/orderPayload'
+import { Paintbrush, Sparkles, Type as TypeIcon, Cat, Dog } from 'lucide-react' // icons for headers/cards
 
 export default function AddProduct() {
   const navigate = useNavigate()
@@ -19,28 +21,44 @@ export default function AddProduct() {
   const originPath = getOriginPath(location.state?.originPath ?? location.state?.from)
 
   const baseOrder = location.state || {}
-  const editIndex = location.state?.editIndex
-  const isEdit = typeof editIndex === 'number'
 
   const [glazes, setGlazes] = useState([])
-  const [products, setProducts] = useState([])
+  const [products, setProducts] = useState(baseOrder.products || [])
+  const [editingIndex, setEditingIndex] = useState(
+    typeof baseOrder.editIndex === 'number' ? baseOrder.editIndex : null
+  )
+
   const objectUrls = useRef([]) // for previews cleanup
   const fileInputRef = useRef(null)
-
   const [errors, setErrors] = useState({})
 
   const [formData, setFormData] = useState({
     type: '',
     quantity: 1,
+    figures: 1,
     price: '',
+    discount: '',
     glazeInterior: '',
     glazeExterior: '',
     description: '',
     images: [],
+    // decorations kept in state; description is hidden in UI but preserved
+    decorations: {
+      hasGold: false,
+      hasName: false,
+      decorationDescription: '',
+    },
   })
 
+  const isEditing = editingIndex !== null
+
   const isFormValid = () => {
-    return formData.type.trim() !== '' && Number(formData.price) > 0
+    const priceOk = Number(formData.price) > 0
+    const figuresOk = Number(formData.figures) >= 1
+    const qtyOk = Number(formData.quantity) >= 1
+    const discNum = Number(formData.discount || 0)
+    const discountOk = discNum >= 0 && discNum <= Number(formData.price || 0)
+    return formData.type.trim() !== '' && priceOk && figuresOk && qtyOk && discountOk
   }
 
   // Redirect to NewOrder if no minimal data found
@@ -54,126 +72,150 @@ export default function AddProduct() {
   useEffect(() => {
     async function fetchGlazes() {
       try {
-        const response = await getAllGlazes({ navigate }) //TODO
+        const response = await getAllGlazes({ navigate })
         setGlazes(response)
       } catch (error) {
         console.error('Failed to fetch glazes', error)
       }
     }
     fetchGlazes()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // Preload product if on EditMode
+  // Seed form if editing
   useEffect(() => {
-    if (isEdit && baseOrder.products && baseOrder.products[editIndex]) {
-      const product = baseOrder.products[editIndex]
-      // helpers (top-level or inline)
+    if (isEditing && products[editingIndex]) {
+      const p = products[editingIndex]
       const toId = (v) => (typeof v === 'object' && v?._id ? v._id : v || '')
       setFormData({
-        type: product.type,
-        quantity: product.quantity,
-        price: product.price,
-        glazeInterior: toId(product.glazes?.interior), // ✅ works with id or object
-        glazeExterior: toId(product.glazes?.exterior), // ✅
-        description: product.description || '',
-        images: product.images || [], // URLs en modo edición
+        type: p.type || '',
+        quantity: Number(p.quantity || 1),
+        figures: Number(p.figures || 1),
+        price: String(Number(p.price || 0) || ''),
+        discount: p.discount === 0 || p.discount === '0' ? '0' : String(p.discount ?? ''),
+        glazeInterior: toId(p.glazes?.interior),
+        glazeExterior: toId(p.glazes?.exterior),
+        description: p.description || '',
+        images: p.images || [],
+        decorations: {
+          hasGold: Boolean(p.decorations?.hasGold),
+          hasName: Boolean(p.decorations?.hasName),
+          decorationDescription: p.decorations?.decorationDescription || '',
+        },
       })
     }
-  }, [isEdit, editIndex, baseOrder.products])
+  }, [isEditing, editingIndex, products])
 
   const handleChange = (e) => {
     const { name, value } = e.target
-
     setFormData((prev) => {
       const updated = { ...prev, [name]: value }
 
+      // Business logic: clean invalid glaze fields based on type
       if (name === 'type') {
-        // Clean invalid glaze fields
         if (value === 'figurine') {
           updated.glazeInterior = ''
           updated.glazeExterior = ''
         } else if (value === 'plate') {
           updated.glazeInterior = ''
-        } else if (value === 'cup' || value === 'handmadeCup') {
-          // keep both
         }
       }
-
       return updated
     })
     setErrors((prev) => ({ ...prev, [name]: null }))
   }
 
-  // Cleanup de previews al desmontar
+  // Toggle helpers for decorations
+  const toggleDecoration = (key) =>
+    setFormData((prev) => ({
+      ...prev,
+      decorations: { ...prev.decorations, [key]: !prev.decorations[key] },
+    }))
+
+  // Cleanup previews on unmount
   useEffect(() => {
     return () => {
       objectUrls.current.forEach((url) => URL.revokeObjectURL(url))
     }
   }, [])
 
-  // Add product to local list (no images yet)
-  const handleAddProduct = async () => {
+  const resetForm = () =>
+    setFormData({
+      type: '',
+      quantity: 1,
+      figures: 1,
+      price: '',
+      discount: '',
+      glazeInterior: '',
+      glazeExterior: '',
+      description: '',
+      images: [],
+      decorations: { hasGold: false, hasName: false, decorationDescription: '' },
+    })
+
+  const addOrSaveProduct = () => {
     const newErrors = {}
     const interior = glazes.find((g) => g._id === formData.glazeInterior)
     const exterior = glazes.find((g) => g._id === formData.glazeExterior)
 
     if (!formData.type.trim()) newErrors.type = t('errors.product.typeRequired')
-    if (!formData.quantity || formData.quantity <= 0) {
-      newErrors.quantity = 'errors.invalid_quantity'
-    }
+    if (!formData.figures || Number(formData.figures) < 1)
+      newErrors.figures = t('errors.product.figuresRequired')
+    if (!formData.quantity || Number(formData.quantity) < 1)
+      newErrors.quantity = t('errors.invalid_quantity')
     if (!formData.price || Number(formData.price) <= 0)
       newErrors.price = t('errors.product.priceInvalid')
+
+    const priceNum = Number(formData.price || 0)
+    const discNum = Number(formData.discount || 0)
+    if (discNum < 0 || discNum > priceNum) newErrors.discount = t('errors.product.discountInvalid')
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors)
       return
     }
 
-    try {
-      const newProduct = {
-        ...formData,
-        glazes: {
-          interior: interior?._id || null,
-          exterior: exterior?._id || null,
-          interiorName: interior?.name || '',
-          interiorHex: interior?.hex || '',
-          exteriorName: exterior?.name || '',
-          exteriorHex: exterior?.hex || '',
-          // thumbnails for UI
-          interiorImage: interior?.image || '',
-          exteriorImage: exterior?.image || '',
-        },
-      }
-      console.log('A) handleAddProduct -> newProduct.glazes:', newProduct.glazes)
-      setProducts((prev) => [...prev, newProduct])
-      showSuccess('success.product.added')
-
-      // Reset form
-      setFormData({
-        type: '',
-        quantity: 1,
-        price: '',
-        glazeInterior: '',
-        glazeExterior: '',
-        description: '',
-        images: [],
-      })
-
-      // Clean previews
-      objectUrls.current = []
-      fileInputRef.current && (fileInputRef.current.value = null)
-      setErrors({})
-    } catch (err) {
-      console.error('Error adding product:', err)
-      setErrors({ ...newErrors, images: t('errors.image.uploadFailed') })
+    const uiProduct = {
+      ...formData,
+      price: priceNum,
+      discount: discNum,
+      figures: Number(formData.figures || 1),
+      quantity: Number(formData.quantity || 1),
+      glazes: {
+        interior: interior?._id || null,
+        exterior: exterior?._id || null,
+        interiorName: interior?.name || '',
+        interiorHex: interior?.hex || '',
+        exteriorName: exterior?.name || '',
+        exteriorHex: exterior?.hex || '',
+        interiorImage: interior?.image || '',
+        exteriorImage: exterior?.image || '',
+      },
     }
-  } // end handleAddProduct
 
-  // Delete product from local list
+    if (isEditing) {
+      setProducts((prev) => prev.map((p, idx) => (idx === editingIndex ? uiProduct : p)))
+      setEditingIndex(null)
+      showSuccess('success.product.updated')
+    } else {
+      setProducts((prev) => [...prev, uiProduct])
+      showSuccess('success.product.added')
+    }
+
+    resetForm()
+    objectUrls.current = []
+    fileInputRef.current && (fileInputRef.current.value = null)
+    setErrors({})
+  }
+
+  const startEditAt = (i) => setEditingIndex(i)
+  const cancelEdit = () => {
+    setEditingIndex(null)
+    resetForm()
+  }
+
   const handleRemoveProduct = (i) => {
     const imgs = products[i]?.images || []
-
-    // Free memory previews (Object URLs)
     imgs.forEach((file) => {
       if (file instanceof File) {
         const url = objectUrls.current.find((u) => u.includes(file.name))
@@ -183,75 +225,43 @@ export default function AddProduct() {
         }
       }
     })
-
     setProducts((prev) => prev.filter((_, idx) => idx !== i))
+    if (editingIndex === i) cancelEdit()
+    if (editingIndex !== null && i < editingIndex) {
+      setEditingIndex((prev) => prev - 1)
+    }
   }
 
-  // Confirm $ navigate to OrderConfirmation (uploading images first)
-  // Confirm $ navigate to OrderConfirmation (uploading images first)
   const handleSubmitAll = async () => {
-    const shouldUploadImages = isEdit
-      ? formData.images && formData.images.length > 0
-      : products.some((p) => p.images && p.images.length > 0)
+    if (!products.length) {
+      showError(t('errors.order.missingProduct'))
+      return
+    }
 
+    const shouldUploadImages = products.some((p) => p.images && p.images.length > 0)
     const toastId = shouldUploadImages ? showLoading('loading.image') : null
 
     try {
-      let finalProducts
-
-      if (isEdit) {
-        // Upload only new Files; keep existing URLs/objects
-        const uploads = await Promise.all(
-          (formData.images || []).map((item) =>
-            item instanceof File ? uploadToCloudinary(item, 'haromobile/products') : item
-          )
-        )
-
-        const editedUiProduct = {
-          ...formData,
-          images: uploads,
-        }
-
-        const editedPayload = toProductPayload(editedUiProduct, glazes)
-
-        // ✅ Reemplazar SOLO el producto editado, no tocar los demás
-        finalProducts = (baseOrder.products || []).map((p, i) =>
-          i === editIndex ? editedPayload : p
-        )
-      } else {
-        if (products.length === 0) {
-          showError(t('errors.order.missingProduct'))
-          return
-        }
-
-        const updatedProducts = await Promise.all(
-          products.map(async (product) => {
-            const uploads = await Promise.all(
-              (product.images || []).map((item) =>
-                item instanceof File ? uploadToCloudinary(item, 'haromobile/products') : item
-              )
+      const uploadedProducts = await Promise.all(
+        products.map(async (product) => {
+          const uploads = await Promise.all(
+            (product.images || []).map((item) =>
+              item instanceof File ? uploadToCloudinary(item, 'haromobile/products') : item
             )
-            return { ...product, images: uploads }
-          })
-        )
+          )
+          return { ...product, images: uploads }
+        })
+      )
 
-        finalProducts = updatedProducts.map((p) => toProductPayload(p, glazes))
-      }
+      const finalProducts = uploadedProducts.map((p) => toProductPayload(p, glazes))
 
       if (toastId) dismissToast(toastId)
       if (shouldUploadImages) showSuccess('success.image.uploaded')
 
-      const fullOrder = {
-        ...baseOrder,
-        products: finalProducts,
-      }
+      const fullOrder = { ...baseOrder, products: finalProducts }
 
       navigate('/orders/confirmation', {
-        state: {
-          ...fullOrder,
-          originPath: baseOrder.originPath ?? '/orders',
-          glazes,
-        },
+        state: { ...fullOrder, originPath: baseOrder.originPath ?? '/orders', glazes },
       })
     } catch (err) {
       console.error('Error uploading images before submit:', err)
@@ -260,298 +270,371 @@ export default function AddProduct() {
     }
   }
 
-  // en handleSubmitAll
-
-  // Normalize anything (File, URL string, Cloudinary response, existing image object) into ImageSchema-like object
-  function normalizeImage(img) {
-    if (!img) return null
-
-    // Already normalized object with url
-    if (img && typeof img === 'object' && img.url) {
-      return {
-        url: img.url,
-        publicId: img.publicId || img.public_id,
-        width: img.width,
-        height: img.height,
-        format: img.format,
-        bytes: img.bytes,
-        alt: img.alt || '',
-        primary: !!img.primary,
-      }
-    }
-
-    // Cloudinary upload response
-    if (img && typeof img === 'object' && (img.secure_url || img.public_id)) {
-      return {
-        url: img.secure_url || img.url,
-        publicId: img.public_id || img.publicId,
-        width: img.width,
-        height: img.height,
-        format: img.format,
-        bytes: img.bytes,
-        alt: img.alt || '',
-        primary: !!img.primary,
-      }
-    }
-
-    // Legacy string URL
-    if (typeof img === 'string') {
-      return { url: img, alt: '', primary: false }
-    }
-
-    // Fallback (e.g., File preview) — we avoid persisting blob://
-    return null
-  }
-
-  // Given selected glaze _id, return { id, name, hex } or null
-  function getGlazeTriplet(glazeId, allGlazes) {
-    if (!glazeId) return null
-    const g = (allGlazes || []).find((x) => x._id === glazeId)
-    return g ? { id: g._id, name: g.name, hex: g.hex, image: g.image || g.url || null } : null
-  }
-
-  // Build final product payload that matches the new schema
-  function toProductPayload(p, allGlazes) {
-    const gi = getGlazeTriplet(p.glazeInterior, allGlazes)
-    const ge = getGlazeTriplet(p.glazeExterior, allGlazes)
-
-    return {
-      type: p.type,
-      quantity: Number(p.quantity),
-      price: Number(p.price), // whole pesos (integers)
-      description: (p.description || '').trim(),
-      glazes: {
-        interior: gi ? gi.id : null,
-        exterior: ge ? ge.id : null,
-        interiorName: gi ? gi.name : null,
-        interiorHex: gi ? gi.hex : null, // keep "#RRGGBB"
-        exteriorName: ge ? ge.name : null,
-        exteriorHex: ge ? ge.hex : null,
-        // UI-only fields to support thumbnails before saving
-        interiorImage: gi ? gi.image : null,
-        exteriorImage: ge ? ge.image : null,
-      },
-      decorations: {
-        hasGold: !!(p.decorations && p.decorations.hasGold),
-        hasName: !!(p.decorations && p.decorations.hasName),
-        outerDrawing: !!(p.decorations && p.decorations.outerDrawing),
-        customText: (p.decorations && p.decorations.customText
-          ? p.decorations.customText
-          : ''
-        ).trim(),
-      },
-      images: (p.images || [])
-        .map((img) => {
-          // Inline normalize to avoid extra imports
-          if (!img) return null
-          if (typeof img === 'string') return { url: img, alt: '', primary: false }
-          if (img && typeof img === 'object' && (img.url || img.secure_url || img.public_id)) {
-            return {
-              url: img.secure_url || img.url,
-              publicId: img.public_id || img.publicId,
-              width: img.width,
-              height: img.height,
-              format: img.format,
-              bytes: img.bytes,
-              alt: img.alt || '',
-              primary: !!img.primary,
-            }
-          }
-          return null
-        })
-        .filter(Boolean),
-      // Preserve _id only in edit mode (if present)
-      ...(p._id ? { _id: p._id } : {}),
-    }
-  }
-
   return (
     <div className="h-full min-h-0 bg-white dark:bg-neutral-900 dark:text-gray-100">
-      <div className="mx-auto max-w-xl space-y-6 px-4 py-6">
-        <h1 className="mb-8 text-center text-xl font-semibold">
-          {isEdit ? t('product.edit') : t('product.title')}
+      {/* bottom padding so BottomNavBar doesn't overlap */}
+      <div className="mx-auto max-w-6xl px-4 py-6 pb-[calc(var(--bottom-bar-h)+20px)]">
+        <h1 className="mb-6 text-center text-xl font-semibold">
+          {isEditing ? t('product.edit') : t('product.title')}
         </h1>
 
-        <div className="space-y-4">
-          <FormInput
-            as="select"
-            name="type"
-            label={t('product.type')}
-            value={formData.type}
-            onChange={handleChange}
-            error={errors.type}
-            errorFormatter={t}
-            required
-          >
-            <option value="">{t('product.select')}</option>
-            <option value="cup">{t('product.cup')}</option>
-            <option value="handmadeCup">{t('product.handmadeCup')}</option>
-            <option value="plate">{t('product.plate')}</option>
-            <option value="figurine">{t('product.figurine')}</option>
-          </FormInput>
-
-          <div className="flex items-center justify-between">
-            <div>
-              <label className="text-sm">{t('product.qty')}:</label>
-              <div className="flex items-center gap-3">
-                <button
-                  type="button"
-                  onClick={() =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      quantity: Math.max(1, prev.quantity - 1),
-                    }))
-                  }
-                  className="rounded bg-gray-300 px-2 py-1 dark:bg-gray-600"
-                >
-                  −
-                </button>
-                <span>{formData.quantity}</span>
-                <button
-                  type="button"
-                  onClick={() =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      quantity: prev.quantity + 1,
-                    }))
-                  }
-                  className="rounded bg-gray-300 px-2 py-1 dark:bg-gray-600"
-                >
-                  +
-                </button>
+        {/* GRID: Form (left) + Cart (right) */}
+        <div className="grid gap-6 lg:grid-cols-[1fr_380px]">
+          {/* LEFT: FORM composed by two sections */}
+          <div className="space-y-6">
+            {/* ───────────────────────── Product Info ───────────────────────── */}
+            <section className="rounded-xl border border-neutral-200/70 bg-white shadow-sm ring-1 ring-black/5 dark:border-neutral-700 dark:bg-neutral-900/60 dark:ring-white/5">
+              {/* Section header */}
+              <div className="border-b border-neutral-200 px-4 py-3 dark:border-neutral-700">
+                <h2 className="text-base font-semibold tracking-wide">
+                  {t('product.section.productInfo') || 'Información del producto'}
+                </h2>
+                <p className="mt-0.5 text-xs text-neutral-500 dark:text-neutral-400">
+                  {t('product.section.productInfoHint') || 'Selecciona el tipo, cantidad y precio.'}
+                </p>
               </div>
-            </div>
 
-            <div className="ml-10">
-              <FormInput
-                label={t('product.price')}
-                floating={false}
-                prefix={t('product.pricePrefix')}
-                name="price"
-                type="number"
-                min="0"
-                step="1"
-                value={formData.price}
-                onChange={handleChange}
-                placeholder="0"
-                error={errors.price}
-              />
+              {/* Section body */}
+              <div className="space-y-5 p-4">
+                {/* Row: product type + quantity */}
+                <div className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-4">
+                  {/* Product type select */}
+                  <div className="min-w-0">
+                    <FormInput
+                      as="select"
+                      name="type"
+                      floating={false}
+                      // label={t('product.type')}
+                      value={formData.type}
+                      onChange={handleChange}
+                      error={errors.type}
+                      errorFormatter={t}
+                      required
+                    >
+                      <option value="">{t('product.select')}</option>
+                      <option value="cup">{t('product.cup')}</option>
+                      <option value="handmadeCup">{t('product.handmadeCup')}</option>
+                      <option value="plate">{t('product.plate')}</option>
+                      <option value="figurine">{t('product.figurine')}</option>
+                    </FormInput>
+                  </div>
+
+                  {/* Quantity stepper */}
+                  <div className="shrink-0 whitespace-nowrap">
+                    <label className="text-sm">{t('product.qty') || 'Qty'}:</label>
+                    <div className="mt-1 flex items-center gap-3">
+                      <button
+                        type="button"
+                        aria-label="Decrease quantity"
+                        onClick={() =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            quantity: Math.max(1, Number(prev.quantity || 1) - 1),
+                          }))
+                        }
+                        className="rounded bg-gray-300 px-2 py-1 dark:bg-gray-600"
+                      >
+                        −
+                      </button>
+                      <span className="min-w-[1.5ch] text-center">{formData.quantity}</span>
+                      <button
+                        type="button"
+                        aria-label="Increase quantity"
+                        onClick={() =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            quantity: Math.max(1, Number(prev.quantity || 1) + 1),
+                          }))
+                        }
+                        className="rounded bg-gray-300 px-2 py-1 dark:bg-gray-600"
+                      >
+                        +
+                      </button>
+                    </div>
+                    {errors.quantity && (
+                      <p className="mt-1 text-xs text-red-500">{t(errors.quantity)}</p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Row: Price & Discount */}
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <FormInput
+                    label={t('product.price')}
+                    floating={false}
+                    prefix={t('product.pricePrefix')}
+                    name="price"
+                    type="number"
+                    min="1"
+                    step="1"
+                    inputMode="numeric"
+                    value={formData.price}
+                    onChange={handleChange}
+                    placeholder="0"
+                    error={errors.price}
+                    errorFormatter={t}
+                    onWheel={(e) => e.currentTarget.blur()}
+                  />
+                  <FormInput
+                    label={t('product.discount')}
+                    floating={false}
+                    prefix={t('product.pricePrefix')}
+                    name="discount"
+                    type="number"
+                    min="0"
+                    step="1"
+                    inputMode="numeric"
+                    value={formData.discount}
+                    onChange={handleChange}
+                    placeholder="0"
+                    error={errors.discount}
+                    errorFormatter={t}
+                    onWheel={(e) => e.currentTarget.blur()}
+                  />
+                </div>
+              </div>
+            </section>
+
+            {/* ─────────────────────── Product Details ─────────────────────── */}
+            <section className="rounded-xl border border-neutral-200/70 bg-white shadow-sm ring-1 ring-black/5 dark:border-neutral-700 dark:bg-neutral-900/60 dark:ring-white/5">
+              {/* Section header */}
+              <div className="border-b border-neutral-200 px-4 py-3 dark:border-neutral-700">
+                <h2 className="text-base font-semibold tracking-wide">
+                  {t('product.section.productDetails') || 'Detalles del Producto'}
+                </h2>
+                <p className="mt-0.5 text-xs text-neutral-500 dark:text-neutral-400">
+                  {t('product.section.productDetailsHint') ||
+                    'Ajusta el número de figuras, esmaltes y personalización.'}
+                </p>
+              </div>
+
+              {/* Section body */}
+              <div className="space-y-1 p-4">
+                {/* Figures: label + inline stepper */}
+                <div className="ml-auto flex w-fit items-center gap-4">
+                  <Dog className="h-6 w-6 shrink-0" />
+                  <div>
+                    <label className="text-base font-medium">
+                      {t('product.figuresCountLabel') || 'Número de figuras (No. of Figures)'}
+                    </label>
+                    {errors.figures && (
+                      <p className="mt-0.5 text-xs text-red-500">{t(errors.figures)}</p>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-3 border border-neutral-300 rounded-lg">
+                    <button
+                      type="button"
+                      aria-label="Decrease figures"
+                      onClick={() =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          figures: Math.max(1, Number(prev.figures || 1) - 1),
+                        }))
+                      }
+                      className="rounded bg-gray-300 px-2 py-1 dark:bg-gray-600"
+                    >
+                      −
+                    </button>
+                    <span className="min-w-[1.5ch] text-center">{formData.figures}</span>
+                    <button
+                      type="button"
+                      aria-label="Increase figures"
+                      onClick={() =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          figures: Math.max(1, Number(prev.figures || 1) + 1),
+                        }))
+                      }
+                      className="rounded bg-gray-300 px-2 py-1 dark:bg-gray-600"
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
+
+                {/* Glazes group (icon moved next to each label) */}
+                {formData.type !== 'figurine' && (
+                  <div className="space-y-2">
+                    {formData.type !== 'plate' && (
+                      <GlazeTypeahead
+                        // Label with icon inline
+                        label={
+                          <span className="inline-flex items-center gap-2">
+                            <Paintbrush className="h-4 w-4 opacity-70" />
+                            {t('fields.glazeInteriorName')}
+                          </span>
+                        }
+                        glazes={glazes}
+                        selectedId={formData.glazeInterior}
+                        onChange={(id) => setFormData((prev) => ({ ...prev, glazeInterior: id }))}
+                        t={t}
+                      />
+                    )}
+
+                    <GlazeTypeahead
+                      label={
+                        <span className="inline-flex items-center gap-2">
+                          <Paintbrush className="h-4 w-4 opacity-70" />
+                          {t('fields.glazeExteriorName')}
+                        </span>
+                      }
+                      glazes={glazes}
+                      selectedId={formData.glazeExterior}
+                      onChange={(id) => setFormData((prev) => ({ ...prev, glazeExterior: id }))}
+                      t={t}
+                    />
+                  </div>
+                )}
+
+                {/* Decorations & personalization — checkbox cards */}
+                <div>
+                  <div className="mb-2 text-sm font-medium">
+                    {t('product.decorations') || 'Decoración y personalización'}
+                  </div>
+
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    {/* Gold details card */}
+                    <button
+                      type="button"
+                      role="checkbox"
+                      aria-checked={formData.decorations.hasGold}
+                      onClick={() => toggleDecoration('hasGold')}
+                      className={`flex items-start gap-3 rounded-lg border p-3 text-left transition-colors ${
+                        formData.decorations.hasGold
+                          ? 'border-amber-400 bg-amber-50 dark:border-amber-500/70 dark:bg-amber-500/10'
+                          : 'border-neutral-200 hover:bg-neutral-50 dark:border-neutral-700 dark:hover:bg-neutral-800'
+                      }`}
+                    >
+                      <div className="mt-0.5">
+                        <Sparkles className="h-4 w-4 opacity-80" />
+                      </div>
+                      <div className="flex-1">
+                        <div className="text-sm font-medium">
+                          {t('product.hasGold') || 'Detalles en oro'}
+                        </div>
+                        <div className="text-xs text-neutral-500 dark:text-neutral-400">
+                          {/* Short helper explaining the add-on */}
+                          {t('product.hasGoldHint') || 'Aplicado en bordes y detalles.'}
+                        </div>
+                      </div>
+                      <input
+                        type="checkbox"
+                        readOnly
+                        checked={formData.decorations.hasGold}
+                        className="mt-0.5 h-4 w-4 accent-amber-500"
+                        aria-hidden="true"
+                        tabIndex={-1}
+                      />
+                    </button>
+
+                    {/* Personalized name card */}
+                    <button
+                      type="button"
+                      role="checkbox"
+                      aria-checked={formData.decorations.hasName}
+                      onClick={() => toggleDecoration('hasName')}
+                      className={`flex items-start gap-3 rounded-lg border p-3 text-left transition-colors ${
+                        formData.decorations.hasName
+                          ? 'border-blue-400 bg-blue-50 dark:border-blue-500/70 dark:bg-blue-500/10'
+                          : 'border-neutral-200 hover:bg-neutral-50 dark:border-neutral-700 dark:hover:bg-neutral-800'
+                      }`}
+                    >
+                      <div className="mt-0.5">
+                        <TypeIcon className="h-4 w-4 opacity-80" />
+                      </div>
+                      <div className="flex-1">
+                        <div className="text-sm font-medium">
+                          {t('product.hasName') || 'Nombre personalizado'}
+                        </div>
+                        <div className="text-xs text-neutral-500 dark:text-neutral-400">
+                          {t('product.hasNameHint') || 'Añade un nombre corto a la pieza.'}
+                        </div>
+                      </div>
+                      <input
+                        type="checkbox"
+                        readOnly
+                        checked={formData.decorations.hasName}
+                        className="mt-0.5 h-4 w-4 accent-blue-500"
+                        aria-hidden="true"
+                        tabIndex={-1}
+                      />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            {/* Media + Notes (kept outside as you requested) */}
+            <ImageUploader
+              multiple={true}
+              label={t('product.images')}
+              value={formData.images}
+              onChange={(imgs) => setFormData({ ...formData, images: imgs })}
+              inputRef={fileInputRef}
+            />
+
+            <FormInput
+              label={t('product.description')}
+              name="description"
+              value={formData.description}
+              onChange={handleChange}
+              maxLength={200}
+            />
+            <p className="-mt-2 text-right text-xs text-gray-400">
+              {formData.description.length}/200
+            </p>
+
+            {/* Add / Save buttons */}
+            <div className="grid gap-2 sm:grid-cols-1">
+              <button
+                type="button"
+                onClick={addOrSaveProduct}
+                className={`w-full rounded py-2 font-semibold transition-colors duration-200 ${
+                  isFormValid()
+                    ? 'bg-blue-600 text-white hover:bg-blue-800'
+                    : 'cursor-not-allowed bg-gray-300 text-gray-400'
+                }`}
+              >
+                {isEditing ? t('button.save') : `+ ${t('product.addButton')}`}
+              </button>
+
+              {isEditing && (
+                <button
+                  type="button"
+                  onClick={cancelEdit}
+                  className="rounded border border-neutral-300 py-2 font-semibold hover:bg-neutral-50 dark:border-neutral-700 dark:hover:bg-neutral-800"
+                >
+                  {t('button.cancelEdit') || 'Cancel edit'}
+                </button>
+              )}
             </div>
           </div>
 
-          {/* Glazes */}
-          {formData.type !== 'figurine' && (
-            <details className="relative overflow-visible rounded bg-neutral-100 p-4 dark:bg-neutral-800">
-              <summary className="cursor-pointer text-sm font-medium dark:text-white">
-                {t('product.glazeTitle')}
-              </summary>
-              <div className="mt-4 space-y-2">
-                {formData.type !== 'plate' && (
-                  <GlazeTypeahead
-                    label={t('product.glazeInt')}
-                    glazes={glazes}
-                    selectedId={formData.glazeInterior}
-                    onChange={(id) => setFormData((prev) => ({ ...prev, glazeInterior: id }))}
-                    t={t}
-                  />
-                )}
-                <GlazeTypeahead
-                  label={t('product.glazeExt')}
-                  glazes={glazes}
-                  selectedId={formData.glazeExterior}
-                  onChange={(id) => setFormData((prev) => ({ ...prev, glazeExterior: id }))}
-                  t={t}
-                />
-              </div>
-            </details>
-          )}
-
-          {/* Imágenes */}
-          <ImageUploader
-            multiple={true}
-            label={t('product.images')}
-            value={formData.images}
-            onChange={(imgs) => setFormData({ ...formData, images: imgs })}
-            inputRef={fileInputRef}
-          />
-
-          <FormInput
-            label={t('product.description')}
-            name="description"
-            value={formData.description}
-            onChange={handleChange}
-            maxLength={200}
-          />
-          <p className="-mt-2 text-right text-xs text-gray-400">
-            {formData.description.length}/200
-          </p>
+          {/* RIGHT: CART (sticky on desktop) */}
+          <aside className="lg:sticky lg:top-4 lg:h-fit">
+            <AddedProductsCart
+              products={products}
+              onEdit={startEditAt}
+              onRemove={handleRemoveProduct}
+              t={t}
+            />
+          </aside>
         </div>
 
-        {!isEdit && (
-          <button
-            type="button"
-            onClick={handleAddProduct}
-            //disabled={!isFormValid()}
-            className={`w-full rounded py-2 font-semibold transition-colors duration-200 ${
-              isFormValid()
-                ? 'bg-blue-600 text-white hover:bg-blue-800'
-                : 'cursor-not-allowed bg-gray-300 text-gray-400'
-            }`}
-          >
-            + {t('product.addButton')}
-          </button>
-        )}
-
-        {/* Added Products Section */}
-        {products.length > 0 && (
-          <>
-            <h2 className="mt-6 mb-2 text-sm font-semibold text-gray-600 dark:text-gray-200">
-              {t('product.added')}
-            </h2>
-            <ul className="space-y-2 text-sm text-gray-800 dark:text-white">
-              {products.map((p, i) => (
-                <li
-                  key={i}
-                  className="flex items-center justify-between rounded border bg-neutral-100 p-2 dark:bg-neutral-800"
-                >
-                  <div className="flex-1 truncate">
-                    <div className="flex-1 truncate">
-                      {t(`product.${p.type}`)} — {p.quantity} {t('product.figure')}
-                      {p.quantity > 1 ? 's' : ''} — ${p.price}
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => handleRemoveProduct(i)}
-                    className="ml-4 text-red-500 hover:text-red-700"
-                  >
-                    <Trash2 className="h-5 w-5" />
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </>
-        )}
-
-        {/* Footer */}
-        <FormActions
-          onSubmit={handleSubmitAll}
-          // Texto botón derecho (siguiente/persistir)
-          submitButtonText={isEdit ? t('button.save') : t('button.confirm')}
-          // Texto botón izquierdo (cancelar)
-          cancelButtonText={t('formActions.cancel')}
-          // Confirm modal al cancelar
-          confirmTitle={
-            isEdit ? t('formActionsEdit.confirmTitle') : t('formActionsCreate.confirmTitle')
-          }
-          confirmMessage={
-            isEdit ? t('formActionsEdit.confirmMessage') : t('formActionsCreate.confirmMessage')
-          }
-          confirmText={t('formActions.confirmText')}
-          cancelText={t('formActions.cancelText')}
-          cancelRedirect={isEdit ? '/orders/confirmation' : originPath}
-          cancelState={baseOrder}
-        />
+        {/* FOOTER: actions */}
+        <div className="mt-6">
+          <FormActions
+            onSubmit={handleSubmitAll}
+            submitButtonText={t('button.confirm')}
+            cancelButtonText={t('formActions.cancel')}
+            confirmTitle={t('formActionsCreate.confirmTitle')}
+            confirmMessage={t('formActionsCreate.confirmMessage')}
+            confirmText={t('formActions.confirmText')}
+            cancelText={t('formActions.cancelText')}
+            cancelRedirect={originPath}
+            cancelState={{ ...baseOrder, products }}
+          />
+        </div>
       </div>
     </div>
   )

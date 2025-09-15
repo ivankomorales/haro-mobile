@@ -117,18 +117,14 @@ export default function AddGlaze() {
               <span className="w-16 text-sm text-gray-700 dark:text-gray-300">{formData.hex}</span>
             </div>
           </div>
-          {/* Image */}
-          <DropWrap
-            onFiles={(files) => {
-              setFormData((s) => ({ ...s, images: files })) // keep your current submit flow
-            }}
-          >
+
             <ImageUploader
               multiple={false}
               value={formData.images}
               onChange={(imgs) => setFormData({ ...formData, images: imgs })}
+              
             />
-          </DropWrap>
+
 
           {error && <div className="text-sm text-red-500">{error}</div>}
           {success && <div className="text-sm text-green-600">{success}</div>}

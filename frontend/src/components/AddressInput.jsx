@@ -1,6 +1,6 @@
 // src/components/AddressInput.jsx
 import FormInput from './FormInput'
-
+import { Trash2 } from 'lucide-react'
 // Renders a grouped set of input fields for address, city, ZIP code, and phone.
 //Supports validation errors, dynamic indexing, and a remove button for handling multiple address entries in a form.
 export default function AddressInput({
@@ -15,10 +15,10 @@ export default function AddressInput({
   city = 'City',
   zip = 'ZIP',
   phone = 'Phone (shipping)',
-  remove = 'Remove',
+  remove = 'Remove', //Changed to lucide trash icon
 }) {
   return (
-    <div className="mb-4 rounded border p-3 dark:border-neutral-700">
+    <div className="rounded-lg border border-neutral-200/80 bg-white p-3 shadow-sm dark:border-neutral-700 dark:bg-neutral-900">
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
         <FormInput
           label={address}
@@ -59,8 +59,12 @@ export default function AddressInput({
       </div>
 
       <div className="mt-3 flex justify-end">
-        <button type="button" onClick={onRemove} className="text-xs text-red-600 hover:underline">
-          {remove}
+        <button
+          type="button"
+          onClick={onRemove}
+          className="text-xs text-red-600 underline-offset-2 hover:underline"
+        >
+          <Trash2 className="h-5 w-5" />
         </button>
       </div>
     </div>
