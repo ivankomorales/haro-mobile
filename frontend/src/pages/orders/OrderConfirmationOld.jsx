@@ -11,73 +11,6 @@ import { formatProductsWithLabels } from '../../utils/transformProducts'
 import { makeGlazeMap, ensureGlazeObjects } from '../../utils/glazeUtils'
 import { buildOrderPayload } from '../../utils/orderPayload'
 
-// comments in English only
-function getApiMessage(err, fallback = 'error.generic') {
-  const msg = err?.response?.data?.message ?? err?.response?.data?.error ?? err?.message ?? fallback
-  return typeof msg === 'string' ? msg : JSON.stringify(msg)
-}
-
-// comments in English only
-// Normalize the order object coming from navigation state.
-// - Enforce shipping shape: { isRequired, addresses[] }
-// - Accept legacy fields (addresses[] at root, "address" alias for "street")
-// - Preserve both `street` and a UI-friendly `address` alias for downstream components
-function normalizeOrderForConfirmation(raw) {
-  if (!raw) return null
-  const order = { ...raw }
-
-  let shipping = order.shipping
-  if (!shipping || typeof shipping === 'boolean') {
-    shipping = { isRequired: !!shipping, addresses: [] }
-  }
-  if (!Array.isArray(shipping.addresses)) shipping.addresses = []
-
-  shipping.addresses = shipping.addresses
-    .map((a, idx) => {
-      const street = (a?.street || a?.address || '').trim() // <-- alias
-      const city = (a?.city || '').trim()
-      const state = (a?.state || '').trim()
-      const zip = (a?.zip || '').trim()
-      const country = (a?.country || 'Mexico').trim()
-      const phone = (a?.phone || '').trim()
-      const reference = (a?.reference || '').trim()
-      const countryCode = (a?.countryCode || '+52').trim()
-      const name = (a?.name || '').trim()
-      return {
-        id: a?.id ?? idx,
-        street,
-        city,
-        state,
-        zip,
-        country,
-        phone,
-        reference,
-        countryCode,
-        name,
-      }
-    })
-    // Borra sólo si TODOS los campos están vacíos
-    .filter((a) =>
-      [a.street, a.city, a.state, a.zip, a.country, a.phone, a.reference, a.name].some(Boolean)
-    )
-
-  order.shipping = shipping
-  delete order.addresses
-
-  order.customer = {
-    name: order.customer?.name || '',
-    lastName: order.customer?.lastName || '',
-    email: order.customer?.email || '',
-    phone: order.customer?.phone || '',
-    countryCode: order.customer?.countryCode || '+52',
-    socialMedia: order.customer?.socialMedia,
-  }
-
-  order.products = Array.isArray(order.products) ? order.products : []
-  return order
-}
-
-// comments in English only
 function summarizeProducts(products = []) {
   return products.map((p, i) => ({
     i,
@@ -97,42 +30,41 @@ function summarizeProducts(products = []) {
 export default function OrderConfirmation() {
   const location = useLocation()
   const navigate = useNavigate()
-  const rawOrder = location.state || null
-
-  // Normalize the incoming state once
-  const order = useMemo(() => normalizeOrderForConfirmation(rawOrder), [rawOrder])
-  if (!order) return null
-
-  const glazes = order.glazes || []
+  const order = location.state || null
+  const glazes = order?.glazes || []
   const glazeMap = useMemo(() => makeGlazeMap(glazes), [glazes])
 
-  // Hydrate glaze objects for UI (names/hex/images) without mutating original
+  // IMPORTANT: hydrate glaze labels & hex like in OrderDetails
+  // 1) hydrate products with glaze names/hex/images using the glazes list
   const hydratedProducts = useMemo(
-    () => ensureGlazeObjects(order.products || [], glazeMap),
-    [order.products, glazeMap]
+    () => ensureGlazeObjects(order?.products || [], glazeMap),
+    [order?.products, glazeMap]
   )
 
-  // UI formatting for labels (keeps objects)
-  const uiReadyProducts = useMemo(() => {
+  // 2) then format labels like in OrderDetails
+  const labeledProducts = useMemo(() => {
     return formatProductsWithLabels(hydratedProducts, t, glazes)
   }, [hydratedProducts, t, glazes])
 
-  // Require minimal state
+  // Build nested glaze objects so resolveGlaze() can render them
+  const uiReadyProducts = labeledProducts // already object-enriched
+
   useRequireState(
     (st) => st?.customer?.name && Array.isArray(st?.products) && st.products.length > 0,
     '/orders/new',
-    () => ({ originPath: order.originPath ?? '/orders' })
+    () => ({ originPath: location.state?.originPath ?? '/orders' })
   )
+
+  if (!order) return null
 
   const originPath = order.originPath ?? '/orders'
   const [submitting, setSubmitting] = useState(false)
 
-  // Totals (sum of quantity * price). Adjust if you use per-line discounts in UI.
+  // Subtotal = sum of line prices (NOT qty * price)
   const totals = useMemo(() => {
     const subtotal = (order.products || []).reduce((acc, p) => {
-      const qty = Number(p.quantity || 1)
       const price = Number(p.price || 0)
-      return acc + qty * price
+      return acc + price
     }, 0)
     const deposit = Number(order.deposit || 0)
     const remaining = Math.max(subtotal - deposit, 0)
@@ -167,15 +99,13 @@ export default function OrderConfirmation() {
       setSubmitting(true)
       showLoading(t('loading.orderCreate'))
 
-      // Build server payload:
-      // - Pass hydrated products so glaze objects are complete for mapping
-      // - Pass allGlazes and glazesLoaded to avoid wiping glaze IDs if list is not ready
+      // Build products compatible with new schema
       const payload = buildOrderPayload(
         { ...order, products: hydratedProducts },
         { allGlazes: glazes, glazesLoaded: glazes.length > 0, quick: false }
       )
 
-      console.log('Payload being sent to createOrder:', payload)
+      // console.log('Payload being sent to createOrder:', payload)
       const saved = await createOrder(payload)
 
       dismissToast()
@@ -192,14 +122,14 @@ export default function OrderConfirmation() {
     } catch (err) {
       console.error('Failed to confirm order:', err)
       dismissToast()
-      showError(getApiMessage(err, 'error.creatingOrder'))
+      showError(t('auth.serverError'))
     } finally {
       setSubmitting(false)
     }
   }
 
   return (
-    <div className="h-full min-h-0 rounded-xl bg-white dark:bg-neutral-900">
+    <div className="h-full min-h-0 bg-white dark:bg-neutral-900">
       <div className="mx-auto max-w-2xl px-4 py-6">
         <h1 className="mb-4 text-center text-xl font-semibold text-black dark:text-white">
           {t('order.confirm') || 'Confirm Order'}

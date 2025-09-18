@@ -1,12 +1,14 @@
 // comments in English only
-import { useEffect, useMemo, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { getStatusLabel, getStatusClasses } from '../utils/orderStatusUtils'
 import { getMessage as t } from '../utils/getMessage'
 import { formatDMY } from '../utils/date'
 import { ArrowUpDown, ArrowUp, ArrowDown, Pencil, Trash2 } from 'lucide-react'
 import { cancelOrderById } from '../api/orders' // NEW HELPER
 import { showError, showSuccess } from '../utils/toastUtils'
+import { getOriginPath } from '../utils/navigationUtils'
+import ConfirmModal from './ConfirmModal'
 
 function IndeterminateCheckbox({ checked, indeterminate, onChange, ariaLabel }) {
   const ref = useRef(null)
@@ -26,6 +28,7 @@ function IndeterminateCheckbox({ checked, indeterminate, onChange, ariaLabel }) 
   )
 }
 
+// Payment Calculations
 function getOrderTotal(order) {
   if (typeof order?.total === 'number') return order.total
   // Fallback (por si entra uno sin backfill):
@@ -38,6 +41,25 @@ function getOrderTotal(order) {
   }, 0)
   const deposit = Number(order?.deposit ?? 0)
   return Math.round(subtotal - deposit)
+}
+
+function getOrderSubtotal(order) {
+  if (typeof order?.subtotal === 'number') return Math.round(order.subtotal)
+  // Fallback (por si entra uno sin backfill):
+  const items = Array.isArray(order?.products) ? order.products : []
+  const subtotal = items.reduce((acc, p) => {
+    const qty = Number(p?.quantity ?? 1)
+    const price = Number(p?.price ?? 0)
+    const disc = Number(p?.discount ?? 0)
+    return acc + qty * Math.max(price - disc, 0)
+  }, 0)
+  return Math.round(subtotal)
+}
+
+function getOrderDue(order) {
+  const subtotal = getOrderSubtotal(order)
+  const deposit = Number(order?.deposit ?? 0)
+  return Math.max(0, Math.round(subtotal - deposit))
 }
 
 function StatusPill({ value }) {
@@ -68,6 +90,49 @@ function SortHeader({ label, column, sort, onSort }) {
   )
 }
 
+const handleConfirm = async () => {
+  if (confirmType !== 'delete' || !confirmId) return
+  setLoading(true)
+  try {
+    // si quieres súper simple: sin filtros, usa solo refreshStats=true
+    const qs = toQS({ refreshStats: true })
+
+    const res = await fetch(`/api/orders/${confirmId}?${qs}`, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+        // si usas JWT:
+        Authorization: `Bearer ${localStorage.getItem('token') || ''}`,
+      },
+    })
+    const data = await res.json()
+    if (!res.ok) throw new Error(data?.message || 'Cancel failed')
+
+    // ⬇️ Actualiza tus StatCards (asumiendo tienes setStats en props/estado)
+    if (data.stats) {
+      setStats(data.stats)
+    } else {
+      // por si aún no pegaste computeOrderStatsFromQuery en backend:
+      const resStats = await fetch('/api/orders/stats')
+      const stats = await resStats.json()
+      setStats(stats)
+    }
+
+    // (opcional) también puedes reflejar el cambio en la tabla localmente:
+    // setRows((rows) => rows.map(r => r._id === confirmId ? { ...r, status: 'cancelled' } : r))
+
+    // feedback
+    // toast.success('Pedido cancelado')
+  } catch (err) {
+    console.error(err)
+    // toast.error(err.message || 'No se pudo cancelar')
+  } finally {
+    setLoading(false)
+    setConfirmOpen(false)
+    setConfirmId(null)
+    setConfirmType(null)
+  }
+}
 /**
  * OrdersTable: simple desktop table with page-local selection.
  *
@@ -89,9 +154,18 @@ export default function OrdersTable({
   onRowClick,
   sort = 'orderDate:desc',
   onSort,
+  onCancelOrder,
   currency = 'MXN',
 }) {
+  // Modal
+  const [confirmOpen, setConfirmOpen] = useState(false)
+  const [confirmId, setConfirmId] = useState(null)
+  const [confirmType, setConfirmType] = useState(null)
+  const [busyId, setBusyId] = useState(null)
+
+  //Navigation
   const navigate = useNavigate()
+  const location = useLocation()
 
   const pageIds = useMemo(() => orders.map((o) => o._id), [orders])
   const selectedOnPage = useMemo(
@@ -161,6 +235,7 @@ export default function OrdersTable({
                 onSort={onSort}
               />
             </th>
+            <th className="px-3 py-2 text-right font-semibold">Actions</th>
           </tr>
         </thead>
 
@@ -180,20 +255,14 @@ export default function OrdersTable({
 
               // Edit Order
               const handleEdit = () => {
-                navigate(`/orders/${o._id}/edit`) // o '/orders/:id/edit-products'
+                navigate(`/orders/${o._id}/edit`, { state: { originPath: location.pathname } }) // o '/orders/:id/edit-products'
               }
 
               // Delete Order (soft-delete)
-              const handleDelete = async () => {
-                const ok = window.confirm(t('confirm.cancelOrder') || 'Cancel this order?')
-                if (!ok) return
-                try {
-                  await cancelOrderById(o._id)
-                  showSuccess('success.order.cancelled')
-                  // ideal: refrescar lista desde el padre; si no, emite un callback por props
-                } catch (e) {
-                  showError('error.cancellingOrder')
-                }
+              const handleDelete = (orderId) => {
+                setConfirmId(orderId)
+                setConfirmType('delete')
+                setConfirmOpen(true)
               }
 
               return (
@@ -238,7 +307,7 @@ export default function OrdersTable({
 
                   <td className="px-3 py-2 text-right align-middle">
                     <span className="font-medium tabular-nums">
-                      {fmtCurrency(getOrderTotal(o))}
+                      {fmtCurrency(getOrderSubtotal(o))}
                     </span>
                   </td>
 
@@ -252,7 +321,7 @@ export default function OrdersTable({
                           e.stopPropagation()
                           handleEdit()
                         }}
-                        className="rounded p-1 text-blue-600 hover:bg-neutral-100 hover:text-blue-800 dark:hover:bg-neutral-700"
+                        className="rounded p-1 text-blue-600 hover:bg-neutral-100 hover:text-blue-800 dark:text-blue-400/70 dark:hover:bg-neutral-700 dark:hover:text-blue-400/90"
                       >
                         <Pencil className="h-4 w-4" />
                       </button>
@@ -261,9 +330,9 @@ export default function OrdersTable({
                         title={t('button.delete') || 'Delete'}
                         onClick={(e) => {
                           e.stopPropagation()
-                          handleDelete()
+                          handleDelete(o._id)
                         }}
-                        className="rounded p-1 text-red-600 hover:bg-neutral-100 dark:hover:bg-neutral-700"
+                        className="rounded p-1 text-red-600 hover:bg-neutral-100 dark:text-red-400/70 dark:hover:bg-neutral-700 dark:hover:text-red-400/90"
                       >
                         <Trash2 className="h-4 w-4" />
                       </button>
@@ -275,6 +344,33 @@ export default function OrdersTable({
           )}
         </tbody>
       </table>
+      <ConfirmModal
+        open={confirmOpen}
+        onClose={() => {
+          if (busyId) return // do not close while working the request
+          setConfirmOpen(false)
+          setConfirmId(null)
+        }}
+        onConfirm={async () => {
+          if (!confirmId) return
+          try {
+            setBusyId(confirmId)
+            await onCancelOrder?.(confirmId)
+          } finally {
+            setBusyId(null)
+            setConfirmOpen(false)
+            setConfirmId(null)
+          }
+        }}
+        title={t('confirm.cancelOrder.title') || 'Cancel this order?'}
+        message={t('confirm.cancelOrder.message') || 'This action cannot be undone.'}
+        confirmText={
+          busyId && confirmId === busyId
+            ? t('common.working') || 'Working...'
+            : t('common.delete') || 'Delete'
+        }
+        cancelText={t('common.cancel') || 'Cancel'}
+      />
     </div>
   )
 }

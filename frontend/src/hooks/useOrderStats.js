@@ -1,29 +1,33 @@
 // src/hooks/useOrderStats.js
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { getOrderStats } from '../api/orders'
 
-export function useOrderStats({ filters, search, range = 'month', dateField = 'orderDate' }) {
+export function useOrderStats({
+  range = 'all',
+  dateField = 'orderDate',
+  includeCancelled = false,
+} = {}) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [stats, setStats] = useState(null)
-  const [curRange, setCurRange] = useState(range)
-  const bump = useRef(0) // manual invalidation counter
 
-  // Build stable params from current filters
+  // Current state (configurable from outside)
+  const [curRange, setRange] = useState(range)
+  const [curIncludeCancelled, setIncludeCancelled] = useState(includeCancelled)
+  const [curDateField, setDateField] = useState(dateField)
+
+  // Manual invalidation counter — but now using state
+  const [refreshIndex, setRefreshIndex] = useState(0)
+
+  // Parameters for the API
   const params = useMemo(() => {
     const p = {
       range: curRange,
-      dateField,
-      q: search || undefined,
-      status: filters?.status && filters.status !== 'all' ? filters.status : undefined,
-      urgent: filters?.isUrgent === '' ? undefined : filters?.isUrgent === 'true',
-      shipping: filters?.shippingRequired === '' ? undefined : filters?.shippingRequired === 'true',
+      dateField: curDateField,
     }
-    // Custom explicit dates override range
-    if (filters?.dateFrom) p.from = filters.dateFrom
-    if (filters?.dateTo) p.to = filters.dateTo
+    if (curIncludeCancelled) p.includeCancelled = true
     return p
-  }, [filters, search, curRange, dateField])
+  }, [curRange, curDateField, curIncludeCancelled])
 
   const fetchStats = useCallback(async () => {
     setLoading(true)
@@ -40,19 +44,24 @@ export function useOrderStats({ filters, search, range = 'month', dateField = 'o
   }, [params])
 
   useEffect(() => {
-    let ignore = false
-    ;(async () => {
-      await fetchStats()
-    })()
-    return () => {
-      ignore = true
-    }
-  }, [fetchStats, bump.current]) // eslint-disable-line
+    fetchStats()
+  }, [fetchStats, refreshIndex]) // notice refreshIndex here
 
   const refresh = useCallback(() => {
-    bump.current++
-    fetchStats()
-  }, [fetchStats])
+    // increment refreshIndex, triggering useEffect
+    setRefreshIndex((i) => i + 1)
+  }, [])
 
-  return { stats, loading, error, refresh, range: curRange, setRange: setCurRange }
+  return {
+    stats,
+    loading,
+    error,
+    range: curRange,
+    setRange,
+    dateField: curDateField,
+    setDateField,
+    includeCancelled: curIncludeCancelled,
+    setIncludeCancelled,
+    refresh,
+  }
 }

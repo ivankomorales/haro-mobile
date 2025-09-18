@@ -601,11 +601,11 @@ Ensure full dark mode support across all components.
 
 ### 2025/08/04 - 2025/09/06
 
-Backend / API
+## Backend / API
 
 Glaze model & controllers: Glaze { name, hex, code, image, isActive } with CRUD-ish endpoints (create/get/list/update/deactivate) and audit logging.
 
-Excel export:
+## Excel export:
 
 Populated product glaze relations and extracted glaze names/hex robustly.
 
@@ -615,7 +615,7 @@ Introduced flexible column set, auto-fit, filters, and safer XML output.
 
 (Note) Name+code concatenation for Excel is pending server-side; UI formatter exists.
 
-Frontend — Networking & Auth
+## Frontend — Networking & Auth
 
 fetchWithAuth overhaul:
 
@@ -627,7 +627,7 @@ Standardized 401/403 handling with optional { navigate, logout } hook to redirec
 
 Added quick NET logging and guidance to avoid localhost on phones.
 
-Login flow:
+## Login flow:
 
 Switched to fetchWithAuth for /api/auth/login (consistent headers/body).
 
@@ -635,7 +635,7 @@ Fixed missing import (fetchWithAuth) bug that blocked login.
 
 Clarified where not to use fetchWithAuth as a form helper vs. API module.
 
-Frontend — Routing & Layout
+## Frontend — Routing & Layout
 
 Private routes under a layout: Nested under DashboardLayout so /products/glazes and other pages render inside the app chrome (AppBar/Sidebar/BottomNav).
 
@@ -643,7 +643,7 @@ Resolved “No routes matched” for /products/glazes by ensuring nesting and co
 
 Return navigation: Adopted state: { originPath, from, returnTo } and getOriginPath() so Cancel/Back returns to Glazes list (fallbacks to /products/glazes).
 
-Frontend — i18n
+## Frontend — i18n
 
 Locales: Added full Spanish dictionary; fixed import/export shapes (named vs default) to eliminate en is not defined.
 
@@ -659,7 +659,7 @@ Drag-and-drop via DropWrap + ImageUploader.
 
 Cloudinary upload on submit; sends { name, colorHex, code, image }.
 
-Glaze list (page):
+## Glaze list (page):
 
 List view (not grid) with image preview instead of hex chip.
 
@@ -681,7 +681,7 @@ Glaze labels in UI: Helper to format glaze display as Name (CODE) for on-screen 
 
 Excel export UI keeps name columns while color-coding cells; concatenating code into Excel labels is a small remaining server-side tweak if you want it.
 
-Mobile / PWA / UX polish
+## Mobile / PWA / UX polish
 
 Mobile network fixes: Left API_BASE empty in dev + Vite proxy to avoid CORS/localhost traps on phone.
 
@@ -693,7 +693,7 @@ Switched page shells to min-h: 100svh (or 100dvh where appropriate) and ensured 
 
 BottomNav uses env(safe-area-inset-bottom) and fixed positioning; optional “hide on keyboard open” class provided.
 
-PWA setup:
+## PWA setup:
 
 Added vite-plugin-pwa config, manifest with maskable icons.
 
@@ -705,10 +705,44 @@ Delivered a set of placeholder icons and wiring instructions.
 
 Clarified install expectations: HTTPS (or localhost) required for Android install prompts; iOS installs via “Add to Home Screen”.
 
-Dev workflow / Debuggability
+## Dev workflow / Debuggability
 
 Mobile console guidance (Chrome Inspect / Safari Web Inspector).
 
 Explained secure: false in Vite proxy (only relevant for HTTPS self-signed targets).
 
 HMR/socket pitfalls called out; removed fragile HMR host overrides.
+
+### 2025/09/07 - 2025/09/14
+
+## Layout & UI
+
+Unified layout between AddProduct and EditOrder (same sections, aligned buttons, fixed cart on desktop).
+
+Improved alignment in stepper, cart pluralization, and subtle visual styling.
+
+ImageUploader unified with drag & drop support, single-mode replacement, and UX fixes (label ↔ input binding).
+
+Glazes accordion with custom icons.
+
+## EditOrder
+
+Added decorations support (gold, name, description) with toggleDecoration helper.
+
+Fixed shipping.addresses initialization and unified data loading (order + glazes in parallel, fallback to /orders).
+
+Implemented originPath for consistent navigation.
+
+Backend validations: required shipping, deposit ≥ 0, coherent products.
+
+Forced markModified on arrays/subdocs to ensure persistence.
+
+Cleanup: removed duplicate getOrderById calls, simplified payload, normalized deposit string → number before saving.
+
+## Backend / DB
+
+Added subtotal and total to orderSchema for faster loading.
+
+Removed special total sort logic from orderController.
+
+Optimized stats payload with $project and $group.

@@ -1,5 +1,5 @@
 // src/pages/orders/AddProduct.jsx
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, useMemo } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { getAllGlazes } from '../../api/glazes'
 import FormInput from '../../components/FormInput'
@@ -14,6 +14,69 @@ import GlazeTypeahead from '../../components/GlazeTypeahead'
 import AddedProductsCart from '../../components/AddedProductsCart'
 import { toProductPayload } from '../../utils/orderPayload'
 import { Paintbrush, Sparkles, Type as TypeIcon, Cat, Dog } from 'lucide-react' // icons for headers/cards
+import { createOrder } from '../../api/orders'
+import { buildOrderPayload } from '../../utils/orderPayload'
+import { getApiMessage } from '../../utils/errorUtils' // o donde lo tengas
+import { makeGlazeMap, ensureGlazeObjects } from '../../utils/glazeUtils'
+
+function normalizeOrderForSubmit(raw) {
+  if (!raw) return null
+  const order = { ...raw }
+
+  // --- shipping shape & cleanup (mirror of OrderConfirmation) ---
+  let shipping = order.shipping
+  if (!shipping || typeof shipping === 'boolean') {
+    shipping = { isRequired: !!shipping, addresses: [] }
+  }
+  if (!Array.isArray(shipping.addresses)) shipping.addresses = []
+
+  const trim = (v) => (v ?? '').toString().trim()
+  shipping.addresses = shipping.addresses
+    .map((a, idx) => {
+      const street = trim(a?.street || a?.address) // alias support
+      const city = trim(a?.city)
+      const state = trim(a?.state)
+      const zip = trim(a?.zip)
+      const country = trim(a?.country || 'Mexico')
+      const phone = trim(a?.phone)
+      const reference = trim(a?.reference)
+      const countryCode = trim(a?.countryCode || '+52')
+      const name = trim(a?.name)
+      return {
+        id: a?.id ?? idx,
+        street,
+        city,
+        state,
+        zip,
+        country,
+        phone,
+        reference,
+        countryCode,
+        name,
+      }
+    })
+    // keep only non-empty addresses
+    .filter((a) =>
+      [a.street, a.city, a.state, a.zip, a.country, a.phone, a.reference, a.name].some(Boolean)
+    )
+
+  order.shipping = shipping
+  delete order.addresses // legacy cleanup
+
+  // --- customer normalization ---
+  order.customer = {
+    name: order.customer?.name || '',
+    lastName: order.customer?.lastName || '',
+    email: order.customer?.email || '',
+    phone: order.customer?.phone || '',
+    countryCode: order.customer?.countryCode || '+52',
+    socialMedia: order.customer?.socialMedia,
+  }
+
+  order.deposit = Number(order.deposit || 0)
+  order.products = Array.isArray(order.products) ? order.products : []
+  return order
+}
 
 export default function AddProduct() {
   const navigate = useNavigate()
@@ -31,6 +94,8 @@ export default function AddProduct() {
   const objectUrls = useRef([]) // for previews cleanup
   const fileInputRef = useRef(null)
   const [errors, setErrors] = useState({})
+
+  const glazeMap = useMemo(() => makeGlazeMap(glazes), [glazes])
 
   const [formData, setFormData] = useState({
     type: '',
@@ -51,6 +116,7 @@ export default function AddProduct() {
   })
 
   const isEditing = editingIndex !== null
+  const [submitting, setSubmitting] = useState(false)
 
   const isFormValid = () => {
     const priceOk = Number(formData.price) > 0
@@ -233,13 +299,17 @@ export default function AddProduct() {
   }
 
   const handleSubmitAll = async () => {
+    if (submitting) return
     if (!products.length) {
       showError(t('errors.order.missingProduct'))
       return
     }
 
+    setSubmitting(true)
+
+    // 1) Upload images if any
     const shouldUploadImages = products.some((p) => p.images && p.images.length > 0)
-    const toastId = shouldUploadImages ? showLoading('loading.image') : null
+    const imgToastId = shouldUploadImages ? showLoading('loading.image') : null
 
     try {
       const uploadedProducts = await Promise.all(
@@ -253,25 +323,51 @@ export default function AddProduct() {
         })
       )
 
+      // 2) Adapt UI product → domain product (keeps glaze ids; adds label fields)
       const finalProducts = uploadedProducts.map((p) => toProductPayload(p, glazes))
 
-      if (toastId) dismissToast(toastId)
+      if (imgToastId) dismissToast(imgToastId)
       if (shouldUploadImages) showSuccess('success.image.uploaded')
 
-      const fullOrder = { ...baseOrder, products: finalProducts }
+      // 3) Normalize draft like OrderConfirmation (shipping/customer/cleanup)
+      const draft = normalizeOrderForSubmit({ ...baseOrder, products: finalProducts })
 
-      navigate('/orders/confirmation', {
-        state: { ...fullOrder, originPath: baseOrder.originPath ?? '/orders', glazes },
-      })
+      // 4) Hydrate glazes before payload to avoid wiping ids when list isn't ready
+      const hydratedProducts = ensureGlazeObjects(draft.products || [], glazeMap)
+
+      // 5) Build payload with same flags used in OrderConfirmation (quick: false)
+      showLoading(t('loading.orderCreate'))
+      const payload = buildOrderPayload(
+        { ...draft, products: hydratedProducts },
+        { allGlazes: glazes, glazesLoaded: glazes.length > 0, quick: false }
+      )
+
+      // 6) Create order
+      const saved = await createOrder(payload)
+      dismissToast()
+      showSuccess(t('success.order.created'))
+
+      // 7) Go straight to details (replace to avoid back to AddProduct)
+      if (saved?._id) {
+        navigate(`/orders/${saved._id}/details`, {
+          replace: true,
+          state: { originPath: baseOrder.originPath ?? '/orders' },
+        })
+      } else {
+        navigate('/orders', { replace: true })
+      }
     } catch (err) {
-      console.error('Error uploading images before submit:', err)
-      if (toastId) dismissToast(toastId)
-      showError(t('errors.image.uploadFailed'))
+      console.error('Error creating order from AddProduct:', err)
+      dismissToast()
+      if (imgToastId) dismissToast(imgToastId)
+      showError(getApiMessage(err, 'error.creatingOrder'))
+    } finally {
+      setSubmitting(false)
     }
-  }
+  } // end handleSubmitAll
 
   return (
-    <div className="h-full min-h-0 bg-white dark:bg-neutral-900 dark:text-gray-100">
+    <div className="h-full min-h-0 rounded-xl bg-white dark:bg-neutral-900 dark:text-gray-100">
       {/* bottom padding so BottomNavBar doesn't overlap */}
       <div className="mx-auto max-w-6xl px-4 py-6 pb-[calc(var(--bottom-bar-h)+20px)]">
         <h1 className="mb-6 text-center text-xl font-semibold">
@@ -322,7 +418,7 @@ export default function AddProduct() {
                   {/* Quantity stepper */}
                   <div className="shrink-0 whitespace-nowrap">
                     <label className="text-sm">{t('product.qty') || 'Qty'}:</label>
-                    <div className="mt-1 flex items-center gap-3">
+                    <div className="mt-1 flex items-center gap-3 rounded-lg border border-neutral-300 dark:border-neutral-700">
                       <button
                         type="button"
                         aria-label="Decrease quantity"
@@ -421,7 +517,7 @@ export default function AddProduct() {
                       <p className="mt-0.5 text-xs text-red-500">{t(errors.figures)}</p>
                     )}
                   </div>
-                  <div className="flex items-center gap-3 border border-neutral-300 rounded-lg">
+                  <div className="flex items-center gap-3 rounded-lg border border-neutral-300 dark:border-neutral-700">
                     <button
                       type="button"
                       aria-label="Decrease figures"
@@ -618,22 +714,23 @@ export default function AddProduct() {
               onRemove={handleRemoveProduct}
               t={t}
             />
+            {/* FOOTER: actions */}
+            <div className="mt-6">
+              <FormActions
+                onSubmit={handleSubmitAll}
+                submitButtonText={t('button.confirm')}
+                cancelButtonText={t('formActions.cancel')}
+                confirmTitle={t('formActionsCreate.confirmTitle')}
+                confirmMessage={t('formActionsCreate.confirmMessage')}
+                confirmText={t('formActions.confirmText')}
+                cancelText={t('formActions.cancelText')}
+                cancelRedirect={originPath}
+                cancelState={{ ...baseOrder, products }}
+                submitDisabled={submitting}
+                submitLoading={submitting}
+              />
+            </div>
           </aside>
-        </div>
-
-        {/* FOOTER: actions */}
-        <div className="mt-6">
-          <FormActions
-            onSubmit={handleSubmitAll}
-            submitButtonText={t('button.confirm')}
-            cancelButtonText={t('formActions.cancel')}
-            confirmTitle={t('formActionsCreate.confirmTitle')}
-            confirmMessage={t('formActionsCreate.confirmMessage')}
-            confirmText={t('formActions.confirmText')}
-            cancelText={t('formActions.cancelText')}
-            cancelRedirect={originPath}
-            cancelState={{ ...baseOrder, products }}
-          />
         </div>
       </div>
     </div>

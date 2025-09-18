@@ -3,7 +3,7 @@ const ApiError = require("../utils/ApiError");
 const { logEvent } = require("../utils/audit");
 
 //
-// 🧩 HELPER: FIND OR CREATE CUSTOMER
+// HELPER: FIND OR CREATE CUSTOMER
 //
 // Used during order creation.
 // If no email or social media is found, creates a new customer by name.

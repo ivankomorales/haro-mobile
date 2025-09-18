@@ -94,7 +94,7 @@ export default async function fetchWithAuth(
 
     if (res.status === 401 || res.status === 403) {
       if (logout) logout(true)
-      else if (navigate) navigate('/login')
+      else if (navigate) navigate('/') //Navigate to /login
       throw new Error('auth.sessionExpired')
     }
 

@@ -33,7 +33,7 @@ export default function GlazeListPage() {
   // sorting: 'name' | 'code' | 'hex' | 'status'
   const [sortKey, setSortKey] = useState('name')
   const [sortDir, setSortDir] = useState('asc') // 'asc' | 'desc'
-
+  // Modal
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [confirmType, setConfirmType] = useState(null) // 'deactivate' | 'activate'
   const [confirmId, setConfirmId] = useState(null)
@@ -399,7 +399,7 @@ export default function GlazeListPage() {
                             })
                           }
                         >
-                          <Pencil className="h-4 w-4" />
+                          <Pencil className="h-4 w-4 dark:text-blue-400/70 dark:hover:text-blue-400/90" />
                         </IconButton>
 
                         {g.isActive ? (
@@ -408,7 +408,7 @@ export default function GlazeListPage() {
                             disabled={busyId === g._id}
                             onClick={() => openConfirm('deactivate', g._id)}
                           >
-                            <Trash2 className="h-4 w-4 text-red-600 dark:text-pink-600" />
+                            <Trash2 className="h-4 w-4 dark:text-red-400/70 dark:hover:text-red-400/90" />
                           </IconButton>
                         ) : (
                           <IconButton

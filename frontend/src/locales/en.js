@@ -17,6 +17,8 @@ export const en = {
   },
   // ─── ERRORS & VALIDATION ──────────────────────────────── (KEEP THESE)
   errors: {
+    zip: { mx5digits: 'El CP debe tener 5 dígitos' },
+    user: { invalidPhone: 'El teléfono debe tener 10 dígitos' },
     address: {
       missingAddress: 'Address is required',
       missingCity: 'City is required',
@@ -57,7 +59,13 @@ export const en = {
 
   validation: {
     address: 'Address is required.',
-    city: 'City is required.',
+    street: 'Street is required',
+    state: 'State is required',
+    country: 'Country is required',
+    city: 'City is required',
+    zip: 'ZIP code is required',
+    phone: 'Phone is required',
+
     facebookFormat: 'Facebook username must start with "/"',
     incompleteAddressBeforeAdding: 'Complete the current address before adding another one.',
     incompleteShipping: 'Please complete all shipping address fields before adding a new one.',
@@ -65,10 +73,9 @@ export const en = {
     nameOnlyLetters: 'First name can only contain letters.',
     lastNameOnlyLetters: 'Last name can only contain letters.',
     invalidDeliveryDate: 'The delivery date must be after the order date.',
-    phone: 'Phone is required.',
+
     positiveNumber: 'Value must be greater than 0',
     requiredFields: 'Please fill all required fields.',
-    zip: 'ZIP code is required.',
   },
 
   // ─── SUCCESS ─────────────────────────────────────────────
@@ -247,9 +254,13 @@ export const en = {
     shippingAddress: 'Shipping address',
     addAddress: '+ Add Address',
     address: 'Address',
+    street: 'Street',
     city: 'City',
+    state: 'State',
     zip: 'ZIP code',
+    country: 'Country',
     phoneShipping: 'Phone (shipping)',
+    reference: 'Reference',
 
     // ─── Dates (if not already defined) ────────────────────
     orderDate: 'Order date',
@@ -364,6 +375,7 @@ export const en = {
     confirm: 'Confirm',
     save: 'Save',
     cancel: 'Cancel',
+    delete: 'Delete',
     cancelEdit: 'Cancel Edit',
     ok: 'OK',
     search: 'Search',
@@ -405,6 +417,7 @@ export const en = {
     cancel: 'Cancel', // ← NEW
     working: 'Working…', // ← NEW
     na: 'N/A', // ← NEW
+    delete: 'Delete',
   },
 
   // pagination
@@ -450,6 +463,7 @@ export const en = {
     ignore: 'Ignore',
     yes: 'Yes',
     no: 'No',
+    orderLoading: 'Loading Orders...',
   },
 
   // ─── STATS ───────────────────────────
@@ -517,5 +531,15 @@ export const en = {
   login: {
     email: 'Email',
     password: 'Password',
+  },
+  confirm: {
+    cancelOrder: {
+      title: 'Cancel Order',
+      message: 'Are you sure you want to cancel this order?',
+    },
+  },
+  loading: {
+    image: 'Loading Images...',
+    orderCreate: 'Creating Order',
   },
 }

@@ -48,7 +48,7 @@ export default function StatCards({
         value: new Intl.NumberFormat('es-MX', {
           style: 'currency',
           currency: 'MXN',
-        }).format(totals?.net ?? 0),
+        }).format(totals?.subtotal ?? 0),
         // subtitle: t?.('stats.grossMinusDeposit') || 'Gross − Deposit',
       },
     ],

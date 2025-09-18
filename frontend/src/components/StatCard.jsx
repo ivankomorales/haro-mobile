@@ -15,7 +15,7 @@ export default function StatCard({
   }
   return (
     <div
-      className={`rounded-lg border border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-900 ${sizes[size]} ${className}`}
+      className={`mb-5 rounded-lg border border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-900 ${sizes[size]} ${className}`}
     >
       <div className="text-center opacity-70 sm:text-left">{title}</div>
       {loading ? (
@@ -23,11 +23,11 @@ export default function StatCard({
           <Spinner size={24} className="text-neutral-500 dark:text-neutral-300" />
         </div>
       ) : (
-        <div className="mt-2 text-center text-2xl font-semibold tabular-nums sm:pl-2 sm:text-left sm:text-3xl">
+        <div className="mt-2 mb-5 text-center text-2xl font-semibold tabular-nums sm:pl-2 sm:text-left sm:text-3xl">
           {value}
         </div>
       )}
-      {subtitle ? <div className="mt-0.5 text-right text-xs opacity-70">{subtitle}</div> : null}
+      {subtitle ? <div className="mt-0.5 border-t-amber-50 text-right text-xs opacity-70">{subtitle}</div> : null}
     </div>
   )
 }

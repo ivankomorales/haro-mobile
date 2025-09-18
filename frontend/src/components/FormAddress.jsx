@@ -52,7 +52,7 @@ export default function FormAddress({
             <p className="text-xs text-neutral-500 dark:text-neutral-400">{emptyHint}</p>
             <button
               type="button"
-              onClick={onAdd}
+              onClick={() => onAdd()}
               className="mt-3 rounded-md bg-neutral-900 px-3 py-2 text-sm text-white hover:bg-neutral-800 dark:bg-amber-500 dark:hover:bg-amber-600"
             >
               {addButton}
@@ -64,13 +64,13 @@ export default function FormAddress({
             <div className="space-y-4">
               {addresses.map((addr, idx) => (
                 <AddressInput
-                  key={idx}
+                  key={addr?._id ?? idx} // Prefer stable keys if available
                   index={idx}
                   value={addr}
                   errors={errors[idx] || {}}
                   errorFormatter={errorFormatter}
                   onRemove={() => onRemove(idx)}
-                  onChange={(field, val) => onChange(idx, field, val)}
+                  onChange={onChange}
                   {...addressInputTexts}
                 />
               ))}
@@ -79,7 +79,7 @@ export default function FormAddress({
             {/* Footer: full-width "Add address" button */}
             <button
               type="button"
-              onClick={onAdd}
+              onClick={() => onAdd()}
               className="mt-4 w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm font-medium hover:bg-neutral-100 dark:border-neutral-700 dark:bg-neutral-800 dark:text-white dark:hover:bg-neutral-700"
             >
               {addOtherButton}

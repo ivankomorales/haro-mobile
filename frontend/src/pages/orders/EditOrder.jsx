@@ -4,13 +4,13 @@ import { useNavigate, useParams, useLocation } from 'react-router-dom'
 import { getOrderById, updateOrderById } from '../../api/orders'
 import { getAllGlazes } from '../../api/glazes'
 import { uploadToCloudinary } from '../../utils/uploadToCloudinary'
-import { toProductPayload } from '../../utils/orderPayload'
 import AddedProductsCart from '../../components/AddedProductsCart'
 import { getMessage as t } from '../../utils/getMessage'
 import { getOriginPath } from '../../utils/navigationUtils'
 import { showError, showSuccess, showLoading, dismissToast } from '../../utils/toastUtils'
 import { Menu, MenuButton, MenuItem, MenuItems, Switch } from '@headlessui/react'
-import { validateBaseForm, cleanAddresses } from '../../utils/orderBuilder'
+import { toProductPayload, buildOrderPayload } from '../../utils/orderPayload'
+import { getApiMessage } from '../../utils/errorUtils' // if you have it
 import { useLayout } from '../../context/LayoutContext'
 import FormInput from '../../components/FormInput'
 import FormActions from '../../components/FormActions'
@@ -28,6 +28,7 @@ import {
 } from 'lucide-react'
 import GlazeTypeahead from '../../components/GlazeTypeahead'
 import ImageUploader from '../../components/ImageUploader'
+import { useShippingAddresses } from '../../hooks/useShippingAddresses'
 
 const TABS = { CUSTOMER: 'customer', PRODUCT: 'product' }
 
@@ -46,14 +47,21 @@ export default function EditOrder() {
 
   const { setTitle, setShowSplitButton } = useLayout()
 
-  // productos y glazes
+  // products and glazes
   const [products, setProducts] = useState([])
   const [glazes, setGlazes] = useState([])
-  const [editingIndex, setEditingIndex] = useState(null) // para editar un producto
+  const [editingIndex, setEditingIndex] = useState(null) // to edit a product
   const isEditingProduct = editingIndex !== null
 
-  const emptyAddress = { address: '', city: '', zip: '', phone: '' }
-  const isShippingOn = (v) => v === true || v?.isRequired === true || v?.active === true
+  const emptyAddress = {
+    street: '',
+    city: '',
+    state: '',
+    zip: '',
+    country: 'Mexico',
+    phone: '',
+    reference: '',
+  }
 
   const [formData, setFormData] = useState({
     name: '',
@@ -74,8 +82,8 @@ export default function EditOrder() {
     type: '',
     quantity: 1,
     figures: 1,
-    price: '', // string para que el 0 placeholder no se “pegue”
-    discount: '', // idem
+    price: '', // string so the 0 placeholder doesn’t “stick”
+    discount: '', // same idea
     glazeInterior: '',
     glazeExterior: '',
     description: '',
@@ -86,14 +94,14 @@ export default function EditOrder() {
   const fileInputRef = useRef(null)
   const [errors, setErrors] = useState({})
 
-  // helpers de inputs (EditOrder / NewOrder)
+  // input helpers (EditOrder / NewOrder)
   const handleChangeAndClearError = (eOrName, maybeValue) => {
-    // Soporta tanto onChange(e) como set programático: handleChangeAndClearError('campo', valor)
+    // Supports both onChange(e) and programmatic set: handleChangeAndClearError('field', value)
     if (eOrName && eOrName.target) {
       const { name, value, type } = eOrName.target
       setFormData((prev) => ({
         ...prev,
-        // Para inputs type="number" guardamos como string para no forzar NaN ni concatenar ceros
+        // For inputs type="number" store as string to avoid forcing NaN or concatenating zeros
         [name]: type === 'number' ? String(value) : value,
       }))
       setErrors((prev) => ({ ...prev, [name]: null }))
@@ -105,53 +113,24 @@ export default function EditOrder() {
     }
   }
 
-  // opcional: versión simple si a veces quieres solo setear sin tocar errors
+  // optional: simple version if sometimes you just want to set without touching errors
   const handleChange = (e) => {
-    const { name, value, type } = e.target
-    setFormData((prev) => ({ ...prev, [name]: type === 'number' ? String(value) : value }))
-  }
-  //Shipping - Address Handlers
-  const handleToggleShipping = (next) => {
-    setErrors((prev) => ({ ...prev, addresses: null }))
-    setFormData((prev) => {
-      const on = typeof next === 'boolean' ? next : !isShippingOn(prev.shipping)
-      return { ...prev, shipping: { isRequired: on } }
-    })
-  }
-
-  const addAddress = () => {
-    const last = formData.shipping?.addresses?.at(-1)
-    const isIncomplete = last && (!last.address || !last.city || !last.zip || !last.phone)
-
-    if (isIncomplete) {
-      showError('validation.incompleteAddressBeforeAdding')
-      return
+    const target = e.target
+    const name = target.name
+    let value = target.value
+    // Solo transforma números si realmente es <input type="number">
+    if (target.tagName === 'INPUT' && target.type === 'number') {
+      value = String(value)
     }
-
-    setFormData((prev) => {
-      const list = Array.isArray(prev.shipping?.addresses) ? prev.shipping.addresses : []
-      return {
-        ...prev,
-        shipping: { ...prev.shipping, isRequired: true, addresses: [...list, { ...emptyAddress }] },
-      }
-    })
+    setFormData((prev) => ({ ...prev, [name]: value }))
   }
 
-  const updateAddress = (index, field, value) => {
-    setFormData((prev) => {
-      const list = Array.isArray(prev.shipping?.addresses) ? [...prev.shipping.addresses] : []
-      list[index] = { ...list[index], [field]: value }
-      return { ...prev, shipping: { ...prev.shipping, addresses: list } }
-    })
-  }
-
-  const removeAddress = (index) => {
-    setFormData((prev) => {
-      const list = Array.isArray(prev.shipping?.addresses) ? [...prev.shipping.addresses] : []
-      list.splice(index, 1)
-      return { ...prev, shipping: { ...prev.shipping, addresses: list } }
-    })
-  } // end Shipping - Address Handlers
+  // Shipping - Address Handlers
+  const { updateAddress, addAddress, removeAddress, toggleShipping } = useShippingAddresses(
+    formData,
+    setFormData
+  )
+  // end Shipping - Address Handlers
 
   const [currentSocialType, setCurrentSocialType] = useState('instagram')
   const [socialInput, setSocialInput] = useState('')
@@ -202,17 +181,25 @@ export default function EditOrder() {
     }))
 
   useEffect(() => {
-    setTitle(t('order.editTitle'))
+    // Si ya tenemos el número de orden, lo usamos en el título
+    if (formData?.orderId) {
+      setTitle(`${t('order.editTitle')} – ${formData.orderId}`)
+    } else {
+      // Mientras no cargue, dejamos el título base
+      setTitle(t('order.editTitle'))
+    }
+
     setShowSplitButton(false)
+
     return () => {
       setTitle('Haro Mobile')
       setShowSplitButton(true)
     }
-  }, [])
+  }, [formData?.orderId, t])
 
-  // Carga inicial: orden + glazes (en 1 solo efecto)
+  // Initial load: order + glazes (in a single effect)
   useEffect(() => {
-    let alive = true // evita setState si el componente se desmonta
+    let alive = true // prevents setState if the component unmounts
 
     ;(async () => {
       try {
@@ -223,11 +210,12 @@ export default function EditOrder() {
         // 1) Glazes
         setGlazes(glz)
 
-        // 2) Productos (para el carrito)
+        // 2) Products (for the cart)
         setProducts(order.products || [])
-
-        // 3) Form base con shipping.addresses adentro
+        // console.log('EDIT > raw order from API:', JSON.stringify(order.shipping, null, 2))
+        // 3) Base form with shipping.addresses inside
         setFormData({
+          orderId: order.orderID,
           name: order.customer?.name || '',
           lastName: order.customer?.lastName || '',
           phone: order.customer?.phone || '',
@@ -235,11 +223,29 @@ export default function EditOrder() {
           email: order.customer?.email || '',
           orderDate: order.orderDate?.slice(0, 10) || '',
           deliverDate: order.deliverDate?.slice(0, 10) || '',
-          deposit: String(order.deposit ?? ''), // mantener como string en UI
+          deposit: String(order.deposit ?? ''), // keep as string in UI
           shipping: {
             isRequired: !!(order.shipping?.isRequired || order.shipping?.active),
-            // fallback por si hay pedidos legacy con addresses a nivel raíz
-            addresses: order.shipping?.addresses || order.addresses || [],
+            addresses: (order.shipping?.addresses || order.addresses || [])
+              .map((a) => ({
+                // keep subdoc _id only; DO NOT add "id"
+                _id: a?._id ? String(a._id) : undefined,
+                street: (a?.street || a?.address || '').trim(),
+                city: (a?.city || '').trim(),
+                state: (a?.state || '').trim(),
+                zip: String(a?.zip || '')
+                  .replace(/\D+/g, '')
+                  .slice(0, 5),
+                country: (a?.country || 'Mexico').trim(),
+                phone: String(a?.phone || '')
+                  .replace(/\D+/g, '')
+                  .slice(0, 10),
+                reference: (a?.reference || '').trim(),
+                countryCode: (a?.countryCode || '+52').trim(),
+                name: (a?.name || '').trim(),
+              }))
+              // keep only rows that are not totally empty (optional)
+              .filter((a) => a.street || a.city || a.phone || a.name),
           },
           socialMedia: order.customer?.socialMedia || { instagram: '', facebook: '' },
           status: order.status || 'new',
@@ -256,53 +262,6 @@ export default function EditOrder() {
       alive = false
     }
   }, [id, navigate])
-
-  const handleUpdateOrder = async (e) => {
-    e.preventDefault()
-    setErrors({})
-
-    const errs = validateBaseForm(formData)
-    if (Object.keys(errs).length > 0) {
-      setErrors(errs)
-      showError('validation.requiredFields')
-      if (errs.deliverDate) showError('validation.invalidDeliveryDate')
-      if (errs.addresses) showError('validation.incompleteShipping')
-      return
-    }
-
-    const coerceShippingForPayload = (fd) => ({
-      isRequired: isShippingOn(fd.shipping),
-      addresses:
-        typeof fd.shipping === 'boolean'
-          ? cleanAddresses(fd.addresses || [])
-          : cleanAddresses(fd.shipping?.addresses || fd.addresses || []),
-    })
-    // ✅ Build payload in correct shape for backend
-    const payload = {
-      customer: {
-        name: formData.name,
-        lastName: formData.lastName,
-        phone: formData.phone,
-        countryCode: formData.countryCode,
-        email: formData.email,
-        socialMedia: formData.socialMedia,
-      },
-      orderDate: formData.orderDate,
-      deliverDate: formData.deliverDate,
-      deposit: Number(formData.deposit || 0),
-      shipping: coerceShippingForPayload(formData),
-      status: formData.status,
-      notes: formData.notes,
-    }
-
-    try {
-      await updateOrderById(id, payload)
-      showSuccess('success.orderUpdated')
-      navigate(`/orders/${id}`)
-    } catch (err) {
-      showError('error.updatingOrder')
-    }
-  }
 
   // Validation and product edit helpers (compact)
   const pValidate = () => {
@@ -352,7 +311,7 @@ export default function EditOrder() {
     })
     setEditingIndex(i)
     setPErrors({})
-    setTab(TABS.PRODUCT) // te lleva a la pestaña de producto al editar
+    setTab(TABS.PRODUCT) // takes you to the product tab when editing
   }
 
   const cancelEditProduct = () => {
@@ -393,6 +352,12 @@ export default function EditOrder() {
         interiorImage: interior?.image || '',
         exteriorImage: exterior?.image || '',
       },
+      decorations: {
+        hasGold: !!pForm?.decorations?.hasGold,
+        hasName: !!pForm?.decorations?.hasName,
+        // outerDrawing: !!pForm?.decorations?.outerDrawing,
+        decorationDescription: pForm?.decorations?.decorationDescription || '',
+      },
       ...(isEditingProduct && products[editingIndex]?._id
         ? { _id: products[editingIndex]._id }
         : {}),
@@ -406,14 +371,14 @@ export default function EditOrder() {
       showSuccess('success.product.added')
     }
     cancelEditProduct()
-  }
-  // End validation and product helperss
+  } // end addOrSaveProduct
+  // End validation and product helpers
 
   // Save All
   const saveAll = async (e) => {
     e?.preventDefault?.()
 
-    // 1) Si hay un producto en edición y no diste "Save", lo volcamos al array.
+    // 1) If there’s a product being edited, validate and merge it into the array first.
     let workingProducts = products
     if (isEditingProduct) {
       const eProd = pValidate()
@@ -443,25 +408,28 @@ export default function EditOrder() {
           interiorImage: interior?.image || '',
           exteriorImage: exterior?.image || '',
         },
-        // conserva _id si el producto ya existe en DB
+        decorations: {
+          hasGold: !!pForm?.decorations?.hasGold,
+          hasName: !!pForm?.decorations?.hasName,
+          // outerDrawing: !!pForm?.decorations?.outerDrawing,
+          decorationDescription: pForm?.decorations?.decorationDescription || '',
+        },
         ...(products[editingIndex]?._id ? { _id: products[editingIndex]._id } : {}),
       }
 
       workingProducts = products.map((p, i) => (i === editingIndex ? uiProduct : p))
-      setProducts(workingProducts) // refleja en UI
-      setEditingIndex(null) // salimos de modo edición
-      // pReset() opcional si quieres limpiar el formulario de producto
-      // pReset()
+      setProducts(workingProducts)
+      setEditingIndex(null)
     }
 
-    // 2) Debe haber al menos un producto
+    // 2) Require at least one product
     if (!workingProducts.length) {
       showError(t('errors.order.missingProduct') || 'Add at least one product.')
       setTab(TABS.PRODUCT)
       return
     }
 
-    // 3) Subida de imágenes si hay Files pendientes
+    // 3) Upload images if needed
     const shouldUpload = workingProducts.some((p) =>
       (p.images || []).some((it) => it instanceof File)
     )
@@ -479,10 +447,12 @@ export default function EditOrder() {
         })
       )
 
-      const finalProducts = uploaded.map((p) => toProductPayload(p, glazes))
+      // 4) Map to API products with glaze guards
+      const glazesLoaded = Array.isArray(glazes) && glazes.length > 0
+      const finalProducts = uploaded.map((p) => toProductPayload(p, glazes, { glazesLoaded }))
 
-      // 4) Payload — usa shipping.addresses (no formData.addresses)
-      const payload = {
+      // 5) Build the final payload using the unified builder (no cleanAddresses, no manual shape)
+      const draft = {
         customer: {
           name: formData.name,
           lastName: formData.lastName,
@@ -493,20 +463,37 @@ export default function EditOrder() {
         },
         orderDate: formData.orderDate,
         deliverDate: formData.deliverDate,
-        // si deposit viene vacío, no lo mandes para no disparar validación en backend
-        ...(String(formData.deposit ?? '').trim() === ''
-          ? {}
-          : { deposit: Number(formData.deposit) }),
-        shipping: {
-          isRequired: isShippingOn(formData.shipping),
-          addresses: cleanAddresses(formData.shipping?.addresses || []),
-        },
+        deposit: formData.deposit, // empty string will be omitted by buildOrderPayload
+        shipping: formData.shipping, // must be { isRequired, addresses }
         status: formData.status,
         notes: formData.notes,
         products: finalProducts,
       }
 
-      // 5) Guardar en backend
+      // console.log('EDIT > shipping draft =', JSON.stringify(formData.shipping, null, 2))
+      // console.log('[EDIT] form.shipping len =', (formData?.shipping?.addresses || []).length)
+
+      const payload = buildOrderPayload(draft, {
+        allGlazes: glazes,
+        glazesLoaded,
+        quick: false,
+      })
+
+      // console.log('[EDIT] payload keys =', Object.keys(payload))
+      // console.log(
+      //   '[EDIT] payload.shipping isRequired/len =',
+      //   !!payload?.shipping?.isRequired,
+      //   Array.isArray(payload?.shipping?.addresses) ? payload.shipping.addresses.length : 'NA'
+      // )
+      // console.log(
+      //   '[EDIT] root addresses present? =',
+      //   'addresses' in payload,
+      //   Array.isArray(payload.addresses) ? payload.addresses.length : payload.addresses
+      // )
+
+      // const routeState = { draft: payload, from: '/orders/new' }
+
+      // 6) Save to backend
       await updateOrderById(id, payload)
 
       if (toastId) dismissToast(toastId)
@@ -517,10 +504,12 @@ export default function EditOrder() {
     } catch (err) {
       console.error(err)
       if (toastId) dismissToast(toastId)
-      const apiMsg = err?.response?.data?.message
-      showError(apiMsg || 'error.updatingOrder')
+      const apiMsg = getApiMessage
+        ? getApiMessage(err, 'error.updatingOrder')
+        : err?.response?.data?.message || 'error.updatingOrder'
+      showError(apiMsg)
     }
-  }
+  } // end saveAll
 
   return (
     <div className="h-full min-h-0 bg-white text-black dark:bg-neutral-900 dark:text-gray-100">
@@ -548,7 +537,7 @@ export default function EditOrder() {
               </button>
             </div>
 
-            {/* ───────── Customer Info (tu sección actual) ───────── */}
+            {/* ───────── Customer Info (your current section) ───────── */}
             {tab === TABS.CUSTOMER && (
               <>
                 {/* ───────────────────────────── Customer Info ───────────────────────────── */}
@@ -749,7 +738,7 @@ export default function EditOrder() {
                   </div>
                 </section>
                 {/* ───────────────────────────── Order Info ─────────────────────────────── */}
-                <section className="rounded-xl border border-neutral-200/70 bg-white shadow-sm ring-1 ring-black/5 dark:border-neutral-700 dark:bg-neutral-900/60 dark:ring-white/5">
+                <section className="mt-5 rounded-xl border border-neutral-200/70 bg-white shadow-sm ring-1 ring-black/5 dark:border-neutral-700 dark:bg-neutral-900/60 dark:ring-white/5">
                   {/* Section header */}
                   <div className="border-b border-neutral-200 px-4 py-3 dark:border-neutral-700">
                     <h2 className="text-base font-semibold tracking-wide">
@@ -799,8 +788,13 @@ export default function EditOrder() {
                         </label>
                         <select
                           name="status"
-                          value={formData.status}
-                          onChange={handleChange}
+                          value={formData.status || 'new'}
+                          onChange={(e) => {
+                            const v = e.target.value
+                            console.log('[status:onChange] raw =', v, 'typeof =', typeof v)
+                            // set it directly so no hay duda:
+                            setFormData((prev) => ({ ...prev, status: v }))
+                          }}
                           className="h-11 w-full rounded-md border border-neutral-300 bg-white px-3 text-sm dark:border-neutral-700 dark:bg-neutral-800 dark:text-white"
                         >
                           <option value="new">{t('status.new')}</option>
@@ -838,26 +832,20 @@ export default function EditOrder() {
                         </p>
                       </div>
                       <Switch
-                        checked={isShippingOn(formData.shipping)}
-                        onChange={handleToggleShipping}
-                        className={`${
-                          isShippingOn(formData.shipping)
-                            ? 'bg-green-500'
-                            : 'bg-neutral-300 dark:bg-neutral-700'
-                        } relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200`}
+                        checked={!!formData.shipping?.isRequired}
+                        onChange={toggleShipping}
+                        className={`${!!formData.shipping?.isRequired ? 'bg-green-500' : 'bg-neutral-300 dark:bg-neutral-700'} relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200`}
                       >
                         <span
-                          className={`${
-                            isShippingOn(formData.shipping) ? 'translate-x-6' : 'translate-x-1'
-                          } inline-block h-4 w-4 transform rounded-full bg-white transition-transform`}
+                          className={`${!!formData.shipping?.isRequired ? 'translate-x-6' : 'translate-x-1'} inline-block h-4 w-4 transform rounded-full bg-white transition-transform`}
                         />
                       </Switch>
                     </div>
 
                     {/* Addresses (conditional) */}
-                    {isShippingOn(formData.shipping) && (
+                    {!!formData.shipping?.isRequired && (
                       <FormAddress
-                        addresses={formData.shipping?.addresses || []}
+                        addresses={formData.shipping?.addresses}
                         onAdd={addAddress}
                         onRemove={removeAddress}
                         onChange={updateAddress}
@@ -866,10 +854,13 @@ export default function EditOrder() {
                         shippingAddress={t('order.shippingAddress')}
                         addButton={t('order.addAddress')}
                         addressInputTexts={{
-                          address: t('order.address'),
+                          street: t('order.street'),
                           city: t('order.city'),
+                          state: t('order.state'),
                           zip: t('order.zip'),
+                          country: t('order.country'),
                           phone: t('order.phoneShipping'),
+                          reference: t('order.reference'),
                           remove: t('order.remove'),
                         }}
                       />
@@ -895,7 +886,7 @@ export default function EditOrder() {
               </>
             )}
 
-            {/* ───────── Product Info (form inline) ───────── */}
+            {/* ───────── Product Info (inline form) ───────── */}
             {tab === TABS.PRODUCT && (
               <div className="space-y-6">
                 {/* ───────────────────────── Product Info ───────────────────────── */}
@@ -941,7 +932,7 @@ export default function EditOrder() {
                       {/* Quantity stepper */}
                       <div className="shrink-0 whitespace-nowrap">
                         <label className="text-sm">{t('product.qty') || 'Qty'}:</label>
-                        <div className="mt-1 flex items-center gap-3">
+                        <div className="mt-1 flex items-center gap-3 rounded-lg border border-neutral-300 dark:border-neutral-700">
                           <button
                             type="button"
                             aria-label="Decrease quantity"
@@ -1046,7 +1037,7 @@ export default function EditOrder() {
                           <p className="mt-0.5 text-xs text-red-500">{t(pErrors.figures)}</p>
                         )}
                       </div>
-                      <div className="flex items-center gap-3 rounded-lg border border-neutral-300">
+                      <div className="flex items-center gap-3 rounded-lg border border-neutral-300 dark:border-neutral-700">
                         <button
                           type="button"
                           aria-label="Decrease figures"
@@ -1231,7 +1222,7 @@ export default function EditOrder() {
             )}
           </div>
 
-          {/* ───────── Carrito (derecha, fijo en desktop) ───────── */}
+          {/* ───────── Cart (right, sticky on desktop) ───────── */}
           <aside className="lg:sticky lg:top-4 lg:h-fit">
             <AddedProductsCart
               products={products}
@@ -1239,21 +1230,20 @@ export default function EditOrder() {
               onRemove={removeProduct}
               t={t}
             />
+            {/* ───────── Actions (save / cancel with originPath) ───────── */}
+            <FormActions
+              onSubmit={saveAll}
+              submitButtonText={t('formActions.saveChanges')}
+              cancelButtonText={t('formActions.cancel')}
+              confirmTitle={t('formActionsEdit.confirmTitle')}
+              confirmMessage={t('formActionsEdit.confirmMessage')}
+              confirmText={t('formActions.confirmText')}
+              cancelText={t('formActions.cancelText')}
+              cancelRedirect={originPath || `/orders/${id}`}
+              cancelState={{ ...location.state, from: here }}
+            />
           </aside>
         </div>
-
-        {/* ───────── Actions (guardar / cancelar con originPath) ───────── */}
-        <FormActions
-          onSubmit={saveAll}
-          submitButtonText={t('formActions.saveChanges')}
-          cancelButtonText={t('formActions.cancel')}
-          confirmTitle={t('formActionsEdit.confirmTitle')}
-          confirmMessage={t('formActionsEdit.confirmMessage')}
-          confirmText={t('formActions.confirmText')}
-          cancelText={t('formActions.cancelText')}
-          cancelRedirect={originPath || `/orders/${id}`}
-          cancelState={{ ...location.state, from: here }}
-        />
       </form>
     </div>
   )

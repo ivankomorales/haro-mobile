@@ -31,9 +31,9 @@ export async function getOrdersPage(params = {}) {
   if (params.shipping !== undefined && params.shipping !== '')
     qs.set('shipping', String(params.shipping))
   if (params.dateField) qs.set('dateField', params.dateField) // 'orderDate'|'deliverDate'|'createdAt'
-  if (params.includeStats !== false) qs.set('includeStats', 'true')
+  if (params.includeStats === true) qs.set('includeStats', 'true')
 
-  // ✅ Already parsed JSON; never call .json() here
+  // Already parsed JSON; never call .json() here
   const payload = await fetchWithAuth(`/api/orders?${qs.toString()}`)
 
   // If backend accidentally returns legacy array, normalize to a consistent shape
@@ -86,7 +86,7 @@ export async function updateManyOrderStatus(orderIds, newStatus) {
       'Content-Type': 'application/json',
     },
   })
-  // ✅ If any error, fetchWithAuth throws exception
+  // If any error, fetchWithAuth throws exception
   return data
 }
 

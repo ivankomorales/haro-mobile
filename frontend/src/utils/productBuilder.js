@@ -22,8 +22,8 @@ export function buildProductListPayload(product, mode = 'create') {
     decorations: {
       hasGold: product.decorations?.hasGold || false,
       hasName: product.decorations?.hasName || false,
-      outerDrawing: product.decorations?.outerDrawing || false,
-      customText: product.decorations?.customText?.trim() || '',
+      // outerDrawing: product.decorations?.outerDrawing || false,
+      decorationDescription: product.decorations?.decorationDescription?.trim() || '',
     },
 
     images: [],

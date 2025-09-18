@@ -1,3 +1,4 @@
+//backend/controllers/orderController.js
 const Order = require("../models/Order");
 const Customer = require("../models/Customer");
 const Counter = require("../models/Counter");
@@ -20,6 +21,7 @@ const LEGACY_MAP = {
   Pending: "pending",
   "In Progress": "inProgress",
   in_progress: "inProgress",
+  inprogress: "inProgress",
   Completed: "completed",
   Cancelled: "cancelled",
 };
@@ -31,8 +33,9 @@ function normalizeStatus(input) {
   if (LEGACY_MAP[s]) return LEGACY_MAP[s]; // direct legacy map
 
   const clean = s.toLowerCase().replace(/[-_ ]+/g, "");
-  if (clean === "inprogress") return "inProgress";
+
   if (clean === "new") return "new";
+  if (clean === "inprogress") return "inProgress";
   if (clean === "pending") return "pending";
   if (clean === "completed") return "completed";
   if (clean === "cancelled") return "cancelled";
@@ -41,6 +44,34 @@ function normalizeStatus(input) {
 
 // group used by your "pending" filter (new+pending+inProgress)
 const PENDING_GROUP = ["new", "pending", "inProgress"];
+
+// ---------------------------------------------
+// 🔹 Helpers for sanitizing atomic updates
+// ---------------------------------------------
+function toNonNegNumber(v, fallback = 0) {
+  const n = Number(v);
+  return Number.isFinite(n) && n >= 0 ? n : fallback;
+}
+
+function buildSafeOrderUpdate(raw = {}) {
+  const allowed = [
+    "status",
+    "deposit",
+    "notes",
+    "products",
+    "shipping",
+    "orderDate",
+    "deliverDate",
+  ];
+  const $set = {};
+  for (const k of allowed) {
+    if (raw[k] !== undefined) $set[k] = raw[k];
+  }
+  // Normalize numbers we care about
+  if ($set.deposit !== undefined)
+    $set.deposit = toNonNegNumber($set.deposit, 0);
+  return { $set };
+}
 
 // ---------------------------------------------
 // 🟠 CREATE ORDER (POST /api/orders)
@@ -115,8 +146,7 @@ const createOrder = async (req, res, next) => {
 // ---------------------------------------------
 // 🟢 GET ALL ORDERS (GET /api/orders)
 // ---------------------------------------------
-// OrderController.getOrders (reemplaza el método actual)
-// comments in English only
+// OrderController.getOrders (replaces current method)
 const getOrders = async (req, res, next) => {
   try {
     // ------ pagination & sort ------
@@ -132,12 +162,28 @@ const getOrders = async (req, res, next) => {
       "total",
       "orderID",
     ]);
-    const sort = sortWhitelist.has(sortField)
-      ? { [sortField]: sortDir === "asc" ? 1 : -1 }
-      : { orderDate: -1 };
+    const dir = sortDir === "asc" ? 1 : -1;
+    // Compound sort for stability (ties)
+    let sort;
+    if (sortWhitelist.has(sortField)) {
+      if (sortField === "orderDate") {
+        sort = { orderDate: dir, createdAt: dir, _id: dir };
+      } else if (sortField === "createdAt") {
+        sort = { createdAt: dir, _id: dir };
+      } else {
+        // other fields: add _id as a minimal tiebreaker
+        sort = { [sortField]: dir, _id: dir };
+      }
+    } else {
+      sort = { orderDate: -1, createdAt: -1, _id: -1 };
+    }
 
     // ------ filters ------
     const filter = {};
+    // Exclude cancelled by default (include them only if required)
+    if (req.query.includeCancelled !== "true") {
+      filter.status = { $ne: "cancelled" };
+    }
 
     // allow selecting which date field to filter by
     const allowedDateFields = new Set([
@@ -243,7 +289,7 @@ const getOrders = async (req, res, next) => {
       });
     }
 
-    // Sorting directo; ya tenemos "total" persistido
+    // Direct sorting; we already have "total" persisted *(orderDate + createdAt / _id)
     pipeline.push({ $sort: sort });
 
     // ------ FACET (pagination + total count) ------
@@ -300,221 +346,221 @@ const getOrders = async (req, res, next) => {
   }
 }; // end getOrders
 
+// ────────────────────────────────────────────────────────────────────────────
+// Helper reutilizable: computa stats con la misma lógica de getOrderStats
+// ────────────────────────────────────────────────────────────────────────────
+async function computeOrderStatsFromQuery(query) {
+  // ---- date range parsing ----
+  const rangeQ = String(query.range || "month").toLowerCase();
+  const now = new Date();
+  function startOfMonth(d) {
+    return new Date(d.getFullYear(), Math.trunc(d.getMonth()), 1);
+  }
+  function startOfQuarter(d) {
+    return new Date(d.getFullYear(), Math.trunc(d.getMonth() / 3) * 3, 1);
+  }
+  function startOfYear(d) {
+    return new Date(d.getFullYear(), 0, 1);
+  }
+  function addDays(d, n) {
+    const x = new Date(d);
+    x.setDate(x.getDate() + n);
+    return x;
+  }
+
+  let from = query.from ? new Date(query.from) : null;
+  let toExcl = query.to ? new Date(query.to) : null;
+  if (!from || !toExcl) {
+    switch (rangeQ) {
+      case "week": {
+        const s = new Date(now);
+        s.setHours(0, 0, 0, 0);
+        from = addDays(s, -6);
+        toExcl = addDays(new Date(s), 1);
+        break;
+      }
+      case "15d": {
+        const s = new Date(now);
+        s.setHours(0, 0, 0, 0);
+        from = addDays(s, -14);
+        toExcl = addDays(new Date(s), 1);
+        break;
+      }
+      case "30d": {
+        const s = new Date(now);
+        s.setHours(0, 0, 0, 0);
+        from = addDays(s, -29);
+        toExcl = addDays(new Date(s), 1);
+        break;
+      }
+      case "quarter": {
+        const s = startOfQuarter(now);
+        from = s;
+        toExcl = new Date(s.getFullYear(), s.getMonth() + 3, 1);
+        break;
+      }
+      case "year": {
+        const s = startOfYear(now);
+        from = s;
+        toExcl = new Date(s.getFullYear() + 1, 0, 1);
+        break;
+      }
+      case "all": {
+        from = new Date(0);
+        toExcl = addDays(new Date(now), 1);
+        break;
+      }
+      case "month":
+      default: {
+        const s = startOfMonth(now);
+        from = s;
+        toExcl = new Date(s.getFullYear(), s.getMonth() + 1, 1);
+        break;
+      }
+    }
+  } else {
+    from.setHours(0, 0, 0, 0);
+    toExcl.setHours(0, 0, 0, 0);
+    toExcl = addDays(toExcl, 1);
+  }
+
+  const allowedDateFields = new Set(["orderDate", "deliverDate", "createdAt"]);
+  const dateField = allowedDateFields.has(query.dateField)
+    ? query.dateField
+    : "orderDate";
+
+  // ---- filters (excluye cancelados por defecto) ----
+  const filter = {};
+  if (query.includeCancelled !== "true") filter.status = { $ne: "cancelled" };
+
+  // status (o grupo pending)
+  const raw = query.status;
+  if (raw && String(raw).toLowerCase() === "pending") {
+    filter.status = { $in: PENDING_GROUP };
+  } else if (raw) {
+    const canon = normalizeStatus(raw);
+    if (canon) filter.status = canon;
+  }
+  filter[dateField] = { $gte: from, $lt: toExcl };
+
+  if (query.urgent === "true") filter.isUrgent = true;
+  if (query.urgent === "false") filter.isUrgent = { $in: [false, null] };
+
+  if (query.shipping === "true") filter["shipping.isRequired"] = true;
+  if (query.shipping === "false")
+    filter["shipping.isRequired"] = { $in: [false, null] };
+
+  // texto (opcional)
+  const q = (query.q || "").trim();
+  const hasQ = q.length > 0;
+  const regex = hasQ
+    ? new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i")
+    : null;
+
+  const pipeline = [{ $match: filter }];
+  if (hasQ) {
+    pipeline.push(
+      {
+        $lookup: {
+          from: "customers",
+          localField: "customer",
+          foreignField: "_id",
+          as: "customer",
+        },
+      },
+      { $unwind: { path: "$customer", preserveNullAndEmptyArrays: true } },
+      {
+        $match: {
+          $or: [
+            { orderID: regex },
+            { "customer.name": regex },
+            { "customer.lastName": regex },
+            { "customer.email": regex },
+          ],
+        },
+      }
+    );
+  }
+  pipeline.push(
+    {
+      $project: {
+        status: 1,
+        gross: { $toDouble: { $ifNull: ["$gross", 0] } },
+        discount: { $toDouble: { $ifNull: ["$discount", 0] } },
+        subtotal: { $toDouble: { $ifNull: ["$subtotal", 0] } },
+        deposit: { $toDouble: { $ifNull: ["$deposit", 0] } },
+      },
+    },
+    {
+      $group: {
+        _id: null,
+        total: { $sum: 1 },
+        new: { $sum: { $cond: [{ $eq: ["$status", "new"] }, 1, 0] } },
+        pending: { $sum: { $cond: [{ $eq: ["$status", "pending"] }, 1, 0] } },
+        inProgress: {
+          $sum: { $cond: [{ $eq: ["$status", "inProgress"] }, 1, 0] },
+        },
+        completed: {
+          $sum: { $cond: [{ $eq: ["$status", "completed"] }, 1, 0] },
+        },
+        cancelled: {
+          $sum: { $cond: [{ $eq: ["$status", "cancelled"] }, 1, 0] },
+        },
+        gross: { $sum: "$gross" },
+        discount: { $sum: "$discount" },
+        subtotal: { $sum: "$subtotal" },
+        deposit: { $sum: "$deposit" },
+      },
+    }
+  );
+
+  const agg = await Order.aggregate(pipeline);
+  const r = agg?.[0] || {
+    total: 0,
+    new: 0,
+    pending: 0,
+    inProgress: 0,
+    completed: 0,
+    cancelled: 0,
+    gross: 0,
+    discount: 0,
+    subtotal: 0,
+    deposit: 0,
+  };
+  return {
+    range: {
+      from: from.toISOString(),
+      to: new Date(toExcl.getTime() - 1).toISOString(),
+      dateField,
+      label: rangeQ,
+    },
+    count: {
+      total: r.total || 0,
+      new: r.new || 0,
+      pending: r.pending || 0,
+      inProgress: r.inProgress || 0,
+      completed: r.completed || 0,
+      cancelled: r.cancelled || 0,
+      pendingGroup: (r.new || 0) + (r.pending || 0) + (r.inProgress || 0),
+    },
+    totals: {
+      gross: Math.round(r.gross || 0),
+      discount: Math.round(r.discount || 0),
+      subtotal: Math.round(r.subtotal || 0), // ventas netas de descuentos
+      deposit: Math.round(r.deposit || 0), // cobros a cuenta
+      due: Math.round((r.subtotal || 0) - (r.deposit || 0)),
+      net: Math.round(r.subtotal || 0), // alias de compatibilidad con el front actual
+    },
+  };
+}
+
 // ---------------------------------------------
 // 🟢 GET ORDER STATS (GET /api/orders/stats)
 // ---------------------------------------------
 const getOrderStats = async (req, res, next) => {
   try {
-    // ---- date range parsing ----
-    const range = String(req.query.range || "month").toLowerCase();
-    const now = new Date();
-
-    function startOfMonth(d) {
-      return new Date(d.getFullYear(), d.getMonth(), 1);
-    }
-    function startOfQuarter(d) {
-      return new Date(d.getFullYear(), Math.floor(d.getMonth() / 3) * 3, 1);
-    }
-    function startOfYear(d) {
-      return new Date(d.getFullYear(), 0, 1);
-    }
-    function addDays(d, n) {
-      const x = new Date(d);
-      x.setDate(x.getDate() + n);
-      return x;
-    }
-
-    // Use [from, toExcl) window for $lt filtering
-    let from = req.query.from ? new Date(req.query.from) : null;
-    let toExcl = req.query.to ? new Date(req.query.to) : null;
-
-    if (!from || !toExcl) {
-      switch (range) {
-        case "week": {
-          const s = new Date(now);
-          s.setHours(0, 0, 0, 0);
-          from = addDays(s, -6); // last 7 days inclusive
-          toExcl = addDays(new Date(s), 1); // today end (exclusive next day)
-          break;
-        }
-        case "15d": {
-          const s = new Date(now);
-          s.setHours(0, 0, 0, 0);
-          from = addDays(s, -14);
-          toExcl = addDays(new Date(s), 1);
-          break;
-        }
-        case "30d": {
-          const s = new Date(now);
-          s.setHours(0, 0, 0, 0);
-          from = addDays(s, -29);
-          toExcl = addDays(new Date(s), 1);
-          break;
-        }
-        case "quarter": {
-          const s = startOfQuarter(now);
-          from = s;
-          toExcl = new Date(s.getFullYear(), s.getMonth() + 3, 1);
-          break;
-        }
-        case "year": {
-          const s = startOfYear(now);
-          from = s;
-          toExcl = new Date(s.getFullYear() + 1, 0, 1);
-          break;
-        }
-        case "all": {
-          from = new Date(0);
-          toExcl = addDays(new Date(now), 1);
-          break;
-        }
-        case "month":
-        default: {
-          const s = startOfMonth(now);
-          from = s;
-          toExcl = new Date(s.getFullYear(), s.getMonth() + 1, 1);
-          break;
-        }
-      }
-    } else {
-      // Normalize to [from 00:00, (to + 1 day) 00:00)
-      from.setHours(0, 0, 0, 0);
-      toExcl.setHours(0, 0, 0, 0);
-      toExcl = addDays(toExcl, 1);
-    }
-
-    // Which date field to filter by (default orderDate)
-    const allowedDateFields = new Set([
-      "orderDate",
-      "deliverDate",
-      "createdAt",
-    ]);
-    const dateField = allowedDateFields.has(req.query.dateField)
-      ? req.query.dateField
-      : "orderDate";
-
-    // ---- filters (mirror getOrders) ----
-    const filter = {};
-    // status or "pending" group
-    const raw = req.query.status;
-    if (raw && String(raw).toLowerCase() === "pending") {
-      filter.status = { $in: PENDING_GROUP };
-    } else if (raw) {
-      const canon = normalizeStatus(raw);
-      if (canon) filter.status = canon;
-    }
-
-    // date range
-    filter[dateField] = { $gte: from, $lt: toExcl };
-
-    // urgent
-    if (req.query.urgent === "true") filter.isUrgent = true;
-    if (req.query.urgent === "false") filter.isUrgent = { $in: [false, null] };
-
-    // shipping (⚠️ use schema path)
-    if (req.query.shipping === "true") filter["shipping.isRequired"] = true;
-    if (req.query.shipping === "false")
-      filter["shipping.isRequired"] = { $in: [false, null] };
-
-    // text query over orderID + customer fields (lookup only if q is present)
-    const q = (req.query.q || "").trim();
-    const hasQ = q.length > 0;
-    const regex = hasQ
-      ? new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i")
-      : null;
-
-    // ---- aggregation ----
-    const pipeline = [{ $match: filter }];
-
-    if (hasQ) {
-      pipeline.push(
-        {
-          $lookup: {
-            from: "customers",
-            localField: "customer",
-            foreignField: "_id",
-            as: "customer",
-          },
-        },
-        { $unwind: { path: "$customer", preserveNullAndEmptyArrays: true } },
-        {
-          $match: {
-            $or: [
-              { orderID: regex },
-              { "customer.name": regex },
-              { "customer.lastName": regex },
-              { "customer.email": regex },
-            ],
-          },
-        }
-      );
-    }
-
-    pipeline.push(
-      {
-        $project: {
-          status: 1,
-          subtotal: { $toDouble: { $ifNull: ["$subtotal", 0] } },
-          deposit: { $toDouble: { $ifNull: ["$deposit", 0] } },
-        },
-      },
-      {
-        $group: {
-          _id: null,
-          total: { $sum: 1 },
-          new: { $sum: { $cond: [{ $eq: ["$status", "new"] }, 1, 0] } },
-          pending: { $sum: { $cond: [{ $eq: ["$status", "pending"] }, 1, 0] } },
-          inProgress: {
-            $sum: { $cond: [{ $eq: ["$status", "inProgress"] }, 1, 0] },
-          },
-          completed: {
-            $sum: { $cond: [{ $eq: ["$status", "completed"] }, 1, 0] },
-          },
-          cancelled: {
-            $sum: { $cond: [{ $eq: ["$status", "cancelled"] }, 1, 0] },
-          },
-          gross: { $sum: "$subtotal" },
-          deposit: { $sum: "$deposit" },
-        },
-      }
-    );
-
-    const agg = await Order.aggregate(pipeline);
-    const r = agg?.[0] || {
-      total: 0,
-      new: 0,
-      pending: 0,
-      inProgress: 0,
-      completed: 0,
-      cancelled: 0,
-      gross: 0,
-      deposit: 0,
-    };
-
-    const result = {
-      range: {
-        from: from.toISOString(),
-        to: new Date(toExcl.getTime() - 1).toISOString(), // inclusive display
-        dateField,
-        label: range,
-      },
-      count: {
-        total: r.total || 0,
-        new: r.new || 0,
-        pending: r.pending || 0,
-        inProgress: r.inProgress || 0,
-        completed: r.completed || 0,
-        cancelled: r.cancelled || 0,
-        pendingGroup: (r.new || 0) + (r.pending || 0) + (r.inProgress || 0),
-      },
-      totals: {
-        gross: Math.round(r.gross || 0),
-        deposit: Math.round(r.deposit || 0),
-        net: Math.round((r.gross || 0) - (r.deposit || 0)),
-      },
-    };
-
-    return res.json(result);
+    const stats = await computeOrderStatsFromQuery(req.query);
+    return res.json(stats);
   } catch (err) {
     console.error("getOrderStats error:", err);
     next(new ApiError("Error retrieving order stats", 500));
@@ -591,11 +637,62 @@ const updateOrder = async (req, res, next) => {
       if (!Array.isArray(addrs) || addrs.length === 0) {
         return next(new ApiError("Add at least one shipping address.", 400));
       }
-      const bad = addrs.find(
-        (a) => !a?.address || !a?.city || !a?.zip || !a?.phone
-      );
-      if (bad)
-        return next(new ApiError("Complete the shipping address fields.", 400));
+      // Normalize and validate required fields (trim + safe types)
+      const normStr = (v) => {
+        // comments in English only
+        if (v == null) return "";
+        if (typeof v === "string") return v.trim();
+        if (typeof v === "number") return String(v).trim();
+        return ""; // reject objects/arrays/booleans
+      };
+
+      const firstBad = addrs.findIndex((raw = {}) => {
+        const street = normStr(raw.street ?? raw.address); // accept legacy "address"
+        const city = normStr(raw.city);
+        const state = normStr(raw.state);
+        const zip = normStr(raw.zip);
+        const country = normStr(raw.country);
+        const phone = normStr(raw.phone);
+        const phoneDigits = phone.replace(/\D/g, "");
+        // Require: street, city, state, zip, country, and phone (10+ digits)
+        return !(
+          street &&
+          city &&
+          state &&
+          zip &&
+          country &&
+          phoneDigits.length >= 10
+        );
+      });
+
+      if (firstBad !== -1) {
+        const raw = addrs[firstBad] || {};
+        const miss = [];
+        const pushIf = (k, ok) => {
+          if (!ok) miss.push(k);
+        };
+        const street = normStr(raw.street ?? raw.address);
+        const city = normStr(raw.city);
+        const state = normStr(raw.state);
+        const zip = normStr(raw.zip);
+        const country = normStr(raw.country);
+        const phone = normStr(raw.phone);
+        const phoneDigits = phone.replace(/\D/g, "");
+        pushIf("street", !!street);
+        pushIf("city", !!city);
+        pushIf("state", !!state);
+        pushIf("zip", !!zip);
+        pushIf("country", !!country);
+        pushIf("phone", phoneDigits.length >= 10);
+        return next(
+          new ApiError(
+            `Complete the shipping address fields (address #${
+              firstBad + 1
+            }): ${miss.join(", ")}.`,
+            400
+          )
+        );
+      }
     }
 
     // 2) Deposit: if present, must be a number >= 0 (normalize to Number)
@@ -715,6 +812,41 @@ const updateOrder = async (req, res, next) => {
 // end updateOrder
 
 // ---------------------------------------------
+// 🔵 UPDATE ORDER (Atomic) (PUT /api/orders/:id/atomic)
+//    Variante B: no carga el doc; dispara pre('findOneAndUpdate')
+// ---------------------------------------------
+const updateOrderAtomic = async (req, res, next) => {
+  try {
+    // Sanitiza y limita campos permitidos
+    const update = buildSafeOrderUpdate(req.body);
+
+    const updated = await Order.findByIdAndUpdate(req.params.id, update, {
+      new: true,
+      runValidators: true, // valida según schema en updates
+      context: "query", // necesario para setters/validators en update
+    })
+      .populate("customer")
+      .populate("products.glazes.interior")
+      .populate("products.glazes.exterior");
+
+    if (!updated) return next(new ApiError("Order not found", 404));
+
+    // (Opcional) Audit muy básico
+    await logEvent({
+      event: "order_updated",
+      objectId: updated._id,
+      description: `Order ${updated.orderID} updated (atomic)`,
+      req,
+    });
+
+    return res.json(updated);
+  } catch (err) {
+    return next(err);
+  }
+};
+// end updateOrderAtomic
+
+// ---------------------------------------------
 // 🟣 UPDATE ORDER STATUS ONLY (PATCH /api/orders/:id/status)
 // ---------------------------------------------
 const updateOrderStatus = async (req, res) => {
@@ -730,8 +862,8 @@ const updateOrderStatus = async (req, res) => {
 
     const updatedOrder = await Order.findByIdAndUpdate(
       orderId,
-      { status: canon },
-      { new: true, runValidators: true }
+      { $set: { status: canon } },
+      { new: true, runValidators: true, context: "query" }
     );
 
     if (!updatedOrder)
@@ -747,9 +879,6 @@ const updateOrderStatus = async (req, res) => {
 // 🟣 BULK STATUS UPDATE (PATCH /api/orders/bulk-status)
 // ---------------------------------------------
 const updateManyOrderStatus = async (req, res) => {
-  console.log("🟡 bulk status controller HIT");
-  console.log("📦 Body recibido:", req.body);
-
   try {
     const { orderIds, newStatus } = req.body;
     const canon = normalizeStatus(newStatus);
@@ -825,6 +954,11 @@ const cancelOrder = async (req, res, next) => {
       req,
     });
 
+    // Si el cliente pide refrescar stats, los calculamos y devolvemos
+    if (req.query.refreshStats === "true") {
+      const stats = await computeOrderStatsFromQuery(req.query);
+      return res.json({ message: "Order cancelled", stats });
+    }
     res.json({ message: "Order cancelled" });
   } catch (err) {
     next(new ApiError("Error cancelling order", 500));
@@ -842,6 +976,7 @@ module.exports = {
   getOrderStats,
   getOrdersByStatus,
   updateOrder,
+  updateOrderAtomic,
   updateOrderStatus,
   updateManyOrderStatus,
   addOrderNote,

@@ -78,12 +78,12 @@ export default function OrderDetailsCard({
 
       {/* Customer Info */}
       <div className="relative rounded border border-gray-200 p-3 dark:border-neutral-700">
-        <button
+        {/* <button
           onClick={onEditBase}
           className="absolute top-2 right-2 rounded p-1 hover:bg-gray-200 dark:hover:bg-neutral-700"
         >
           <SquarePen className="h-4 w-4" />
-        </button>
+        </button> */}
 
         <div className="space-y-1">
           <p className="font-semibold">
@@ -156,12 +156,12 @@ export default function OrderDetailsCard({
               key={index}
               className="relative space-y-2 rounded border border-gray-200 bg-white p-3 dark:border-neutral-700 dark:bg-neutral-800"
             >
-              <button
+              {/* <button
                 onClick={() => onEditProducts?.(index)}
                 className="absolute top-2 right-2 rounded p-1 hover:bg-gray-200 dark:hover:bg-neutral-700"
               >
                 <SquarePen className="h-4 w-4" />
-              </button>
+              </button> */}
 
               <p className="font-semibold">{product.label}</p>
 

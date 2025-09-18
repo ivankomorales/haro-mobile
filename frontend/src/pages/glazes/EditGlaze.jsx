@@ -1,6 +1,6 @@
 // src/pages/glazes/EditGlaze.jsx
 // comments in English only
-import { useEffect, useRef, useState, useMemo } from 'react' // ★ useMemo agregado
+import { useEffect, useRef, useState, useMemo } from 'react' 
 import { useNavigate, useParams, useLocation } from 'react-router-dom'
 import FormInput from '../../components/FormInput'
 import { uploadToCloudinary } from '../../utils/uploadToCloudinary'
@@ -9,7 +9,6 @@ import { getMessage as t } from '../../utils/getMessage'
 import FormActions from '../../components/FormActions'
 import { getOriginPath } from '../../utils/navigationUtils'
 import { useLayout } from '../../context/LayoutContext'
-import DropWrap from '../../components/DropWrap'
 import { getGlazeById, updateGlaze } from '../../api/glazes'
 import { showLoading, showSuccess, showError, dismissToast } from '../../utils/toastUtils'
 

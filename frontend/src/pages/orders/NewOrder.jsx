@@ -11,6 +11,7 @@ import { getMessage as t } from '../../utils/getMessage'
 import { prefillFormFromDraft, validateBaseForm, buildBaseOrder } from '../../utils/orderBuilder'
 import { useLayout } from '../../context/LayoutContext'
 import { getOriginPath } from '../../utils/navigationUtils'
+import { useShippingAddresses } from '../../hooks/useShippingAddresses'
 
 export default function NewOrder() {
   const navigate = useNavigate()
@@ -80,18 +81,6 @@ export default function NewOrder() {
     setFormData((prev) => ({ ...prev, [name]: value }))
   }
 
-  // Shipping toggle
-  const handleToggleShipping = () => {
-    setFormData((prev) => {
-      const shipping = !prev.shipping
-      return {
-        ...prev,
-        shipping,
-        addresses: shipping ? (prev.addresses ?? []) : [], // al apagar, vacía
-      }
-    })
-  }
-
   // Add or update social media manually
   const addOrUpdateSocial = () => {
     const val = socialInput.trim()
@@ -130,45 +119,45 @@ export default function NewOrder() {
     if (type === currentSocialType) setSocialInput('')
   }
 
-  // Address handlers
-  const emptyAddress = { address: '', city: '', zip: '', phone: '' }
-
-  const addAddress = () => {
-    const last = formData.addresses.at(-1)
-    const isIncomplete = last && (!last.address || !last.city || !last.zip || !last.phone)
-
-    if (isIncomplete) {
-      showError('validation.incompleteAddressBeforeAdding')
-      return
-    }
-
-    setFormData((prev) => ({
-      ...prev,
-      addresses: [...(prev.addresses || []), { ...emptyAddress }],
-    }))
+  // Address and Shipping handlers
+  const emptyAddress = {
+    street: '',
+    city: '',
+    state: '',
+    zip: '',
+    country: 'Mexico',
+    phone: '',
+    reference: '',
   }
 
-  const updateAddress = (index, field, value) => {
-    setFormData((prev) => {
-      const updated = [...prev.addresses]
-      updated[index] = { ...updated[index], [field]: value }
-      return { ...prev, addresses: updated }
-    })
-  }
-
-  const removeAddress = (index) => {
-    setFormData((prev) => {
-      const updated = [...prev.addresses]
-      updated.splice(index, 1)
-      return { ...prev, addresses: updated }
-    })
-  }
+  const { updateAddress, addAddress, removeAddress, toggleShipping } = useShippingAddresses(
+    formData,
+    setFormData
+  )
 
   // Prefill desde location.state (draft/baseOrder) -> formData
   useEffect(() => {
     if (!location.state) return
     const filled = prefillFormFromDraft(location.state)
-    setFormData((prev) => ({ ...prev, ...filled }))
+    setFormData((prev) => {
+      const merged = { ...prev, ...filled }
+      // Enforce canonical shape
+      if (!merged.shipping || typeof merged.shipping === 'boolean') {
+        merged.shipping = { isRequired: !!merged.shipping, addresses: [] }
+      }
+      if (!Array.isArray(merged.shipping.addresses)) merged.shipping.addresses = []
+      // Normalize new fields
+      merged.shipping.addresses = merged.shipping.addresses.map((a) => ({
+        street: a?.street || '',
+        city: a?.city || '',
+        state: a?.state || '',
+        zip: a?.zip || '',
+        country: a?.country || 'Mexico',
+        phone: a?.phone || '',
+        reference: a?.reference || '',
+      }))
+      return merged
+    })
   }, [location.state])
 
   // Camino único: Validar + armar baseOrder + navegar
@@ -176,6 +165,7 @@ export default function NewOrder() {
     e.preventDefault()
     setErrors({})
 
+    // 1) Validate required fields
     const errs = validateBaseForm(formData)
     if (Object.keys(errs).length > 0) {
       setErrors(errs)
@@ -185,25 +175,28 @@ export default function NewOrder() {
       return
     }
 
+    // 2) Build the draft order from the current form state
     const baseOrder = buildBaseOrder(formData, {
       socialInput,
       currentSocialType,
     })
 
-    // sanitize dates (avoid sending empty string)
+    // 3) Normalize dates: remove empty strings to avoid sending invalid values
     if (!baseOrder.deliverDate) delete baseOrder.deliverDate
     if (!baseOrder.orderDate) delete baseOrder.orderDate
 
+    // 4) Branch by mode: edit base vs. create new
     if (isEditBase) {
+      // Merge edited base with existing products and any prior state
       const updatedOrder = {
         ...location.state,
         ...baseOrder,
         products: existingProducts,
       }
 
-      // Success Edit
       showSuccess('success.order.updated')
 
+      // Go back to the caller (or confirmation) replacing history
       navigate(returnTo || '/orders/confirmation', {
         state: updatedOrder,
         replace: true,
@@ -211,7 +204,7 @@ export default function NewOrder() {
       return
     }
 
-    // SUccess Creation
+    // 5) New order base created: go to products step
     showSuccess('success.order.baseCreated')
 
     navigate('/orders/new/products', {
@@ -221,7 +214,8 @@ export default function NewOrder() {
         from: '/orders/new',
       },
     })
-  } // end handleBaseSubmit
+  }
+  // end handleBaseSubmit
 
   const handleChangeAndClearError = (e) => {
     const { name, value } = e.target
@@ -230,7 +224,7 @@ export default function NewOrder() {
   }
 
   return (
-    <div className="h-full min-h-0 bg-white text-black dark:bg-neutral-900 dark:text-gray-100">
+    <div className="h-full min-h-0 bg-white rounded-xl text-black dark:bg-neutral-900 dark:text-gray-100">
       <form
         onSubmit={handleBaseSubmit}
         className="mx-auto mb-[var(--bottom-bar-h)] max-w-2xl space-y-6 px-4 py-6 sm:mb-2"
@@ -522,24 +516,20 @@ export default function NewOrder() {
                 </p>
               </div>
               <Switch
-                checked={formData.shipping}
-                onChange={handleToggleShipping}
-                className={`${
-                  formData.shipping ? 'bg-green-500' : 'bg-neutral-300 dark:bg-neutral-700'
-                } relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200`}
+                checked={!!formData.shipping?.isRequired}
+                onChange={toggleShipping}
+                className={`${formData.shipping?.isRequired ? 'bg-green-500' : 'bg-neutral-300 dark:bg-neutral-700'} relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200`}
               >
                 <span
-                  className={`${
-                    formData.shipping ? 'translate-x-6' : 'translate-x-1'
-                  } inline-block h-4 w-4 transform rounded-full bg-white transition-transform`}
+                  className={`${formData.shipping?.isRequired ? 'translate-x-6' : 'translate-x-1'} inline-block h-4 w-4 transform rounded-full bg-white transition-transform`}
                 />
               </Switch>
             </div>
 
             {/* Addresses (conditional) */}
-            {formData.shipping && (
+            {formData.shipping?.isRequired && (
               <FormAddress
-                addresses={formData.addresses}
+                addresses={formData.shipping.addresses}
                 onAdd={addAddress}
                 onRemove={removeAddress}
                 onChange={updateAddress}
@@ -548,10 +538,13 @@ export default function NewOrder() {
                 shippingAddress={t('order.shippingAddress')}
                 addButton={t('order.addAddress')}
                 addressInputTexts={{
-                  address: t('order.address'),
+                  street: t('order.street'),
                   city: t('order.city'),
+                  state: t('order.state'),
                   zip: t('order.zip'),
+                  country: t('order.country'),
                   phone: t('order.phoneShipping'),
+                  reference: t('order.reference'),
                   remove: t('order.remove'),
                 }}
               />

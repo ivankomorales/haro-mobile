@@ -1,4 +1,6 @@
 // src/utils/orderBuilder.js
+const CANONICAL = new Set(['new', 'pending', 'inProgress', 'completed', 'cancelled'])
+
 //Date Helpers
 // Parse 'YYYY-MM-DD' (local) → Date | undefined
 export function parseDateInput(s) {
@@ -50,34 +52,71 @@ const LEGACY_STATUS_MAP = {
   New: 'new',
   Pending: 'pending',
   'In Progress': 'inProgress',
+  in_progress: 'inProgress',
+  inprogress: 'inProgress',
   Completed: 'completed',
   Cancelled: 'cancelled',
 }
+
 export function ensureStatus(s) {
   if (!s) return 'new'
-  const mapped = LEGACY_STATUS_MAP[s]
-  if (mapped) return mapped
-  return String(s).toLowerCase()
+  const raw = String(s).trim()
+  if (CANONICAL.has(raw)) return raw
+
+  // try exact legacy
+  if (LEGACY_STATUS_MAP[raw]) return LEGACY_STATUS_MAP[raw]
+
+  // try relaxed legacy (case/sep-insensitive)
+  const lower = raw.toLowerCase()
+  if (LEGACY_STATUS_MAP[lower]) return LEGACY_STATUS_MAP[lower]
+
+  const clean = lower.replace(/[-_\s]+/g, '')
+  if (clean === 'inprogress') return 'inProgress'
+  if (clean === 'new') return 'new'
+  if (clean === 'pending') return 'pending'
+  if (clean === 'completed') return 'completed'
+  if (clean === 'cancelled') return 'cancelled'
+
+  // fallback seguro
+  return 'new'
 }
 
-// Keep only COMPLETE addresses (avoid half-filled entries)
-export function cleanAddresses(addresses = []) {
-  return addresses.filter((addr) => {
-    const a = (addr?.address || '').trim()
-    const c = (addr?.city || '').trim()
-    const z = (addr?.zip || '').trim()
-    const p = (addr?.phone || '').trim()
-    return !!(a && c && z && p)
-  })
-}
 /**
  * Generates initial form values from a draft (location.state).
  * Only sets the fields that exist in the draft object.
  */
 export function prefillFormFromDraft(draft = {}) {
+  // --- Customer ---
   const name = draft.customer?.name || ''
   const lastName = draft.customer?.lastName || ''
   const { countryCode, phone } = parsePhone(draft.customer?.phone || '')
+
+  // --- Shipping (canónico: { isRequired, addresses[] }) ---
+  const rawShipping = draft.shipping
+  const isRequired = !!rawShipping?.isRequired
+
+  // Prefer canonical shipping.addresses; fallback a legacy draft.addresses
+  const srcAddresses =
+    Array.isArray(rawShipping?.addresses) && rawShipping.addresses.length
+      ? rawShipping.addresses
+      : Array.isArray(draft.addresses)
+        ? draft.addresses
+        : []
+
+  // Normalizar SOLO para UI (sin filtrar incompletas, sin inventar IDs)
+  const addresses = srcAddresses.map((a) => ({
+    // preserva _id si existe (subdoc key); NO inventes "id"
+    ...('_id' in (a || {}) && a._id ? { _id: a._id } : {}),
+    street: (a?.street || a?.address || '').trim(),
+    city: (a?.city || '').trim(),
+    state: (a?.state || '').trim(),
+    zip: String(a?.zip || '').trim(),
+    country: (a?.country || 'Mexico').trim(),
+    phone: String(a?.phone || '').trim(),
+    reference: (a?.reference || '').trim(),
+    countryCode: (a?.countryCode || '+52').trim(),
+    name: (a?.name || '').trim(),
+  }))
 
   return {
     // Customer
@@ -96,14 +135,16 @@ export function prefillFormFromDraft(draft = {}) {
     // Payment
     deposit: draft.deposit ?? '',
 
-    // Shipping
-    shipping: Boolean(draft.shipping?.isRequired),
-    addresses: draft.shipping?.addresses || [],
+    // Shipping (canónico; NADA en la raíz)
+    shipping: {
+      isRequired,
+      addresses, // si isRequired y vienen vacías, el validador de UI hará su trabajo
+    },
 
-    // Notes
+    // Notas (si las manejas aquí)
     notes: draft.notes || '',
   }
-}
+} // end prefillFormFromDraft
 
 /**
  * Validates the basic order form (NewOrder).
@@ -131,7 +172,6 @@ export function validateBaseForm(formData) {
   if (!formData.orderDate) errors.orderDate = 'errors.order.missingDate'
 
   // Validate delivery date is not before the order date
-  // Validate delivery date is not before the order date
   if (formData.deliverDate && formData.orderDate) {
     const od = parseDateInput(formData.orderDate)
     const dd = parseDateInput(formData.deliverDate)
@@ -150,38 +190,87 @@ export function validateBaseForm(formData) {
     errors.email = 'errors.user.invalidEmail'
   }
 
-  // Shipping validation (only if shipping is required)
-  if (formData.shipping) {
-    const addresses = formData.addresses || []
+  // --- Shipping validation (only if shipping is required) ---
+  const isShippingRequired = !!formData.shipping?.isRequired
+
+  // Prefer shipping.addresses; fallback to legacy addresses in root
+  const addressesIn = Array.isArray(formData.shipping?.addresses)
+    ? formData.shipping.addresses
+    : Array.isArray(formData.addresses)
+      ? formData.addresses
+      : []
+
+  const digitsOnly = (v) => String(v ?? '').replace(/\D+/g, '')
+  const trim = (v) => String(v ?? '').trim()
+
+  const REQUIRED_FIELDS = ['street', 'city', 'state', 'zip', 'country', 'phone']
+
+  const isRowEmpty = (addr) => {
+    if (!addr) return true
+    // treat phone/zip after stripping non-digits
+    const allEmpty =
+      !trim(addr.street) &&
+      !trim(addr.city) &&
+      !trim(addr.state) &&
+      !digitsOnly(addr.zip) &&
+      !trim(addr.country) &&
+      !digitsOnly(addr.phone) &&
+      !trim(addr.reference)
+    return allEmpty
+  }
+
+  const isRowComplete = (addr) => {
+    if (!addr) return false
+    const phone = digitsOnly(addr.phone)
+    const zip = digitsOnly(addr.zip)
+    return (
+      !!trim(addr.street) &&
+      !!trim(addr.city) &&
+      !!trim(addr.state) &&
+      zip.length === 5 &&
+      !!trim(addr.country) &&
+      phone.length === 10
+    )
+  }
+
+  if (isShippingRequired) {
     const addressErrors = []
 
-    addresses.forEach((addr, i) => {
+    addressesIn.forEach((addr, i) => {
       const errs = {}
-
-      if (Object.values(addr).every((val) => !val || val.trim() === '')) {
-        // skip empty form
+      if (isRowEmpty(addr)) {
+        addressErrors[i] = errs // ignore totally empty rows
         return
       }
 
-      if (!addr.address?.trim()) errs.address = 'validation.address'
-      if (!addr.city?.trim()) errs.city = 'validation.city'
-      if (!addr.zip?.trim()) errs.zip = 'validation.zip'
-      if (!addr.phone?.trim()) errs.phone = 'validation.phone'
+      if (!trim(addr.street)) errs.street = 'validation.street'
+      if (!trim(addr.city)) errs.city = 'validation.city'
+      if (!trim(addr.state)) errs.state = 'validation.state'
+
+      const zip = digitsOnly(addr.zip)
+      if (!zip) errs.zip = 'validation.zip'
+      else if (zip.length !== 5) errs.zip = 'errors.zip.mx5digits'
+
+      if (!trim(addr.country)) errs.country = 'validation.country'
+
+      const phone = digitsOnly(addr.phone)
+      if (!phone) errs.phone = 'validation.phone'
+      else if (phone.length !== 10) errs.phone = 'errors.user.invalidPhone'
 
       addressErrors[i] = errs
     })
 
-    // At least one complete address required
-    const nonEmpty = addressErrors.filter((e) => Object.keys(e).length === 0)
-    if (nonEmpty.length === 0) {
+    const hasValidAddress = addressesIn.some(isRowComplete)
+
+    if (!hasValidAddress) {
       errors.addresses = addressErrors.length > 0 ? addressErrors : ['incomplete']
-    } else if (addressErrors.some((e) => Object.keys(e).length > 0)) {
+    } else if (addressErrors.some((e) => e && Object.keys(e).length > 0)) {
       errors.addresses = addressErrors
     }
   }
 
   return errors
-}
+} // end validateBaseForm
 
 /**
  * Builds the base order object from form data.
@@ -201,9 +290,17 @@ export function buildBaseOrder(formData, opts = {}) {
 
   // Normalize status to new enum (lowercase)
   const status = ensureStatus(formData.status)
+  // Determine shipping requirement and addresses source
+  const isShippingRequired = !!formData?.shipping?.isRequired
+  const rawAddresses = Array.isArray(formData?.shipping?.addresses)
+    ? formData.shipping.addresses
+    : []
 
-  // Clean addresses (only keep complete ones)
-  const addresses = formData.shipping ? cleanAddresses(formData.addresses) : []
+  const shipping = {
+    isRequired: isShippingRequired,
+    // Pass-through; final normalization/filtering happens in orderPayload.normalizeShipping
+    addresses: rawAddresses,
+  }
 
   return {
     orderDate,
@@ -212,10 +309,7 @@ export function buildBaseOrder(formData, opts = {}) {
     deposit: Number(formData.deposit || 0),
     notes: formData.notes,
 
-    shipping: {
-      isRequired: !!formData.shipping,
-      addresses,
-    },
+    shipping,
 
     // NOTE: This 'customer' is the base info. Your final create endpoint
     // should findOrCreate a Customer and replace with its ObjectId server-side.
@@ -227,4 +321,4 @@ export function buildBaseOrder(formData, opts = {}) {
       socialMedia,
     },
   }
-}
+} // end buildBaseOrder

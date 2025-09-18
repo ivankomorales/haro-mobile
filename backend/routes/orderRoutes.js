@@ -1,3 +1,4 @@
+//backend/routes/orderRoutes.js
 const express = require("express");
 const router = express.Router();
 
@@ -10,6 +11,7 @@ const {
   getOrdersByStatus,
   getOrderStats,
   updateOrder,
+  updateOrderAtomic,
   updateOrderStatus,
   updateManyOrderStatus,
   addOrderNote,
@@ -75,6 +77,10 @@ router.put(
 // Update status on multiple orders
 router.patch("/bulk/status", requireAdmin, updateManyOrderStatus);
 
+// Atomic partial update (does not load the doc; triggers pre('findOneAndUpdate'))
+// Use runValidators + context:'query' from the controller
+router.patch("/:id", verifyOwnershipOrAdmin, updateOrderAtomic);
+
 // Update only the order status
 router.patch("/:id/status", verifyOwnershipOrAdmin, updateOrderStatus);
 
@@ -90,7 +96,7 @@ router.delete("/:id", requireAdmin, cancelOrder);
 //
 
 router.post("/export/pdf", requireAdmin, exportOrdersToPDF);
-// futuros: excel, word
+
 router.post("/export/excel", requireAdmin, exportOrdersToExcel);
 // router.post("/export/word", requireAdmin, exportOrdersToWord);
 
