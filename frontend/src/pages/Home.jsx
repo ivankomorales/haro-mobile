@@ -1,12 +1,12 @@
 // src/pages/home/Home.jsx
 import { useEffect, useState } from 'react'
-import { getRecentOrders, getPendingCount } from '../api/orders'
 import { useNavigate } from 'react-router-dom'
-import { getMessage as t } from '../utils/getMessage'
-import { useLayout } from '../context/LayoutContext'
-import { OrderCard } from '../components/OrderCard'
 
+import { getRecentOrders, getPendingCount } from '../api/orders'
+import { OrderCard } from '../components/OrderCard'
 import OrderDetailsModal from '../components/OrderDetailsModal'
+import { useLayout } from '../context/LayoutContext'
+import { getMessage as t } from '../utils/getMessage'
 
 export default function Home() {
   const [lastUpdated, setLastUpdated] = useState(null)
@@ -94,6 +94,7 @@ export default function Home() {
           order={selectedOrder}
           glazes={glazes || []} // empty until lazy-loaded
           onClose={() => setSelectedOrder(null)}
+          t={t}
         />
       </div>
     </div>

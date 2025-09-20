@@ -1,14 +1,15 @@
 // src/pages/glazes/GlazeListPage.jsx
+import { Pencil, Trash2, Plus, ArrowUpDown, ChevronUp, ChevronDown, RotateCcw } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
+
 import { getAllGlazes, deactivateGlaze, activateGlaze } from '../../api/glazes'
-import { Pencil, Trash2, Plus, ArrowUpDown, ChevronUp, ChevronDown, RotateCcw } from 'lucide-react'
 import ConfirmModal from '../../components/ConfirmModal'
+import TableSkeleton from '../../components/TableSkeleton'
 import { useLayout } from '../../context/LayoutContext'
 import { getMessage as t } from '../../utils/getMessage'
 
 // Skeleton
-import TableSkeleton from '../../components/TableSkeleton'
 
 function norm(s) {
   return (s || '')

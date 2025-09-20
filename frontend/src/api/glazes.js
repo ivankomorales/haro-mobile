@@ -1,5 +1,4 @@
 // src/api/glazes.js
-
 import fetchWithAuth from '../utils/fetchWithAuth'
 
 /**

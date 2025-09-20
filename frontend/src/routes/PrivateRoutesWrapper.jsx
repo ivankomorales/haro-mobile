@@ -1,6 +1,7 @@
 import { Route, Navigate } from 'react-router-dom'
-import { privateRoutes } from './privateRoutes'
+
 import PrivateRoute from './PrivateRoute'
+import { privateRoutes } from './privateRoutes'
 import DashboardLayout from '../layouts/DashboardLayout'
 
 export default function PrivateRoutes() {

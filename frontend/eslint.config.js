@@ -1,29 +1,44 @@
-import js from '@eslint/js'
+import { defineConfig } from 'eslint/config'
+import importPlugin from 'eslint-plugin-import'
+import pluginReact from 'eslint-plugin-react'
 import globals from 'globals'
-import reactHooks from 'eslint-plugin-react-hooks'
-import reactRefresh from 'eslint-plugin-react-refresh'
-import { defineConfig, globalIgnores } from 'eslint/config'
 
 export default defineConfig([
-  globalIgnores(['dist']),
   {
-    files: ['**/*.{js,jsx}'],
-    extends: [
-      js.configs.recommended,
-      reactHooks.configs['recommended-latest'],
-      reactRefresh.configs.vite,
-    ],
+    files: ['**/*.{js,mjs,cjs,jsx}'],
     languageOptions: {
-      ecmaVersion: 2020,
       globals: globals.browser,
-      parserOptions: {
-        ecmaVersion: 'latest',
-        ecmaFeatures: { jsx: true },
-        sourceType: 'module',
-      },
+      ecmaVersion: 'latest',
+      sourceType: 'module',
+    },
+    plugins: {
+      react: pluginReact,
+      import: importPlugin,
     },
     rules: {
-      'no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]' }],
+      // React
+      'react/react-in-jsx-scope': 'off', // React 17+ doesn’t need `import React`
+
+      // Import organization
+      'import/order': [
+        'error',
+        {
+          groups: [
+            'builtin', // Node built-ins like fs, path
+            'external', // npm modules
+            'internal', // alias paths like src/*
+            ['parent', 'sibling', 'index'], // relative imports
+          ],
+          'newlines-between': 'always',
+          alphabetize: { order: 'asc', caseInsensitive: true },
+        },
+      ],
+    },
+    settings: {
+      react: {
+        version: 'detect',
+      },
     },
   },
+  pluginReact.configs.flat.recommended,
 ])

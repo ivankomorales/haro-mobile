@@ -1,6 +1,7 @@
 // src/components/OrderDetailsModal.jsx
 import { Dialog, DialogPanel, DialogTitle, Transition, TransitionChild } from '@headlessui/react'
 import { Fragment } from 'react'
+
 import OrderDetailsCard from './OrderDetailsCard'
 import { getMessage as t } from '../utils/getMessage'
 import { formatProductsWithLabels } from '../utils/transformProducts'
@@ -72,7 +73,7 @@ export default function OrderDetailsModal({ open, order, onClose, i18n, glazes }
                 <button
                   type="button"
                   onClick={onClose}
-                  className="rounded bg-gray-200 px-4 py-2 text-sm font-medium hover:bg-gray-300 dark:bg-neutral-700 dark:hover:bg-neutral-600"
+                  className="rounded bg-gray-200 px-4 py-2 text-sm font-medium hover:bg-gray-300 dark:bg-neutral-200 dark:hover:bg-neutral-600"
                 >
                   {t('button.close')}
                 </button>

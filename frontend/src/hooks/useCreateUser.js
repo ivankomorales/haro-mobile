@@ -1,6 +1,6 @@
 // src/hooks/useCreateUser.js
-import { createUser } from '../api/users'
 import { logout } from '../api/auth'
+import { createUser } from '../api/users'
 
 /**
  * Custom hook to handle user creation logic with validation and error handling.

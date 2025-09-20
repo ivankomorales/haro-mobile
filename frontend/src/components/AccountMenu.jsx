@@ -1,6 +1,6 @@
 // src/components/AccountMenu.jsx
-import { useEffect, useRef, useState } from 'react'
 import { UserRoundPen, Settings, LogOut, Upload, X } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
 
 function getInitials(nameOrEmail = '') {
   const base = nameOrEmail.includes('@')

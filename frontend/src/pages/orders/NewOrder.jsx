@@ -1,23 +1,25 @@
 // src/pages/orders/NewOrder.jsx
-import { useState, useEffect, useRef } from 'react'
-import { useNavigate, useLocation } from 'react-router-dom'
-import FormInput from '../../components/FormInput'
-import FormActions from '../../components/FormActions'
-import FormAddress from '../../components/FormAddress'
 import { Menu, MenuButton, MenuItem, MenuItems, Switch } from '@headlessui/react'
 import { Instagram, Facebook, Plus, ChevronDown } from 'lucide-react'
-import { showSuccess, showError } from '../../utils/toastUtils'
-import { getMessage as t } from '../../utils/getMessage'
-import { prefillFormFromDraft, validateBaseForm, buildBaseOrder } from '../../utils/orderBuilder'
+import { useState, useEffect, useRef } from 'react'
+import { useNavigate, useLocation } from 'react-router-dom'
+
+import FormActions from '../../components/FormActions'
+import FormAddress from '../../components/FormAddress'
+import FormInput from '../../components/FormInput'
 import { useLayout } from '../../context/LayoutContext'
-import { getOriginPath } from '../../utils/navigationUtils'
 import { useShippingAddresses } from '../../hooks/useShippingAddresses'
+import { getMessage as t } from '../../utils/getMessage'
+import { normalizeBaseOrder } from '../../utils/mappers/baseOrder'
+import { getOriginPath } from '../../utils/navigationUtils'
+import { prefillFormFromDraft, validateBaseForm, buildBaseOrder } from '../../utils/orderBuilder'
+import { showSuccess, showError } from '../../utils/toastUtils'
 
 export default function NewOrder() {
   const navigate = useNavigate()
   const location = useLocation()
   const { setTitle, setShowSplitButton, resetLayout } = useLayout()
-
+  const socialInputRef = useRef(null)
   //console.log('location.state:', location.state) //CONSOLE LOG LOCATION STATE
 
   // Edit Mode Variables
@@ -52,6 +54,16 @@ export default function NewOrder() {
     notes: '',
   })
 
+  // after formData state init
+  useEffect(() => {
+    if (!formData.orderDate) {
+      const today = new Date().toISOString().slice(0, 10)
+      setFormData((prev) => ({ ...prev, orderDate: today }))
+    }
+    // run once on mount
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   // TITLE AND SPLITACTION BUTTON
   useEffect(() => {
     setTitle(isEditBase ? t('order.editTitle') : t('order.newTitle'))
@@ -73,12 +85,6 @@ export default function NewOrder() {
   const setTypeAndPrefill = (type) => {
     setCurrentSocialType(type)
     setSocialInput(formData.socialMedia?.[type] || '')
-  }
-
-  // General input handler
-  const handleChange = (e) => {
-    const { name, value } = e.target
-    setFormData((prev) => ({ ...prev, [name]: value }))
   }
 
   // Add or update social media manually
@@ -135,38 +141,21 @@ export default function NewOrder() {
     setFormData
   )
 
-  // Prefill desde location.state (draft/baseOrder) -> formData
+  // Prefill from location.state (draft/baseOrder) -> formData
   useEffect(() => {
     if (!location.state) return
     const filled = prefillFormFromDraft(location.state)
-    setFormData((prev) => {
-      const merged = { ...prev, ...filled }
-      // Enforce canonical shape
-      if (!merged.shipping || typeof merged.shipping === 'boolean') {
-        merged.shipping = { isRequired: !!merged.shipping, addresses: [] }
-      }
-      if (!Array.isArray(merged.shipping.addresses)) merged.shipping.addresses = []
-      // Normalize new fields
-      merged.shipping.addresses = merged.shipping.addresses.map((a) => ({
-        street: a?.street || '',
-        city: a?.city || '',
-        state: a?.state || '',
-        zip: a?.zip || '',
-        country: a?.country || 'Mexico',
-        phone: a?.phone || '',
-        reference: a?.reference || '',
-      }))
-      return merged
-    })
+    setFormData((prev) => normalizeBaseOrder({ ...prev, ...filled }))
   }, [location.state])
 
-  // Camino único: Validar + armar baseOrder + navegar
+  // Single flow: validate, build baseOrder, then navigate
   const handleBaseSubmit = (e) => {
     e.preventDefault()
     setErrors({})
 
     // 1) Validate required fields
-    const errs = validateBaseForm(formData)
+    const normalized = normalizeBaseOrder(formData)
+    const errs = validateBaseForm(normalized)
     if (Object.keys(errs).length > 0) {
       setErrors(errs)
       showError('validation.requiredFields')
@@ -176,10 +165,7 @@ export default function NewOrder() {
     }
 
     // 2) Build the draft order from the current form state
-    const baseOrder = buildBaseOrder(formData, {
-      socialInput,
-      currentSocialType,
-    })
+    const baseOrder = buildBaseOrder(normalized, { socialInput, currentSocialType })
 
     // 3) Normalize dates: remove empty strings to avoid sending invalid values
     if (!baseOrder.deliverDate) delete baseOrder.deliverDate
@@ -224,7 +210,7 @@ export default function NewOrder() {
   }
 
   return (
-    <div className="h-full min-h-0 bg-white rounded-xl text-black dark:bg-neutral-900 dark:text-gray-100">
+    <div className="h-full min-h-0 rounded-xl bg-white text-black dark:bg-neutral-900 dark:text-gray-100">
       <form
         onSubmit={handleBaseSubmit}
         className="mx-auto mb-[var(--bottom-bar-h)] max-w-2xl space-y-6 px-4 py-6 sm:mb-2"
@@ -272,7 +258,7 @@ export default function NewOrder() {
                   name="countryCode"
                   aria-label={t('order.countryCode') || 'Country code'}
                   value={formData.countryCode}
-                  onChange={handleChange}
+                  onChange={handleChangeAndClearError}
                   className="h-11 w-24 rounded-md border border-neutral-300 bg-white px-2 text-sm dark:border-neutral-700 dark:bg-neutral-800 dark:text-white"
                 >
                   <option value="+52">+52</option>
@@ -333,6 +319,7 @@ export default function NewOrder() {
 
                       {/* Social input */}
                       <input
+                        ref={socialInputRef}
                         type="text"
                         placeholder={
                           currentSocialType === 'instagram'
@@ -400,13 +387,7 @@ export default function NewOrder() {
                         className="text-xs underline-offset-2 hover:underline"
                         onClick={() => {
                           setTypeAndPrefill(type)
-                          setTimeout(() => {
-                            document
-                              .querySelector(
-                                'input[placeholder="@username"], input[placeholder^="/"], input[placeholder^="URL"]'
-                              )
-                              ?.focus()
-                          }, 0)
+                          socialInputRef.current?.focus()
                         }}
                       >
                         {t('order.editLabel')}
@@ -479,7 +460,7 @@ export default function NewOrder() {
                 <select
                   name="status"
                   value={formData.status}
-                  onChange={handleChange}
+                  onChange={handleChangeAndClearError}
                   className="h-11 w-full rounded-md border border-neutral-300 bg-white px-3 text-sm dark:border-neutral-700 dark:bg-neutral-800 dark:text-white"
                 >
                   <option value="new">{t('status.new')}</option>

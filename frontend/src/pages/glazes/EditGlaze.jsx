@@ -2,15 +2,16 @@
 // comments in English only
 import { useEffect, useRef, useState, useMemo } from 'react' 
 import { useNavigate, useParams, useLocation } from 'react-router-dom'
-import FormInput from '../../components/FormInput'
-import { uploadToCloudinary } from '../../utils/uploadToCloudinary'
-import ImageUploader from '../../components/ImageUploader'
-import { getMessage as t } from '../../utils/getMessage'
-import FormActions from '../../components/FormActions'
-import { getOriginPath } from '../../utils/navigationUtils'
-import { useLayout } from '../../context/LayoutContext'
+
 import { getGlazeById, updateGlaze } from '../../api/glazes'
+import FormActions from '../../components/FormActions'
+import FormInput from '../../components/FormInput'
+import ImageUploader from '../../components/ImageUploader'
+import { useLayout } from '../../context/LayoutContext'
+import { getMessage as t } from '../../utils/getMessage'
+import { getOriginPath } from '../../utils/navigationUtils'
 import { showLoading, showSuccess, showError, dismissToast } from '../../utils/toastUtils'
+import { uploadToCloudinary } from '../../utils/uploadToCloudinary'
 
 export default function EditGlaze() {
   const { id } = useParams()
@@ -204,7 +205,7 @@ export default function EditGlaze() {
             <ImageUploader
               multiple={false}
               value={formData.newImages}
-              onChange={(imgs) => setFormData((s) => ({ ...s, newImages: imgs }))}
+              onChange={(imgs) => setFormData((s) => ({ ...s, newImages: imgs }))} // s = prev
             />
 
             <div className="text-xs text-neutral-500">

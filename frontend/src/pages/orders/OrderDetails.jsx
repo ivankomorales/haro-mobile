@@ -1,9 +1,10 @@
-import OrderDetailsCard from '../../components/OrderDetailsCard'
-import { getOrderById } from '../../api/orders'
-import { useParams, useNavigate, useLocation } from 'react-router-dom'
 import { useEffect, useState } from 'react'
-import { showError } from '../../utils/toastUtils'
+import { useParams, useNavigate, useLocation } from 'react-router-dom'
+
+import { getOrderById } from '../../api/orders'
+import OrderDetailsCard from '../../components/OrderDetailsCard'
 import { getMessage as t } from '../../utils/getMessage'
+import { showError } from '../../utils/toastUtils'
 import { formatProductsWithLabels } from '../../utils/transformProducts'
 
 export default function OrderDetails() {

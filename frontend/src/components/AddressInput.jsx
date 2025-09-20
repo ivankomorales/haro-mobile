@@ -1,6 +1,7 @@
 // src/components/AddressInput.jsx
-import FormInput from './FormInput'
 import { Trash2 } from 'lucide-react'
+
+import FormInput from './FormInput'
 
 // Renders a grouped set of input fields for shipping addresses.
 // Supports validation errors, dynamic indexing, and a remove button for handling multiple address entries in a form.

@@ -1,7 +1,8 @@
 // components/FormInput.jsx
-import { useState } from 'react'
 import { Eye, EyeOff, Calendar, XCircle } from 'lucide-react'
+import { useState } from 'react'
 import DatePicker from 'react-datepicker'
+
 import 'react-datepicker/dist/react-datepicker.css'
 import { fromYMD, toYMD } from '../utils/date'
 

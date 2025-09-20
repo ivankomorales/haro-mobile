@@ -1,6 +1,7 @@
 // src/components/ImageUploader.jsx
-import { useRef, useMemo, useEffect, useId } from 'react'
 import { ImagePlus, X, RefreshCcw } from 'lucide-react'
+import { useRef, useMemo, useEffect, useId } from 'react'
+
 import DropWrap from './DropWrap' // 👈 está en /src/components
 
 export default function ImageUploader({

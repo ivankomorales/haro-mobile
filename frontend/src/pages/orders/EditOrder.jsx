@@ -1,15 +1,6 @@
 // src/pages/orders/EditOrder.jsx
-import { useEffect, useRef, useState } from 'react'
-import { useNavigate, useParams, useLocation } from 'react-router-dom'
-import { getOrderById, updateOrderById } from '../../api/orders'
-import { getAllGlazes } from '../../api/glazes'
-import { uploadToCloudinary } from '../../utils/uploadToCloudinary'
-import AddedProductsCart from '../../components/AddedProductsCart'
-import { getMessage as t } from '../../utils/getMessage'
-import { getOriginPath } from '../../utils/navigationUtils'
-import { showError, showSuccess, showLoading, dismissToast } from '../../utils/toastUtils'
 import { Menu, MenuButton, MenuItem, MenuItems, Switch } from '@headlessui/react'
-import { toProductPayload, buildOrderPayload } from '../../utils/orderPayload'
+
 import { getApiMessage } from '../../utils/errorUtils' // if you have it
 import { useLayout } from '../../context/LayoutContext'
 import FormInput from '../../components/FormInput'
@@ -26,9 +17,20 @@ import {
   Sparkles,
   Type as TypeIcon,
 } from 'lucide-react'
+import { useEffect, useRef, useState, useMemo } from 'react'
+import { useNavigate, useParams, useLocation,  } from 'react-router-dom'
+import { getAllGlazes } from '../../api/glazes'
+import { getOrderById, updateOrderById } from '../../api/orders'
+import AddedProductsCart from '../../components/AddedProductsCart'
 import GlazeTypeahead from '../../components/GlazeTypeahead'
 import ImageUploader from '../../components/ImageUploader'
 import { useShippingAddresses } from '../../hooks/useShippingAddresses'
+import { getMessage as t } from '../../utils/getMessage'
+import { normalizeProductForm } from '../../utils/mappers/product'
+import { getOriginPath } from '../../utils/navigationUtils'
+import { toProductPayload, buildOrderPayload } from '../../utils/orderPayload'
+import { showError, showSuccess, showLoading, dismissToast } from '../../utils/toastUtils'
+import { uploadToCloudinary } from '../../utils/uploadToCloudinary'
 
 const TABS = { CUSTOMER: 'customer', PRODUCT: 'product' }
 
@@ -36,6 +38,7 @@ export default function EditOrder() {
   const { id } = useParams()
   const navigate = useNavigate()
   const location = useLocation()
+  const socialInputRef = useRef(null)
 
   // Current URL
   const here = location.pathname + location.search
@@ -52,6 +55,7 @@ export default function EditOrder() {
   const [glazes, setGlazes] = useState([])
   const [editingIndex, setEditingIndex] = useState(null) // to edit a product
   const isEditingProduct = editingIndex !== null
+  const glazeMap = useMemo(() => new Map(glazes.map((g) => [String(g._id), g])), [glazes])
 
   const emptyAddress = {
     street: '',
@@ -333,31 +337,8 @@ export default function EditOrder() {
       return
     }
 
-    const interior = glazes.find((g) => g._id === pForm.glazeInterior)
-    const exterior = glazes.find((g) => g._id === pForm.glazeExterior)
-
     const uiProduct = {
-      ...pForm,
-      price: Number(pForm.price || 0),
-      discount: Number(pForm.discount || 0),
-      quantity: Number(pForm.quantity || 1),
-      figures: Number(pForm.figures || 1),
-      glazes: {
-        interior: interior?._id || null,
-        exterior: exterior?._id || null,
-        interiorName: interior?.name || '',
-        interiorHex: interior?.hex || '',
-        exteriorName: exterior?.name || '',
-        exteriorHex: exterior?.hex || '',
-        interiorImage: interior?.image || '',
-        exteriorImage: exterior?.image || '',
-      },
-      decorations: {
-        hasGold: !!pForm?.decorations?.hasGold,
-        hasName: !!pForm?.decorations?.hasName,
-        // outerDrawing: !!pForm?.decorations?.outerDrawing,
-        decorationDescription: pForm?.decorations?.decorationDescription || '',
-      },
+      ...normalizeProductForm(pForm, glazeMap),
       ...(isEditingProduct && products[editingIndex]?._id
         ? { _id: products[editingIndex]._id }
         : {}),
@@ -389,31 +370,8 @@ export default function EditOrder() {
         return
       }
 
-      const interior = glazes.find((g) => g._id === pForm.glazeInterior)
-      const exterior = glazes.find((g) => g._id === pForm.glazeExterior)
-
       const uiProduct = {
-        ...pForm,
-        price: Number(pForm.price || 0),
-        discount: Number(pForm.discount || 0),
-        quantity: Number(pForm.quantity || 1),
-        figures: Number(pForm.figures || 1),
-        glazes: {
-          interior: interior?._id || null,
-          exterior: exterior?._id || null,
-          interiorName: interior?.name || '',
-          interiorHex: interior?.hex || '',
-          exteriorName: exterior?.name || '',
-          exteriorHex: exterior?.hex || '',
-          interiorImage: interior?.image || '',
-          exteriorImage: exterior?.image || '',
-        },
-        decorations: {
-          hasGold: !!pForm?.decorations?.hasGold,
-          hasName: !!pForm?.decorations?.hasName,
-          // outerDrawing: !!pForm?.decorations?.outerDrawing,
-          decorationDescription: pForm?.decorations?.decorationDescription || '',
-        },
+        ...normalizeProductForm(pForm, glazeMap),
         ...(products[editingIndex]?._id ? { _id: products[editingIndex]._id } : {}),
       }
 
@@ -644,6 +602,7 @@ export default function EditOrder() {
 
                               {/* Social input */}
                               <input
+                                ref={socialInputRef}
                                 type="text"
                                 placeholder={
                                   currentSocialType === 'instagram'
@@ -711,13 +670,7 @@ export default function EditOrder() {
                                 className="text-xs underline-offset-2 hover:underline"
                                 onClick={() => {
                                   setTypeAndPrefill(type)
-                                  setTimeout(() => {
-                                    document
-                                      .querySelector(
-                                        'input[placeholder="@username"], input[placeholder^="/"], input[placeholder^="URL"]'
-                                      )
-                                      ?.focus()
-                                  }, 0)
+                                  socialInputRef.current?.focus()
                                 }}
                               >
                                 {t('order.editLabel')}
@@ -1080,6 +1033,7 @@ export default function EditOrder() {
                               </span>
                             }
                             glazes={glazes}
+                            glazeMap={glazeMap}
                             selectedId={pForm.glazeInterior}
                             onChange={(id) => setPForm((prev) => ({ ...prev, glazeInterior: id }))}
                             t={t}
@@ -1094,6 +1048,7 @@ export default function EditOrder() {
                             </span>
                           }
                           glazes={glazes}
+                          glazeMap={glazeMap}
                           selectedId={pForm.glazeExterior}
                           onChange={(id) => setPForm((prev) => ({ ...prev, glazeExterior: id }))}
                           t={t}
@@ -1228,6 +1183,7 @@ export default function EditOrder() {
               products={products}
               onEdit={startEditProduct}
               onRemove={removeProduct}
+              deposit={formData?.deposit}
               t={t}
             />
             {/* ───────── Actions (save / cancel with originPath) ───────── */}

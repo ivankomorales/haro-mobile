@@ -1,4 +1,4 @@
-// GlazeTypeahead.jsx
+// src/components/GlazeTypeahead.jsx
 import { useEffect, useMemo, useRef, useState } from 'react'
 
 function normalize(s) {
@@ -13,9 +13,7 @@ export default function GlazeTypeahead({
   glazes = [], // [{_id, name, image?, hex?}]
   selectedId = '',
   onChange, // (id: string | '') => void
-  placeholder = 'Buscar esmalte...', //product.glazeSearch
-  noneText = 'Sin esmalte', //product.glazeNone
-  noResultsText = 'Sin resultados', //product.glazeNoResult
+  glazeMap,
   t,
 }) {
   const [open, setOpen] = useState(false)
@@ -23,9 +21,16 @@ export default function GlazeTypeahead({
   const rootRef = useRef(null)
   const inputRef = useRef(null)
 
+  const map = useMemo(() => {
+    if (glazeMap) return glazeMap
+    const m = new Map()
+    for (const g of glazes) m.set(String(g._id), g)
+    return m
+  }, [glazeMap, glazes])
+
   const selectedGlaze = useMemo(
-    () => glazes.find((g) => g._id === selectedId),
-    [glazes, selectedId]
+    () => (selectedId ? map.get(String(selectedId)) : null),
+    [map, selectedId]
   )
 
   const filtered = useMemo(() => {

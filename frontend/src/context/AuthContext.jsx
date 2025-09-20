@@ -1,10 +1,11 @@
 // comments in English only
 import { createContext, useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { getUserFromToken, isTokenExpired } from '../utils/jwt'
-import { showError, showSuccess } from '../utils/toastUtils'
+
 import { apiLogin, apiLogout } from '../api/auth'
 import { getMe } from '../api/users'
+import { getUserFromToken, isTokenExpired } from '../utils/jwt'
+import { showError, showSuccess } from '../utils/toastUtils'
 
 export const AuthContext = createContext(null)
 
@@ -43,11 +44,18 @@ export function AuthProvider({ children }) {
   const handleLogin = async (email, password) => {
     const data = await apiLogin(email, password) // throws on error
     if (!data?.token) throw new Error('auth.invalidToken')
+
+    // Save the token
     localStorage.setItem('token', data.token)
     setToken(data.token)
     setUser(getUserFromToken(data.token))
     await refreshUser()
-    navigate('/home')
+
+    // Redirect: back to where user was, or fallback to /home
+    const redirectTo = sessionStorage.getItem('postLoginRedirect') || '/home'
+
+    sessionStorage.removeItem('postLoginRedirect')
+    navigate(redirectTo, { replace: true })
   }
 
   const logout = (expired = false) => {

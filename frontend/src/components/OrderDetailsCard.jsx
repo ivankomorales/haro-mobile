@@ -1,210 +1,326 @@
 // src/components/OrderDetailsCard.js
-import { useMemo } from 'react'
-import { Phone, Mail, Globe, AlertCircle, SquarePen } from 'lucide-react'
 import { format } from 'date-fns'
+import { Phone, Mail, Globe, AlertCircle, SquarePen } from 'lucide-react'
+import { useMemo } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { getMessage as t } from '../utils/getMessage'
 import { makeGlazeMap, resolveGlazeFlexible } from '../utils/glazeUtils'
 
-/** Render a glaze thumbnail: image if present, otherwise a hex swatch */
 function GlazeThumb({ glaze }) {
-  // No glaze, nothing to show
   if (!glaze) return null
-
-  // Prefer image when available
   if (glaze.image) {
     return (
       <img
         src={glaze.image}
         alt={glaze.name || ''}
         title={glaze.name || ''}
-        className="h-6 w-6 rounded border"
+        className="h-5 w-5 rounded object-cover ring-1 ring-black/10 dark:ring-white/10"
       />
     )
   }
-
-  // Fallback to hex swatch
   if (glaze.hex) {
     return (
       <span
         title={glaze.name || glaze.hex}
-        className="inline-block h-6 w-6 rounded border"
+        className="inline-block h-5 w-5 rounded ring-1 ring-black/10 dark:ring-white/10"
         style={{ background: glaze.hex }}
       />
     )
   }
-
   return null
 }
 
-export default function OrderDetailsCard({
-  order = {},
-  glazes = [],
-  onEditBase,
-  onEditProducts,
-  // i18n TEXTS
-  shippingRequired = 'Requiere envío *',
-  subtotalLabel = 'Subtotal: ',
-  advanceLabel = 'Anticipo: ',
-  totalLabel = 'Total: ',
-  figureLabel = 'Figure',
-  glazeLabel = 'Glaze',
-  descriptionLabel = 'Descripción',
-}) {
+// 🔑 Single place to derive qty/unit/amount with smart fallbacks
+function deriveLine(p) {
+  const qty = Number(p?.quantity ?? 1)
+  // Treat price as UNIT by default
+  let unit = p?.unitPrice ?? p?.rate ?? (p?.price != null ? Number(p.price) : null)
+  // Prefer explicit totals if they exist
+  let amount = p?.total ?? p?.lineTotal ?? null
+  // If no explicit total, compute from unit×qty
+  if (amount == null && unit != null && qty) amount = unit * qty
+  // If total exists but no unit, infer unit from total/qty
+  if (unit == null && amount != null && qty) unit = amount / qty
+  return { qty, unit, amount }
+}
+
+export default function OrderDetailsCard({ order = {}, glazes = [] }) {
+  const navigate = useNavigate()
   const {
+    _id,
     orderID = '',
     orderDate,
-    deliverDate, // not currently shown
     customer = {},
-    deposit = 0,
     products = [],
     shipping = {},
-  } = order
+    currency = 'MXN',
+    totals: totalsObj,
+  } = order || {}
 
-  /** Fast glaze lookup map */
+  const nf = useMemo(
+    () =>
+      new Intl.NumberFormat(undefined, { style: 'currency', currency, maximumFractionDigits: 2 }),
+    [currency]
+  )
+  const $ = (v) => (v == null ? '—' : nf.format(Number(v)))
+
   const glazeMap = useMemo(() => makeGlazeMap(glazes), [glazes])
 
-  /** Billing totals (line price already includes qty) */
-  const subtotal = products.reduce((acc, item) => acc + Number(item.price || 0), 0)
-  const total = subtotal - deposit
+  // Totals (prefer backend; fallback to local sum of amounts)
+  const fallbackGross =
+    products.length > 0 ? products.reduce((sum, p) => sum + (deriveLine(p).amount ?? 0), 0) : null
+
+  const gross = (totalsObj && 'gross' in totalsObj ? totalsObj.gross : order.gross) ?? fallbackGross
+  const discount = (totalsObj && 'discount' in totalsObj ? totalsObj.discount : order.discount) ?? 0
+  const deposit = (totalsObj && 'deposit' in totalsObj ? totalsObj.deposit : order.deposit) ?? 0
+  const total =
+    (totalsObj && 'total' in totalsObj ? totalsObj.total : order.total) ??
+    (gross != null ? Number(gross) - Number(discount) - Number(deposit) : null)
+
+  const goEditCustomer = () => {
+    if (!_id) return
+    navigate(`/orders/${_id}/edit`) // we’ll adjust tab routing later
+  }
+  const goEditProductAt = (index) => {
+    if (!_id) return
+    navigate(`/orders/${_id}/edit`) // we’ll adjust tab routing later
+  }
+
+  const asDate = orderDate ? new Date(orderDate) : null
 
   return (
-    <div className="relative mx-auto w-full max-w-2xl space-y-6 rounded-xl bg-white p-4 text-black shadow-md dark:bg-neutral-900 dark:text-white">
+    <div className="relative mx-auto w-full max-w-4xl rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm dark:border-neutral-800 dark:bg-neutral-900">
       {/* Header */}
-      <div className="space-y-1 text-center">
-        {orderID && <p className="text-2xl font-bold">{orderID}</p>}
-        <p className="text-sm text-gray-500 dark:text-gray-400">
-          {orderDate ? format(orderDate, 'MMM dd, yyyy') : 'No date'}
-        </p>
-      </div>
+      <header className="mb-5 flex items-end justify-between">
+        <div>
+          {!!orderID && (
+            <div className="text-lg font-semibold tracking-wide text-neutral-900 dark:text-neutral-100">
+              {orderID}
+            </div>
+          )}
+          <div className="text-xs text-neutral-600 dark:text-neutral-400">
+            {asDate ? format(asDate, 'MMM dd, yyyy') : t('order.noDate') || 'No date'}
+          </div>
+        </div>
+      </header>
 
-      {/* Customer Info */}
-      <div className="relative rounded border border-gray-200 p-3 dark:border-neutral-700">
-        {/* <button
-          onClick={onEditBase}
-          className="absolute top-2 right-2 rounded p-1 hover:bg-gray-200 dark:hover:bg-neutral-700"
+      {/* Customer Data */}
+      <section className="relative mb-6 rounded-xl bg-neutral-50/60 p-4 ring-1 ring-black/5 dark:bg-neutral-800/50 dark:ring-white/5">
+        <button
+          type="button"
+          onClick={goEditCustomer}
+          className="absolute top-2 right-2 rounded-md p-1.5 text-neutral-600 hover:bg-white/70 hover:text-neutral-900 dark:text-neutral-300 dark:hover:bg-neutral-700"
+          title={t('order.editCustomer') || 'Edit customer'}
         >
           <SquarePen className="h-4 w-4" />
-        </button> */}
+        </button>
 
-        <div className="space-y-1">
-          <p className="font-semibold">
-            {customer.name} {customer.lastName}
-          </p>
+        <h3 className="mb-2 text-sm font-semibold tracking-wide text-neutral-800 dark:text-neutral-100">
+          {t('order.section.customerInfo') || 'Customer Info'}
+        </h3>
 
-          {customer.phone && (
-            <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-              <Phone className="h-4 w-4" /> {customer.phone}
+        <div className="space-y-1 text-sm">
+          <div className="font-medium text-neutral-900 dark:text-neutral-100">
+            {(customer.name || '') + (customer.lastName ? ` ${customer.lastName}` : '')}
+          </div>
+
+          {!!customer.phone && (
+            <div className="flex items-center gap-2 text-neutral-700 dark:text-neutral-300">
+              <Phone className="h-4 w-4" />
+              <span>{customer.phone}</span>
             </div>
           )}
 
-          {customer.email && (
-            <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-              <Mail className="h-4 w-4" /> {customer.email}
+          {!!customer.email && (
+            <div className="flex items-center gap-2 text-neutral-700 dark:text-neutral-300">
+              <Mail className="h-4 w-4" />
+              <span>{customer.email}</span>
             </div>
           )}
 
-          {/* If you want to show social media, your model uses customer.socialMedia */}
-          {customer.socialMedia &&
-            (customer.socialMedia.instagram || customer.socialMedia.facebook) && (
-              <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+          {!!customer.socialMedia &&
+            (customer.socialMedia.instagram ||
+              customer.socialMedia.facebook ||
+              customer.socialMedia.tiktok) && (
+              <div className="flex items-center gap-2 text-neutral-700 dark:text-neutral-300">
                 <Globe className="h-4 w-4" />
-                <span>
-                  {customer.socialMedia.instagram || ''}
-                  {customer.socialMedia.instagram && customer.socialMedia.facebook ? ' · ' : ''}
-                  {customer.socialMedia.facebook || ''}
+                <span className="truncate">
+                  {[
+                    customer.socialMedia.instagram,
+                    customer.socialMedia.facebook,
+                    customer.socialMedia.tiktok,
+                  ]
+                    .filter(Boolean)
+                    .join(' · ')}
                 </span>
               </div>
             )}
 
-          {shipping?.isRequired && (
-            <div className="mt-2 flex items-center gap-1 text-sm text-red-600">
-              <AlertCircle className="h-4 w-4" />
-              <span className="font-medium">{shippingRequired}</span>
+          {!!shipping?.isRequired && (
+            <div className="mt-2 inline-flex items-center gap-1 rounded-md bg-amber-50 px-2 py-1 text-xs font-medium text-amber-700 ring-1 ring-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-500/30">
+              <AlertCircle className="h-3.5 w-3.5" />
+              <span>{t('order.shippingRequired') || 'Shipping required'}</span>
             </div>
           )}
         </div>
-      </div>
+      </section>
 
-      {/* Payment */}
-      <div className="space-y-1 text-center text-sm">
-        <hr className="border-gray-300 dark:border-neutral-700" />
+      {/* Desktop invoice table */}
+      <section className="mb-4 hidden overflow-hidden rounded-xl ring-1 ring-black/5 md:block dark:ring-white/10">
+        <table className="min-w-full border-separate border-spacing-0">
+          <thead className="bg-neutral-50 text-xs tracking-wide text-neutral-500 uppercase dark:bg-neutral-800 dark:text-neutral-400">
+            <tr>
+              <th className="px-4 py-3 text-left font-semibold">
+                {t('invoice.product') || 'Product/Services'}
+              </th>
+              <th className="px-3 py-3 text-right font-semibold">{t('invoice.qty') || 'Qty'}</th>
+              <th className="px-3 py-3 text-right font-semibold">{t('invoice.rate') || 'Rate'}</th>
+              <th className="px-4 py-3 text-right font-semibold">
+                {t('invoice.amount') || 'Amount'}
+              </th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-neutral-200 bg-white text-sm dark:divide-neutral-800 dark:bg-neutral-900">
+            {products.map((p, index) => {
+              const gi = resolveGlazeFlexible(p.glazes?.interior, glazeMap, p, 'interior')
+              const ge = resolveGlazeFlexible(p.glazes?.exterior, glazeMap, p, 'exterior')
+              const { qty, unit, amount } = deriveLine(p)
 
-        <div className="inline-grid grid-cols-2 gap-x-4 text-left text-sm">
-          <span className="text-right">{subtotalLabel}</span>
-          <span className="text-left font-medium">${subtotal}</span>
+              return (
+                <tr key={p._id || index} className="group">
+                  <td className="relative px-4 py-3 align-top">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="font-medium text-neutral-900 dark:text-neutral-100">
+                        {p.label || p.type || t('product.unnamed') || 'Product'}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => goEditProductAt(index)}
+                        className="invisible rounded p-1 text-neutral-500 group-hover:visible hover:bg-neutral-100 hover:text-neutral-900 dark:text-neutral-300 dark:hover:bg-neutral-800"
+                        title={t('product.edit') || 'Edit'}
+                      >
+                        <SquarePen className="h-4 w-4" />
+                      </button>
+                    </div>
 
-          <span className="text-right">{advanceLabel}</span>
-          <span className="text-left text-red-500">-${deposit}</span>
+                    {(gi || ge) && (
+                      <div className="mt-1 flex items-center gap-2 text-xs text-neutral-600 dark:text-neutral-300">
+                        <span>{t('glaze.list') || 'Glazes'}:</span>
+                        <GlazeThumb glaze={gi} />
+                        <GlazeThumb glaze={ge} />
+                      </div>
+                    )}
 
-          <span className="text-right text-lg font-bold">{totalLabel}</span>
-          <span className="text-left text-lg font-bold">${total}</span>
-        </div>
+                    {!!p.description && (
+                      <div className="mt-1 text-xs text-neutral-600 dark:text-neutral-300">
+                        {p.description}
+                      </div>
+                    )}
+                  </td>
 
-        <hr className="border-gray-300 dark:border-neutral-700" />
-      </div>
+                  <td className="px-3 py-3 text-right align-top text-neutral-900 dark:text-neutral-100">
+                    {qty}
+                  </td>
+                  <td className="px-3 py-3 text-right align-top text-neutral-900 dark:text-neutral-100">
+                    {unit != null ? $(unit) : '—'}
+                  </td>
+                  <td className="px-4 py-3 text-right align-top font-medium text-neutral-900 dark:text-neutral-100">
+                    {amount != null ? $(amount) : '—'}
+                  </td>
+                </tr>
+              )
+            })}
 
-      {/* Products */}
-      <div className="space-y-6">
-        {products.map((product, index) => {
-          // Resolve interior/exterior using shared utils; falls back to product flat fields
-          const gi = resolveGlazeFlexible(product.glazes?.interior, glazeMap, product, 'interior')
-          const ge = resolveGlazeFlexible(product.glazes?.exterior, glazeMap, product, 'exterior')
+            {products.length === 0 && (
+              <tr>
+                <td
+                  colSpan={4}
+                  className="px-4 py-6 text-center text-neutral-600 dark:text-neutral-300"
+                >
+                  {t('cart.empty') || 'No products added'}
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </section>
 
-          const count = [gi, ge].filter(Boolean).length
-
-          return (
-            <div
-              key={index}
-              className="relative space-y-2 rounded border border-gray-200 bg-white p-3 dark:border-neutral-700 dark:bg-neutral-800"
-            >
-              {/* <button
-                onClick={() => onEditProducts?.(index)}
-                className="absolute top-2 right-2 rounded p-1 hover:bg-gray-200 dark:hover:bg-neutral-700"
+      {/* Mobile list: type, qty, amount only */}
+      <section className="mb-4 md:hidden">
+        <div className="space-y-2">
+          {products.map((p, index) => {
+            const { qty, amount } = deriveLine(p)
+            return (
+              <div
+                key={p._id || index}
+                className="group rounded-lg bg-white p-3 ring-1 ring-black/5 dark:bg-neutral-900 dark:ring-white/10"
               >
-                <SquarePen className="h-4 w-4" />
-              </button> */}
-
-              <p className="font-semibold">{product.label}</p>
-
-              <p className="text-sm">
-                {(() => {
-                  const label = product.figures === 1 ? figureLabel : `${figureLabel}s`
-                  return `${product.figures} ${label}`
-                })()}
-              </p>
-
-              {(gi || ge) && (
-                <div className="flex items-center gap-2">
-                  <p className="text-sm font-medium">
-                    {glazeLabel}
-                    {count > 1 ? 's' : ''}:
-                  </p>
-                  <GlazeThumb glaze={gi} />
-                  <GlazeThumb glaze={ge} />
+                <div className="flex items-start justify-between gap-2">
+                  <div className="font-medium text-neutral-900 dark:text-neutral-100">
+                    {p.label || p.type || t('product.unnamed') || 'Product'}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => goEditProductAt(index)}
+                    className="rounded p-1 text-neutral-500 hover:bg-neutral-100 hover:text-neutral-900 dark:text-neutral-300 dark:hover:bg-neutral-800"
+                    title={t('product.edit') || 'Edit'}
+                  >
+                    <SquarePen className="h-4 w-4" />
+                  </button>
                 </div>
-              )}
 
-              {product.description && (
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  {descriptionLabel}: {product.description}
-                </p>
-              )}
-
-              {product.images?.length > 0 && (
-                <div className="scrollbar-hide mt-2 flex gap-2 overflow-x-auto">
-                  {product.images.map((image, i) => (
-                    <img
-                      key={i}
-                      src={typeof image === 'string' ? image : image.url}
-                      alt={typeof image === 'string' ? '' : image.alt || ''}
-                      className="h-20 w-20 rounded-md object-cover"
-                    />
-                  ))}
+                <div className="mt-1 flex items-center gap-3 text-sm">
+                  <div className="text-neutral-600 dark:text-neutral-300">
+                    {t('invoice.qty') || 'Qty'}: <span className="font-medium">{qty}</span>
+                  </div>
+                  <div className="ml-auto font-semibold text-neutral-900 dark:text-neutral-100">
+                    {amount != null ? $(amount) : '—'}
+                  </div>
                 </div>
-              )}
+              </div>
+            )
+          })}
+
+          {products.length === 0 && (
+            <div className="rounded-lg bg-white p-4 text-center text-neutral-600 ring-1 ring-black/5 dark:bg-neutral-900 dark:text-neutral-300 dark:ring-white/10">
+              {t('cart.empty') || 'No products added'}
             </div>
-          )
-        })}
-      </div>
+          )}
+        </div>
+      </section>
+
+      {/* Summary */}
+      <section className="ml-auto w-full max-w-sm">
+        <div className="grid grid-cols-[1fr_auto] gap-y-1 text-sm">
+          <div className="text-neutral-600 dark:text-neutral-400">
+            {t('cart.subtotal') || 'Subtotal'}
+          </div>
+          <div className="font-medium text-neutral-900 dark:text-neutral-100">{$(gross)}</div>
+
+          {discount != null && Number(discount) > 0 && (
+            <>
+              <div className="text-neutral-600 dark:text-neutral-400">
+                {t('cart.discounts') || 'Discounts'}
+              </div>
+              <div className="font-medium text-emerald-600 dark:text-emerald-400">
+                −{$(discount)}
+              </div>
+            </>
+          )}
+
+          <div className="text-neutral-600 dark:text-neutral-400">
+            {t('cart.deposit') || 'Deposit'}
+          </div>
+          <div className="font-medium text-amber-600 dark:text-amber-400">−{$(deposit)}</div>
+
+          <div className="mt-2 border-t border-neutral-200 pt-2 text-base font-semibold dark:border-neutral-700 dark:text-neutral-400">
+            {t('cart.total') || 'Total'}
+          </div>
+          <div className="mt-2 border-t border-neutral-200 pt-2 text-base font-semibold dark:border-neutral-700 dark:text-neutral-400">
+            {$(total)}
+          </div>
+        </div>
+      </section>
     </div>
   )
 }

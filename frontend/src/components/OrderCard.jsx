@@ -1,5 +1,6 @@
 // src/components/OrderCard.jsx
 import React from 'react'
+
 import { getStatusLabel, getStatusClasses } from '../utils/orderStatusUtils'
 
 function OrderCardBase({ order, selectable = false, isSelected = false, onSelect, onClick, t }) {

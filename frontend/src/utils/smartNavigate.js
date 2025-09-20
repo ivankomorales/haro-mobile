@@ -1,7 +1,7 @@
 // src/utils/smartNavigate.js
 
-import { en as messages } from '../locales/en'
 import { ORDER_CREATION_ROUTES } from './constants' // or '../utils/constants' if used outside
+import { en as messages } from '../locales/en'
 
 /**
  * Smart navigation helper that intercepts route changes during critical flows.

@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+
 import fetchWithAuth from '../src/utils/fetchWithAuth'
 
 global.localStorage = {

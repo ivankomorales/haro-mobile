@@ -1,17 +1,17 @@
 // src/routes/privateRoutes.jsx
+import Dashboard from '../pages/Dashboard'
+import AddGlaze from '../pages/glazes/AddGlaze'
+import EditGlaze from '../pages/glazes/EditGlaze'
+import GlazeListPage from '../pages/glazes/GlazeListPage'
 import Home from '../pages/Home'
-import Orders from '../pages/orders/Orders'
-import NewOrder from '../pages/orders/NewOrder'
-import EditOrder from '../pages/orders/EditOrder'
 import AddProduct from '../pages/orders/AddProduct'
+import EditOrder from '../pages/orders/EditOrder'
+import NewOrder from '../pages/orders/NewOrder'
 import OrderConfirmation from '../pages/orders/OrderConfirmation'
 import OrderDetails from '../pages/orders/OrderDetails'
+import Orders from '../pages/orders/Orders'
 import AddUser from '../pages/users/AddUser'
-import AddGlaze from '../pages/glazes/AddGlaze'
-import Dashboard from '../pages/Dashboard'
 import UserProfile from '../pages/users/UserProfile'
-import GlazeListPage from '../pages/glazes/GlazeListPage'
-import EditGlaze from '../pages/glazes/EditGlaze'
 
 export const privateRoutes = [
   { path: '/home', element: <Home /> },

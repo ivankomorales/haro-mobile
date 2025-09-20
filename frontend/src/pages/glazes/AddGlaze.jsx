@@ -1,15 +1,14 @@
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import FormInput from '../../components/FormInput'
-import { useCreateGlaze } from '../../hooks/useCreateGlaze'
-import { uploadToCloudinary } from '../../utils/uploadToCloudinary'
-import ImageUploader from '../../components/ImageUploader'
-import { ChevronLeft } from 'lucide-react'
-import { getMessage as t } from '../../utils/getMessage'
+
 import FormActions from '../../components/FormActions'
-import { getOriginPath } from '../../utils/navigationUtils'
+import FormInput from '../../components/FormInput'
+import ImageUploader from '../../components/ImageUploader'
 import { useLayout } from '../../context/LayoutContext'
-import DropWrap from '../../components/DropWrap'
+import { useCreateGlaze } from '../../hooks/useCreateGlaze'
+import { getMessage as t } from '../../utils/getMessage'
+import { getOriginPath } from '../../utils/navigationUtils'
+import { uploadToCloudinary } from '../../utils/uploadToCloudinary'
 
 export default function AddGlaze() {
   const navigate = useNavigate()
@@ -118,13 +117,11 @@ export default function AddGlaze() {
             </div>
           </div>
 
-            <ImageUploader
-              multiple={false}
-              value={formData.images}
-              onChange={(imgs) => setFormData({ ...formData, images: imgs })}
-              
-            />
-
+          <ImageUploader
+            multiple={false}
+            value={formData.images}
+            onChange={(imgs) => setFormData((prev) => ({ ...prev, images: imgs }))}
+          />
 
           {error && <div className="text-sm text-red-500">{error}</div>}
           {success && <div className="text-sm text-green-600">{success}</div>}

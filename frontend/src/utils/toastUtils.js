@@ -1,6 +1,7 @@
 // utils/toastUtils.js
 
 import { toast } from 'react-hot-toast'
+
 import { getMessage } from './getMessage'
 
 /**

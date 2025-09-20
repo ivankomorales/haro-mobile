@@ -1,4 +1,4 @@
-// frontend/src/utils/exportUtils.js
+// src/utils/exportUtils.js
 import { showError, showLoading, dismissToast } from './toastUtils'
 
 export async function exportSelectedOrdersToPDF(orderIds) {
@@ -109,35 +109,52 @@ function makeCSV(headers, rows) {
 
 /**
  * Export an array of glazes (visible rows) to CSV on the client.
- * @param {Array} glazes - array of glaze objects
+ * @param {Map} glazes - Map of glaze objects
  */
-export async function exportGlazesToCSV(glazes) {
-  if (!Array.isArray(glazes) || glazes.length === 0) {
+export async function exportGlazesToCSV(glazesOrMap) {
+  // Normalize input to a plain array
+  const list = Array.isArray(glazesOrMap)
+    ? glazesOrMap
+    : glazesOrMap instanceof Map
+      ? Array.from(glazesOrMap.values())
+      : []
+
+  if (list.length === 0) {
     return showError('No glazes to export')
   }
 
   const toastId = showLoading('Exporting CSV…')
   try {
     const headers = ['Name', 'Code', 'Hex', 'Active', 'Image URL', 'Updated At', 'Created At', 'ID']
-    const rows = glazes.map((g) => [
-      g.name || '',
-      g.code || '',
-      g.hex || '',
-      g.isActive ? 'true' : 'false',
-      g.image || '',
-      g.updatedAt || '',
-      g.createdAt || '',
-      g._id || '',
+
+    const toISO = (v) => (v ? new Date(v).toISOString() : '')
+    const rows = list.map((g) => [
+      g?.name ?? '',
+      g?.code ?? '',
+      // prefer `hex`, fallback to `colorHex`
+      g?.hex ?? g?.colorHex ?? '',
+      g?.isActive ? 'true' : 'false',
+      g?.image ?? '',
+      toISO(g?.updatedAt),
+      toISO(g?.createdAt),
+      String(g?._id ?? ''),
     ])
 
     const csv = makeCSV(headers, rows)
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+
+    // Add BOM so Excel opens UTF-8 accents correctly
+    const blob = new Blob(['\ufeff', csv], { type: 'text/csv;charset=utf-8;' })
     const url = URL.createObjectURL(blob)
+
     const a = document.createElement('a')
     a.href = url
     a.download = `glazes-${todayStamp()}.csv`
+    document.body.appendChild(a)
     a.click()
-    URL.revokeObjectURL(url)
+    document.body.removeChild(a)
+
+    // Revoke after click (Safari quirk)
+    setTimeout(() => URL.revokeObjectURL(url), 0)
     dismissToast(toastId)
   } catch (err) {
     console.error(err)

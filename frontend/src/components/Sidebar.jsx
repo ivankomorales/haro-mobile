@@ -1,11 +1,12 @@
 // components/Sidebar.jsx
 import { House, ClipboardList, UserRound, Package } from 'lucide-react'
-import { useNavigate, useLocation } from 'react-router-dom'
-import { smartNavigate } from '../utils/smartNavigate'
-import { useConfirm } from '../context/ConfirmContext'
-import { getOriginPath } from '../utils/navigationUtils'
 import { useState } from 'react'
+import { useNavigate, useLocation } from 'react-router-dom'
+
+import { useConfirm } from '../context/ConfirmContext'
 import { getMessage as t } from '../utils/getMessage'
+import { getOriginPath } from '../utils/navigationUtils'
+import { smartNavigate } from '../utils/smartNavigate'
 /* -------------------------------------------
    Styling helpers
    - Taller items (py-3.5)
@@ -70,7 +71,6 @@ export default function Sidebar({ ordersCount = 0 }) {
       className="flex h-full w-full flex-col overflow-y-auto bg-white px-3 dark:bg-neutral-900"
       style={{
         paddingTop: 'calc(var(--app-bar-h) + env(safe-area-inset-top))',
-        
       }}
     >
       <div className="mb-2 text-center text-lg font-bold text-gray-800 dark:text-gray-100">
@@ -148,7 +148,7 @@ export default function Sidebar({ ordersCount = 0 }) {
                 onClick={() => handleNav('/products/glazes')}
                 className={cx('pl-15', navItemBase(isActive('/products/glazes')))}
               >
-                └── {t('glaze.list')}
+                {t('glaze.list')}
               </button>
             </div>
           )}

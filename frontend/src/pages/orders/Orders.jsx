@@ -1,48 +1,30 @@
 // comments in English only
-
-// ───────────────────────────────────────────────────────────────────────────────
 // External libs
-// ───────────────────────────────────────────────────────────────────────────────
+import { XCircle, Plus, X, Calendar } from 'lucide-react' // Icons
 import { useEffect, useMemo, useState, useCallback } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { XCircle, Plus, X, Calendar } from 'lucide-react' // Icons
-
-// ───────────────────────────────────────────────────────────────────────────────
+// API
+import { getOrdersPage, updateManyOrderStatus, cancelOrderById } from '../../api/orders'
 // App hooks & context
-// ───────────────────────────────────────────────────────────────────────────────
+import FormInput from '../../components/FormInput'
+import OrderActionsBar from '../../components/OrderActionsBar'
+import { OrderCard } from '../../components/OrderCard'
+import OrderDetailsModal from '../../components/OrderDetailsModal'
+import OrdersFilters from '../../components/OrdersFilters'
+import OrdersTable from '../../components/OrdersTable'
+import PaginationBar from '../../components/PaginationBar'
+import StatCards from '../../components/StatCards'
+import StatusModal from '../../components/StatusModal'
 import { useLayout } from '../../context/LayoutContext'
 import { useOrderStats } from '../../hooks/useOrderStats'
-
-// ───────────────────────────────────────────────────────────────────────────────
-// API
-// ───────────────────────────────────────────────────────────────────────────────
-import { getOrdersPage, updateManyOrderStatus, cancelOrderById } from '../../api/orders'
-
-// ───────────────────────────────────────────────────────────────────────────────
 // Utils
-// ───────────────────────────────────────────────────────────────────────────────
 import { parseFlexible, formatDMY } from '../../utils/date'
 import { getMessage as t } from '../../utils/getMessage'
 import { showError, showSuccess, showLoading, dismissToast } from '../../utils/toastUtils'
 import { formatProductsWithLabels } from '../../utils/transformProducts'
-
-// ───────────────────────────────────────────────────────────────────────────────
 // UI components
-// ───────────────────────────────────────────────────────────────────────────────
-import FormInput from '../../components/FormInput'
-import { OrderCard } from '../../components/OrderCard'
-import OrderDetailsModal from '../../components/OrderDetailsModal'
-import OrderActionsBar from '../../components/OrderActionsBar'
-import StatusModal from '../../components/StatusModal'
-import OrdersFilters from '../../components/OrdersFilters'
-import PaginationBar from '../../components/PaginationBar'
-import OrdersTable from '../../components/OrdersTable'
 import TableSkeleton from '../../components/TableSkeleton'
-import StatCards from '../../components/StatCards'
-
-// ───────────────────────────────────────────────────────────────────────────────
 // Constants
-// ───────────────────────────────────────────────────────────────────────────────
 const DEFAULT_FILTERS = {
   status: 'all',
   dateFrom: '',
@@ -53,9 +35,7 @@ const DEFAULT_FILTERS = {
 
 const DEFAULT_META = { page: 1, limit: 20, totalDocs: 0, totalPages: 1 }
 
-// ───────────────────────────────────────────────────────────────────────────────
 // Pure helpers (no hooks here)
-// ───────────────────────────────────────────────────────────────────────────────
 function normalizeMeta(meta, fallback) {
   const curPage = Number(meta?.page ?? fallback.page ?? 1)
   const curLimit = Number(meta?.limit ?? fallback.limit ?? 20)
@@ -132,9 +112,7 @@ function MobileOrdersSkeleton({ count = 8 }) {
   )
 }
 
-// ───────────────────────────────────────────────────────────────────────────────
 // Component
-// ───────────────────────────────────────────────────────────────────────────────
 export default function Orders() {
   // App/Navigation
   const navigate = useNavigate()

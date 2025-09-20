@@ -42,6 +42,9 @@ app.use("/api/glazes", glazeRoutes);
 const customerRoutes = require("./routes/customerRoutes");
 app.use("/api/customers", customerRoutes);
 
+const orderDraftRoutes = require("./routes/orderDrafts");
+app.use("/api/order-drafts", orderDraftRoutes);
+
 // 🛑 Catch all unknown routes
 app.use((req, res, next) => {
   const error = new Error(`Not Found - ${req.originalUrl}`);

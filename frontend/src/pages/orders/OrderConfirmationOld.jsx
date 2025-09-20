@@ -1,15 +1,16 @@
 // src/pages/orders/OrderConfirmation.jsx
-import { useLocation, useNavigate } from 'react-router-dom'
 import { useMemo, useState, useEffect } from 'react'
-import OrderDetailsCard from '../../components/OrderDetailsCard'
-import { useRequireState } from '../../utils/useRequireState'
-import { getMessage as t } from '../../utils/getMessage'
-import FormActions from '../../components/FormActions'
-import { showError, showSuccess, showLoading, dismissToast } from '../../utils/toastUtils'
+import { useLocation, useNavigate } from 'react-router-dom'
+
 import { createOrder } from '../../api/orders'
-import { formatProductsWithLabels } from '../../utils/transformProducts'
+import FormActions from '../../components/FormActions'
+import OrderDetailsCard from '../../components/OrderDetailsCard'
+import { getMessage as t } from '../../utils/getMessage'
 import { makeGlazeMap, ensureGlazeObjects } from '../../utils/glazeUtils'
 import { buildOrderPayload } from '../../utils/orderPayload'
+import { showError, showSuccess, showLoading, dismissToast } from '../../utils/toastUtils'
+import { formatProductsWithLabels } from '../../utils/transformProducts'
+import { useRequireState } from '../../utils/useRequireState'
 
 function summarizeProducts(products = []) {
   return products.map((p, i) => ({

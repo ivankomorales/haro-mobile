@@ -1,20 +1,21 @@
 // src/layouts/DashboardLayout.jsx
-import { Outlet, useNavigate } from 'react-router-dom'
+import { useEffect, useRef, useState } from 'react'
 import { useMediaQuery } from 'react-responsive'
-import SideBar from '../components/Sidebar'
+import { Outlet, useNavigate } from 'react-router-dom'
+
+import { logout } from '../api/auth'
+import { updateMe } from '../api/users'
+import AccountMenu from '../components/AccountMenu'
 import AppBar from '../components/AppBar'
 import BottomNavBar from '../components/BottomNavBar'
-import useHideBars from '../hooks/useHideBars'
-import { useAuth } from '../hooks/useAuth'
+import SideBar from '../components/Sidebar'
 import SplitActionButton from '../components/SplitActionButton'
-import { getMessage as t } from '../utils/getMessage'
 import { useLayout } from '../context/LayoutContext'
-import { useEffect, useRef, useState } from 'react'
-import { logout } from '../api/auth'
+import { useAuth } from '../hooks/useAuth'
+import useHideBars from '../hooks/useHideBars'
 import useKeyboardOpen from '../hooks/useKeyboardOpen'
-import AccountMenu from '../components/AccountMenu'
+import { getMessage as t } from '../utils/getMessage'
 import { uploadToCloudinary } from '../utils/uploadToCloudinary'
-import { updateMe } from '../api/users'
 
 export default function DashboardLayout() {
   const isDesktop = useMediaQuery({ minWidth: 1024 })
@@ -42,7 +43,6 @@ export default function DashboardLayout() {
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  const handleAvatarClick = () => setShowMenu((v) => !v)
   const handleLogout = () => logout(navigate)
 
   const splitLabels = {
@@ -101,55 +101,13 @@ export default function DashboardLayout() {
                 }
                 right={
                   <div className="relative mr-4">
-                    {/* <button
-                      ref={avatarRef}
-                      onClick={handleAvatarClick}
-                      className="h-8 w-8 overflow-hidden rounded-full focus:ring-2 focus:ring-amber-500/50 focus:outline-none"
-                      aria-haspopup="menu"
-                      aria-expanded={showMenu ? 'true' : 'false'}
-                      title="Account"
-                    >
-                      <img
-                        src="https://i.pravatar.cc/40"
-                        alt="Avatar"
-                        className="h-full w-full object-cover"
-                      />
-                    </button> */}
                     <AccountMenu
                       email={user?.email || 'user@example.com'}
                       name={[user?.name, user?.lastName].filter(Boolean).join(' ')}
                       avatarUrl={user?.avatarUrl || ''}
                       onLogout={handleLogout}
                       onUploadAvatar={handleUploadAvatar}
-                      // onUploadAvatar = async (file) => {
-                      //   // TODO: sube a tu backend y retorna la URL final
-                      //   const url = await uploadAvatar(file)
-                      //   return url
-                      // }
                     />
-                    {/* Avatar menu */}
-                    {/* {showMenu && (
-                      <div
-                        ref={menuRef}
-                        role="menu"
-                        className="absolute top-[calc(100%+8px)] right-0 z-50 w-44 rounded-md border bg-white shadow-md dark:border-neutral-700 dark:bg-neutral-900"
-                      >
-                        <ul className="py-2 text-sm">
-                          <li className="cursor-pointer px-4 py-2 hover:bg-gray-100 dark:hover:bg-neutral-800">
-                            Profile
-                          </li>
-                          <li className="cursor-pointer px-4 py-2 hover:bg-gray-100 dark:hover:bg-neutral-800">
-                            Settings
-                          </li>
-                          <li
-                            className="cursor-pointer px-4 py-2 text-red-600 hover:bg-gray-100 dark:hover:bg-neutral-800"
-                            onClick={handleLogout}
-                          >
-                            Log out
-                          </li>
-                        </ul>
-                      </div>
-                    )} */}
                   </div>
                 }
               />
@@ -167,7 +125,7 @@ export default function DashboardLayout() {
           </main>
 
           {/* Bottom navigation on mobile */}
-          {showBottom && <BottomNavBar t={t}/>}
+          {showBottom && <BottomNavBar t={t} />}
         </div>
       </div>
     </div>

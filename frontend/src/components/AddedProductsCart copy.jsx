@@ -7,51 +7,17 @@ function pluralLabel(count, singular) {
   return count === 1 ? singular : `${singular}s`
 }
 
-// Money formatter (keeps it consistent like $12.00)
-function formatMoney(n) {
-  const value = Number.isFinite(n) ? n : 0
-  return `$${value.toFixed(2)}`
-}
+export default function AddedProductsCart({ products = [], onEdit, onRemove, t }) {
+  // Compute line total for a product: (price - discount) * quantity
+  const lineTotal = (p) => {
+    const price = Number(p.price || 0)
+    const discount = Math.max(0, Number(p.discount || 0))
+    const qty = Math.max(1, Number(p.quantity || 1))
+    return Math.max(0, price - discount) * qty
+  }
 
-/**
- * AddedProductsCart
- *
- * Props:
- * - products: array of items with shape:
- *    {
- *      type,            // string key for i18n, e.g. "mug"
- *      price,           // unit price (number)
- *      discount,        // unit discount (number, >= 0)
- *      quantity,        // integer >= 1
- *      figures,         // integer >= 1
- *      glazes: { interiorName, interiorHex, exteriorName, exteriorHex }
- *    }
- * - onEdit(index), onRemove(index)
- * - t: translation function
- * - deposit: number (optional). Pass parent value, e.g. order.deposit
- */
-export default function AddedProductsCart({
-  products = [],
-  onEdit,
-  onRemove,
-  t,
-  deposit = 0, // <-- Parent can pass order.deposit here
-}) {
-  // Normalize helpers
-  const qtyOf = (p) => Math.max(1, Number(p.quantity || 1))
-  const unitPriceOf = (p) => Number(p.price || 0)
-  const unitDiscountOf = (p) => Math.max(0, Number(p.discount || 0))
-
-  // Aggregates (MINIMAL UI approach)
-  // Subtotal = sum of all unit prices times quantity (no discounts applied here)
-  const subtotal = products.reduce((acc, p) => acc + unitPriceOf(p) * qtyOf(p), 0)
-  // Discounts = sum of all unit discounts times quantity
-  const discounts = products.reduce((acc, p) => acc + unitDiscountOf(p) * qtyOf(p), 0)
-  // Deposit is provided by parent (already normalized in render)
-  const depositSafe = Math.max(0, Number(deposit || 0))
-
-  // Final total (no IVA yet): Subtotal − Discounts − Deposit
-  const total = Math.max(0, subtotal - discounts - depositSafe)
+  // Sum of all line totals
+  const subtotal = products.reduce((acc, p) => acc + lineTotal(p), 0)
 
   // Header key changes depending on number of items
   const itemsCount = products.length
@@ -75,9 +41,14 @@ export default function AddedProductsCart({
         <>
           <ul className="space-y-2 text-sm text-gray-800 dark:text-white">
             {products.map((p, i) => {
-              const qty = qtyOf(p)
+              // Normalize numbers
+              const qty = Math.max(1, Number(p.quantity || 1))
               const figures = Math.max(1, Number(p.figures || 1))
-              const price = unitPriceOf(p)
+              const price = Number(p.price || 0)
+              const discount = Math.max(0, Number(p.discount || 0))
+              const total = lineTotal(p)
+
+              // Localized type label (keep original casing for display)
               const typeLabel = t(`product.${p.type}`) || p.type
 
               return (
@@ -98,9 +69,13 @@ export default function AddedProductsCart({
                       )}
                     </div>
 
-                    {/* SECOND LINE (MINIMAL): only show the product price (unit price) */}
+                    {/* SECOND LINE: price + (optional discount) + (qty only if > 1) + total */}
                     <div className="text-xs text-gray-600 dark:text-gray-300">
-                      {formatMoney(price)}
+                      ${price}
+                      {discount > 0 && <> − ${discount}</>}
+                      {qty > 1 && <> × {qty}</>}
+                      {' = '}
+                      <strong>${total}</strong>
                     </div>
 
                     {/* Glazes mini with swatches (unchanged) */}
@@ -109,7 +84,7 @@ export default function AddedProductsCart({
                         {p.glazes?.interiorName && (
                           <span className="inline-flex items-center gap-1">
                             <span
-                              className="inline-block h-3 w-3 rounded-full"
+                              className="inline-block h-3 w-3 rounded-full" // TODO add border to stand out specially on Dark mode
                               style={{ backgroundColor: p.glazes?.interiorHex || '#ccc' }}
                             />
                             {p.glazes?.interiorName}
@@ -118,7 +93,7 @@ export default function AddedProductsCart({
                         {p.glazes?.exteriorName && (
                           <span className="inline-flex items-center gap-1">
                             <span
-                              className="inline-block h-3 w-3 rounded-full"
+                              className="inline-block h-3 w-3 rounded-full" // TODO add border to stand out specially on Dark mode
                               style={{ backgroundColor: p.glazes?.exteriorHex || '#ccc' }}
                             />
                             {p.glazes?.exteriorName}
@@ -154,49 +129,11 @@ export default function AddedProductsCart({
             })}
           </ul>
 
-          {/* Totals (compact, right-aligned values) */}
+          {/* Totals */}
           <div className="mt-4 border-t border-neutral-200 pt-3 text-sm dark:border-neutral-700">
             <div className="flex justify-between">
               <span className="text-gray-600 dark:text-gray-300">{t('cart.subtotal')}</span>
-              <span className="font-medium">{formatMoney(subtotal)}</span>
-            </div>
-
-            {/* Only show Discounts if there are any */}
-            {discounts > 0 && (
-              <div className="mt-1 flex justify-between">
-                <span className="text-gray-600 dark:text-gray-300">
-                  {t('cart.discounts') || 'Discounts'}
-                </span>
-                <span className="font-medium">−{formatMoney(discounts)}</span>
-              </div>
-            )}
-
-            {/* Only show Deposit if provided (> 0) */}
-            {depositSafe > 0 && (
-              <div className="mt-1 flex justify-between">
-                <span className="text-gray-600 dark:text-gray-300">
-                  {t('cart.deposit') || 'Deposit'}
-                </span>
-                <span className="font-medium">−{formatMoney(depositSafe)}</span>
-              </div>
-            )}
-
-            {/* IVA (commented for future use) */}
-            {/*
-            const ivaRate = 0.16 // 16% example
-            const ivaAmount = Math.max(0, (subtotal - discounts - depositSafe) * ivaRate)
-            <div className="mt-1 flex justify-between">
-              <span className="text-gray-600 dark:text-gray-300">{t('cart.iva') || 'IVA'}</span>
-              <span className="font-medium">+{formatMoney(ivaAmount)}</span>
-            </div>
-            */}
-
-            {/* Total */}
-            <div className="mt-2 flex justify-between border-t border-neutral-200 pt-2 dark:border-neutral-700">
-              <span className="font-semibold text-gray-800 dark:text-white">
-                {t('cart.total') || 'Total'}
-              </span>
-              <span className="font-semibold">{formatMoney(total)}</span>
+              <span className="font-semibold">${subtotal}</span>
             </div>
           </div>
         </>

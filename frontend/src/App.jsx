@@ -1,9 +1,10 @@
 //src/App.jsx 
-import { Routes } from 'react-router-dom'
-import PublicRoutes from './routes/PublicRoutesWrapper'
-import PrivateRoutes from './routes/PrivateRoutesWrapper'
 import { Toaster } from 'react-hot-toast'
+import { Routes } from 'react-router-dom'
+
 import { ConfirmProvider } from './context/ConfirmContext'
+import PrivateRoutes from './routes/PrivateRoutesWrapper'
+import PublicRoutes from './routes/PublicRoutesWrapper'
 
 export default function App() {
   return (

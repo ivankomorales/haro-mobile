@@ -1,6 +1,7 @@
 // src/components/StatCards.jsx
-import { useMemo, useState, useCallback } from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { useMemo, useState, useCallback } from 'react'
+
 import StatCard from './StatCard'
 
 /**

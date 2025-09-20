@@ -1,7 +1,8 @@
 // useHideBars.js
-import { useLocation, matchPath } from 'react-router-dom'
-import { HIDE_BARS_ROUTES } from '../utils/constants'
 import { useMediaQuery } from 'react-responsive'
+import { useLocation, matchPath } from 'react-router-dom'
+
+import { HIDE_BARS_ROUTES } from '../utils/constants'
 
 export default function useHideBars() {
   const { pathname } = useLocation()

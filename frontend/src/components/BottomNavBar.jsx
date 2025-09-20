@@ -7,9 +7,10 @@ import {
   Paintbrush,
 } from 'lucide-react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { smartNavigate } from '../utils/smartNavigate'
+
 import { useConfirm } from '../context/ConfirmContext'
 import { getOriginPath } from '../utils/navigationUtils'
+import { smartNavigate } from '../utils/smartNavigate'
 
 export default function BottomNavBar({ t }) {
   const navigate = useNavigate()

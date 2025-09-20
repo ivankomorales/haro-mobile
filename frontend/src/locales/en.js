@@ -207,7 +207,7 @@ export const en = {
     social: 'Social Media',
     editLabel: 'Edit',
     submit: 'Confirm',
-
+    editCustomer: 'Edit Customer',
     remove: 'Remove',
     newTitle: 'New Order',
     editTitle: 'Edit Order',
@@ -244,6 +244,7 @@ export const en = {
       customerInfoHint: 'Basic customer details and social information.',
       orderInfo: 'Order Info',
       orderInfoHint: 'Dates, status, payment and shipping preferences.',
+      orderSummary: 'Order Summary',
     },
 
     // ─── Shipping ──────────────────────────────────────────
@@ -283,7 +284,7 @@ export const en = {
     pricePrefix: '$',
     discount: 'Discount',
     added: 'Product added',
-    addedOther: 'Products added',
+    addedOther: 'Products Added',
 
     glazeTitle: 'Glaze',
     glazeInt: 'Interior',
@@ -321,7 +322,12 @@ export const en = {
   cart: {
     empty: 'No products added yet.',
     subtotal: 'Subtotal',
-    summary: 'Order Summary',
+    orderSummary: 'Order Summary',
+    payment: 'Payment',
+    balance: 'Balance',
+    deposit: 'Deposit',
+    discounts: 'Discounts',
+    total: 'Total',
   },
   // ─────────────── SplitAction ──────────────────────
   splitAction: {
@@ -396,6 +402,7 @@ export const en = {
     exportPdf: 'Export PDF', // ← NEW
     exportExcel: 'Export Excel', // ← NEW
     changeStatus: 'Change Status', // ← NEW
+    checkout: 'Checkout', // ← NEW
   },
 
   messages: {
@@ -464,6 +471,7 @@ export const en = {
     yes: 'Yes',
     no: 'No',
     orderLoading: 'Loading Orders...',
+    orderLoadingError: 'Error Loading Orders',
   },
 
   // ─── STATS ───────────────────────────
@@ -541,5 +549,11 @@ export const en = {
   loading: {
     image: 'Loading Images...',
     orderCreate: 'Creating Order',
+  },
+  invoice: {
+    product: 'Product',
+    qty: 'Qty',
+    rate: 'Rate',
+    amount: 'Amount',
   },
 }

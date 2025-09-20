@@ -1,89 +1,55 @@
 // src/pages/orders/AddProduct.jsx
+import { Paintbrush, Sparkles, Type as TypeIcon, Dog } from 'lucide-react' // icons for headers/cards
 import { useEffect, useState, useRef, useMemo } from 'react'
-import { useLocation, useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
+
 import { getAllGlazes } from '../../api/glazes'
-import FormInput from '../../components/FormInput'
-import { uploadToCloudinary } from '../../utils/uploadToCloudinary'
-import ImageUploader from '../../components/ImageUploader'
+import {
+  createOrderDraft,
+  getOrderDraft,
+  updateOrderDraft,
+  deleteOrderDraft,
+} from '../../api/orderDrafts'
+import { createOrder } from '../../api/orders'
+import AddedProductsCart from '../../components/AddedProductsCart'
 import FormActions from '../../components/FormActions'
-import { getMessage as t } from '../../utils/getMessage'
-import { showLoading, dismissToast, showError, showSuccess } from '../../utils/toastUtils'
+import FormInput from '../../components/FormInput'
 import { useRequireState } from '../../utils/useRequireState'
 import { getOriginPath } from '../../utils/navigationUtils'
 import GlazeTypeahead from '../../components/GlazeTypeahead'
-import AddedProductsCart from '../../components/AddedProductsCart'
+import ImageUploader from '../../components/ImageUploader'
 import { toProductPayload } from '../../utils/orderPayload'
-import { Paintbrush, Sparkles, Type as TypeIcon, Cat, Dog } from 'lucide-react' // icons for headers/cards
-import { createOrder } from '../../api/orders'
-import { buildOrderPayload } from '../../utils/orderPayload'
 import { getApiMessage } from '../../utils/errorUtils' // o donde lo tengas
+import { getMessage as t } from '../../utils/getMessage'
 import { makeGlazeMap, ensureGlazeObjects } from '../../utils/glazeUtils'
-
-function normalizeOrderForSubmit(raw) {
-  if (!raw) return null
-  const order = { ...raw }
-
-  // --- shipping shape & cleanup (mirror of OrderConfirmation) ---
-  let shipping = order.shipping
-  if (!shipping || typeof shipping === 'boolean') {
-    shipping = { isRequired: !!shipping, addresses: [] }
-  }
-  if (!Array.isArray(shipping.addresses)) shipping.addresses = []
-
-  const trim = (v) => (v ?? '').toString().trim()
-  shipping.addresses = shipping.addresses
-    .map((a, idx) => {
-      const street = trim(a?.street || a?.address) // alias support
-      const city = trim(a?.city)
-      const state = trim(a?.state)
-      const zip = trim(a?.zip)
-      const country = trim(a?.country || 'Mexico')
-      const phone = trim(a?.phone)
-      const reference = trim(a?.reference)
-      const countryCode = trim(a?.countryCode || '+52')
-      const name = trim(a?.name)
-      return {
-        id: a?.id ?? idx,
-        street,
-        city,
-        state,
-        zip,
-        country,
-        phone,
-        reference,
-        countryCode,
-        name,
-      }
-    })
-    // keep only non-empty addresses
-    .filter((a) =>
-      [a.street, a.city, a.state, a.zip, a.country, a.phone, a.reference, a.name].some(Boolean)
-    )
-
-  order.shipping = shipping
-  delete order.addresses // legacy cleanup
-
-  // --- customer normalization ---
-  order.customer = {
-    name: order.customer?.name || '',
-    lastName: order.customer?.lastName || '',
-    email: order.customer?.email || '',
-    phone: order.customer?.phone || '',
-    countryCode: order.customer?.countryCode || '+52',
-    socialMedia: order.customer?.socialMedia,
-  }
-
-  order.deposit = Number(order.deposit || 0)
-  order.products = Array.isArray(order.products) ? order.products : []
-  return order
-}
+import { normalizeBaseOrder } from '../../utils/mappers/baseOrder'
+import { normalizeProductForm } from '../../utils/mappers/product'
+import { buildOrderPayload } from '../../utils/orderPayload'
+import { showLoading, dismissToast, showError, showSuccess } from '../../utils/toastUtils'
+import { uploadToCloudinary } from '../../utils/uploadToCloudinary'
 
 export default function AddProduct() {
   const navigate = useNavigate()
   const location = useLocation()
   const originPath = getOriginPath(location.state?.originPath ?? location.state?.from)
+  // --- DRAFT HOOKS & STATE ---
+  const [searchParams, setSearchParams] = useSearchParams()
+
+  const draftIdFromUrl = searchParams.get('draft')
+  const [draftId, setDraftId] = useState(draftIdFromUrl || null)
+  // while we're loading an existing draft from the URL, keep a small "bootstrapping" flag
+  const [bootstrapping, setBootstrapping] = useState(!!draftIdFromUrl)
 
   const baseOrder = location.state || {}
+  const [baseDraft, setBaseDraft] = useState({
+    customer: baseOrder?.customer || {},
+    orderDate: baseOrder?.orderDate || '',
+    deliverDate: baseOrder?.deliverDate || '',
+    status: baseOrder?.status || 'new',
+    deposit: baseOrder?.deposit ?? '',
+    notes: baseOrder?.notes || '',
+    shipping: baseOrder?.shipping || { isRequired: false, addresses: [] },
+  })
 
   const [glazes, setGlazes] = useState([])
   const [products, setProducts] = useState(baseOrder.products || [])
@@ -127,12 +93,94 @@ export default function AddProduct() {
     return formData.type.trim() !== '' && priceOk && figuresOk && qtyOk && discountOk
   }
 
-  // Redirect to NewOrder if no minimal data found
+  // Let people in if there’s either base data or a draft
   useRequireState(
-    (st) => st?.customer?.name && st?.orderDate && typeof st?.shipping?.isRequired === 'boolean',
+    (st) => {
+      const hasBase =
+        st?.customer?.name && st?.orderDate && typeof st?.shipping?.isRequired === 'boolean'
+      const hasDraft = !!searchParams.get('draft')
+      return hasBase || hasDraft
+    },
     '/orders/new',
     () => ({ originPath: location.state?.originPath ?? '/orders' })
   )
+
+  // 1) If we don't have a draftId, create one immediately (use baseOrder as initial data)
+  useEffect(() => {
+    let ignore = false
+    ;(async () => {
+      if (draftId) return
+      try {
+        const label = `${baseOrder?.customer?.name || 'Order'} ${baseOrder?.orderDate || ''}`.trim()
+        const initialData = {
+          baseOrder: {
+            customer: baseOrder?.customer || {},
+            orderDate: baseOrder?.orderDate || '',
+            deliverDate: baseOrder?.deliverDate || '',
+            status: baseOrder?.status || 'new',
+            deposit: baseOrder?.deposit ?? '',
+            notes: baseOrder?.notes || '',
+            shipping: baseOrder?.shipping || { isRequired: false, addresses: [] },
+          },
+          products: baseOrder?.products || [],
+          productForm: null,
+        }
+        const { _id } = await createOrderDraft({ label, data: initialData })
+        if (ignore) return
+        setDraftId(_id)
+        // put ?draft in the URL so refresh keeps the draft
+        const sp = new URLSearchParams(searchParams)
+        sp.set('draft', _id)
+        setSearchParams(sp, { replace: true })
+      } catch (e) {
+        console.error('createOrderDraft failed', e)
+        // non-fatal: user can still proceed, but autosave won’t work
+      }
+    })()
+    return () => {
+      ignore = true
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // 2) If we arrived with ?draft=..., fetch it and hydrate UI
+  useEffect(() => {
+    let ignore = false
+    ;(async () => {
+      if (!draftIdFromUrl) return
+      try {
+        const { data } = await getOrderDraft(draftIdFromUrl)
+        if (ignore || !data) return
+        // hydrate lists & form
+        if (Array.isArray(data.products)) setProducts(data.products)
+        if (data.productForm) setFormData((prev) => ({ ...prev, ...data.productForm }))
+        if (data.baseOrder) setBaseDraft(data.baseOrder)
+        // (Optional) also hydrate baseOrder into local variables if you need it
+      } catch (e) {
+        console.error('getOrderDraft failed', e)
+      } finally {
+        if (!ignore) setBootstrapping(false)
+      }
+    })()
+    return () => {
+      ignore = true
+    }
+    // only run when the url-provided id changes
+  }, [draftIdFromUrl, setProducts, setFormData])
+
+  // 3) Debounced autosave whenever products/form change (and we have a draftId)
+  useEffect(() => {
+    if (!draftId || bootstrapping) return
+    const t = setTimeout(() => {
+      const payload = {
+        baseOrder: baseDraft,
+        products,
+        productForm: formData,
+      }
+      updateOrderDraft(draftId, { data: payload }).catch((e) => console.warn('autosave failed', e))
+    }, 600)
+    return () => clearTimeout(t)
+  }, [draftId, products, formData, baseDraft, bootstrapping])
 
   // Fetch Glazes
   useEffect(() => {
@@ -175,9 +223,9 @@ export default function AddProduct() {
   const handleChange = (e) => {
     const { name, value } = e.target
     setFormData((prev) => {
-      const updated = { ...prev, [name]: value }
+      let updated = { ...prev, [name]: value }
 
-      // Business logic: clean invalid glaze fields based on type
+      // Business rules that depend on fields:
       if (name === 'type') {
         if (value === 'figurine') {
           updated.glazeInterior = ''
@@ -186,8 +234,18 @@ export default function AddProduct() {
           updated.glazeInterior = ''
         }
       }
+
+      if (name === 'price') {
+        const priceNum = Number(value || 0)
+        const discNum = Number(updated.discount || 0)
+        if (discNum > priceNum) {
+          updated.discount = String(priceNum) // clamp
+        }
+      }
+
       return updated
     })
+
     setErrors((prev) => ({ ...prev, [name]: null }))
   }
 
@@ -221,8 +279,6 @@ export default function AddProduct() {
 
   const addOrSaveProduct = () => {
     const newErrors = {}
-    const interior = glazes.find((g) => g._id === formData.glazeInterior)
-    const exterior = glazes.find((g) => g._id === formData.glazeExterior)
 
     if (!formData.type.trim()) newErrors.type = t('errors.product.typeRequired')
     if (!formData.figures || Number(formData.figures) < 1)
@@ -241,23 +297,7 @@ export default function AddProduct() {
       return
     }
 
-    const uiProduct = {
-      ...formData,
-      price: priceNum,
-      discount: discNum,
-      figures: Number(formData.figures || 1),
-      quantity: Number(formData.quantity || 1),
-      glazes: {
-        interior: interior?._id || null,
-        exterior: exterior?._id || null,
-        interiorName: interior?.name || '',
-        interiorHex: interior?.hex || '',
-        exteriorName: exterior?.name || '',
-        exteriorHex: exterior?.hex || '',
-        interiorImage: interior?.image || '',
-        exteriorImage: exterior?.image || '',
-      },
-    }
+    const uiProduct = normalizeProductForm(formData, glazeMap)
 
     if (isEditing) {
       setProducts((prev) => prev.map((p, idx) => (idx === editingIndex ? uiProduct : p)))
@@ -329,8 +369,8 @@ export default function AddProduct() {
       if (imgToastId) dismissToast(imgToastId)
       if (shouldUploadImages) showSuccess('success.image.uploaded')
 
-      // 3) Normalize draft like OrderConfirmation (shipping/customer/cleanup)
-      const draft = normalizeOrderForSubmit({ ...baseOrder, products: finalProducts })
+      // 3) Submit: build draft from the restored base
+      const draft = normalizeBaseOrder({ ...baseDraft, products: finalProducts })
 
       // 4) Hydrate glazes before payload to avoid wiping ids when list isn't ready
       const hydratedProducts = ensureGlazeObjects(draft.products || [], glazeMap)
@@ -346,7 +386,13 @@ export default function AddProduct() {
       const saved = await createOrder(payload)
       dismissToast()
       showSuccess(t('success.order.created'))
-
+      // Clear server draft and remove ?draft from URL
+      if (draftId) {
+        deleteOrderDraft(draftId).catch(() => {})
+        const sp = new URLSearchParams(searchParams)
+        sp.delete('draft')
+        setSearchParams(sp, { replace: true })
+      }
       // 7) Go straight to details (replace to avoid back to AddProduct)
       if (saved?._id) {
         navigate(`/orders/${saved._id}/details`, {
@@ -561,6 +607,7 @@ export default function AddProduct() {
                           </span>
                         }
                         glazes={glazes}
+                        glazeMap={glazeMap}
                         selectedId={formData.glazeInterior}
                         onChange={(id) => setFormData((prev) => ({ ...prev, glazeInterior: id }))}
                         t={t}
@@ -575,6 +622,7 @@ export default function AddProduct() {
                         </span>
                       }
                       glazes={glazes}
+                      glazeMap={glazeMap}
                       selectedId={formData.glazeExterior}
                       onChange={(id) => setFormData((prev) => ({ ...prev, glazeExterior: id }))}
                       t={t}
@@ -665,7 +713,7 @@ export default function AddProduct() {
               multiple={true}
               label={t('product.images')}
               value={formData.images}
-              onChange={(imgs) => setFormData({ ...formData, images: imgs })}
+              onChange={(imgs) => setFormData((prev) => ({ ...prev, images: imgs }))}
               inputRef={fileInputRef}
             />
 
@@ -712,13 +760,14 @@ export default function AddProduct() {
               products={products}
               onEdit={startEditAt}
               onRemove={handleRemoveProduct}
+              deposit={Number(baseDraft?.deposit || 0)}
               t={t}
             />
             {/* FOOTER: actions */}
             <div className="mt-6">
               <FormActions
                 onSubmit={handleSubmitAll}
-                submitButtonText={t('button.confirm')}
+                submitButtonText={t('button.checkout')}
                 cancelButtonText={t('formActions.cancel')}
                 confirmTitle={t('formActionsCreate.confirmTitle')}
                 confirmMessage={t('formActionsCreate.confirmMessage')}
@@ -726,7 +775,7 @@ export default function AddProduct() {
                 cancelText={t('formActions.cancelText')}
                 cancelRedirect={originPath}
                 cancelState={{ ...baseOrder, products }}
-                submitDisabled={submitting}
+                submitDisabled={submitting || products.length === 0}
                 submitLoading={submitting}
               />
             </div>
