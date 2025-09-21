@@ -327,6 +327,7 @@ export const en = {
     balance: 'Balance',
     deposit: 'Deposit',
     discounts: 'Discounts',
+    orderTotal: 'Order Total',
     total: 'Total',
   },
   // ─────────────── SplitAction ──────────────────────
@@ -452,11 +453,12 @@ export const en = {
     hex: 'Hex',
     status: 'Status',
     actions: 'Actions',
+    net: 'Net Sales',
 
     // Orders-specific
     orderID: 'ORD#',
     customer: 'Customer',
-    orderDate: 'Order date',
+    orderDate: 'Date',
     total: 'Total',
   },
   filters: {
@@ -482,8 +484,9 @@ export const en = {
     // ── NEW ──
     inProgress: 'In Progress',
     cancelled: 'Cancelled',
-    inRange: 'Orders (range)',
+    inRange: 'Orders',
     netSales: 'Net sales',
+    amountDue: 'Amount Due',
 
     grossMinusDeposit: 'Gross − Deposit',
     range: 'Range',

@@ -1,30 +1,47 @@
 // src/components/StatCards.jsx
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { useMemo, useState, useCallback } from 'react'
-
 import StatCard from './StatCard'
 
 /**
  * Props:
- * - stats: { count: { total, pendingGroup, completed }, totals: { net } }
+ * - stats: {
+ *     count: { total, pendingGroup, completed },
+ *     totals: { subtotal, due }   // from your /stats endpoint
+ *   }
  * - loading: boolean
  * - t: getMessage function (key: string) => string | undefined
  * - size: 'sm' | 'md' | 'lg'
  * - className: string
  * - showMobileCarousel: boolean (default: true)
+ * - currency: string (ISO 4217, default 'MXN')
+ * - locale: string (BCP 47, default 'es-MX')
  */
 export default function StatCards({
   stats,
   loading,
-  t, // <= getMessage passed in as `t`
+  t,
   size = 'md',
   className = '',
   showMobileCarousel = true,
+  currency = 'MXN',
+  locale = 'es-MX',
 }) {
   const count = stats?.count
   const totals = stats?.totals
 
-  // Build cards once based on deps
+  // Currency formatter once
+  const fmt = useMemo(
+    () =>
+      new Intl.NumberFormat(locale, {
+        style: 'currency',
+        currency,
+        maximumFractionDigits: 2,
+      }),
+    [locale, currency]
+  )
+
+  // Build cards (memoized)
   const cards = useMemo(
     () => [
       {
@@ -32,7 +49,6 @@ export default function StatCards({
         title: t?.('stats.inRange') || 'Orders (range)',
         value: count?.total ?? 0,
       },
-
       {
         key: 'completed',
         title: t?.('stats.completed') || 'Completed',
@@ -46,19 +62,22 @@ export default function StatCards({
       {
         key: 'netSales',
         title: t?.('stats.netSales') || 'Net sales',
-        value: new Intl.NumberFormat('es-MX', {
-          style: 'currency',
-          currency: 'MXN',
-        }).format(totals?.subtotal ?? 0),
-        // subtitle: t?.('stats.grossMinusDeposit') || 'Gross − Deposit',
+        // Your backend exposes `totals.subtotal` as gross - discount (net sales)
+        value: fmt.format(totals?.orderTotal ?? 0),
+      },
+      {
+        key: 'amountDue',
+        title: t?.('stats.amountDue') || 'Amount due',
+        // From backend: totals.due (alias of subtotal - deposit)
+        value: fmt.format(totals?.amountDue ?? 0),
       },
     ],
-    [stats, t]
+    [count, totals, t, fmt]
   )
 
+  // Simple mobile carousel state
   const [i, setI] = useState(0)
   const total = cards.length
-
   const prev = useCallback(() => setI((v) => (v - 1 + total) % total), [total])
   const next = useCallback(() => setI((v) => (v + 1) % total), [total])
 
@@ -111,8 +130,8 @@ export default function StatCards({
         </div>
       )}
 
-      {/* TABLET/DESKTOP: original grid */}
-      <div className="hidden grid-cols-2 gap-2 sm:grid sm:grid-cols-4 sm:gap-8">
+      {/* TABLET/DESKTOP: responsive grid */}
+      <div className="hidden grid-cols-2 gap-2 sm:grid sm:grid-cols-5 sm:gap-8">
         {cards.map((c) => (
           <StatCard
             key={c.key}

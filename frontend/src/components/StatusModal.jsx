@@ -21,8 +21,8 @@ export default function StatusModal({
 
   // Optional: stable order for options (avoid relying on object key order)
   const STATUS_ORDER = useMemo(
-    () => [STATUS.NEW, STATUS.PENDING, STATUS.IN_PROGRESS, STATUS.COMPLETED, STATUS.CANCELLED],
-    []
+    () => [STATUS.NEW, STATUS.IN_PROGRESS, STATUS.COMPLETED, STATUS.CANCELLED],
+    [] // Removed STATUS.PENDING
   )
 
   const handleConfirm = () => {

@@ -119,7 +119,7 @@ export default function OrdersFilters({
           >
             <option value="all">{tt('status.all')}</option>
             <option value="new">{tt('status.new')}</option>
-            <option value="pending">{tt('status.pending')}</option>
+            {/* <option value="pending">{tt('status.pending')}</option> */}
             <option value="inProgress">{tt('status.inProgress')}</option>
             <option value="completed">{tt('status.completed')}</option>
             <option value="cancelled">{tt('status.cancelled')}</option>

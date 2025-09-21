@@ -1,4 +1,4 @@
-//backend/controllers/orderController.js
+// backend/controllers/orderController.js NEW
 const Order = require("../models/Order");
 const Customer = require("../models/Customer");
 const Counter = require("../models/Counter");
@@ -6,7 +6,6 @@ const { findOrCreateCustomer } = require("./customerController");
 const ApiError = require("../utils/ApiError");
 const { logEvent } = require("../utils/audit");
 
-// TODO: i18n TEXTS
 // ---- status helpers (canonical + normalization) ----
 const CANONICAL = new Set([
   "new",
@@ -31,9 +30,7 @@ function normalizeStatus(input) {
   const s = String(input);
   if (CANONICAL.has(s)) return s; // already canonical
   if (LEGACY_MAP[s]) return LEGACY_MAP[s]; // direct legacy map
-
   const clean = s.toLowerCase().replace(/[-_ ]+/g, "");
-
   if (clean === "new") return "new";
   if (clean === "inprogress") return "inProgress";
   if (clean === "pending") return "pending";
@@ -42,11 +39,11 @@ function normalizeStatus(input) {
   return undefined;
 }
 
-// group used by your "pending" filter (new+pending+inProgress)
+// Group used by your "pending" filter (new+pending+inProgress)
 const PENDING_GROUP = ["new", "pending", "inProgress"];
 
 // ---------------------------------------------
-// 🔹 Helpers for sanitizing atomic updates
+// Helpers for sanitizing atomic updates
 // ---------------------------------------------
 function toNonNegNumber(v, fallback = 0) {
   const n = Number(v);
@@ -54,6 +51,7 @@ function toNonNegNumber(v, fallback = 0) {
 }
 
 function buildSafeOrderUpdate(raw = {}) {
+  // Only allow these fields to be patched atomically.
   const allowed = [
     "status",
     "deposit",
@@ -81,18 +79,15 @@ const createOrder = async (req, res, next) => {
     const userId = req.user.id;
     const customer = await findOrCreateCustomer(req.body.customer, req);
 
+    // Sequential counter -> display number (ORD#7000, ORD#7010, ...)
     const counter = await Counter.findByIdAndUpdate(
       { _id: "order" },
       { $inc: { seq: 1 } },
       { new: true, upsert: true }
     );
-    // BEFORE:
-    // const orderID = `ORD-${String(counter.seq).padStart(4, "0")}`;
-
-    // AFTER:
-    const seq = counter.seq; // e.g. 700
-    const displayNumber = seq * 10; // -> 7000
-    const orderID = `ORD#${displayNumber}`; // -> "ORD#7000"
+    const seq = counter.seq;
+    const displayNumber = seq * 10;
+    const orderID = `ORD#${displayNumber}`;
 
     const allowedFields = [
       "status",
@@ -112,6 +107,7 @@ const createOrder = async (req, res, next) => {
     if (!orderData.orderDate) {
       orderData.orderDate = new Date(); // default to "today"
     }
+
     const newOrder = new Order({
       ...orderData,
       userId,
@@ -119,6 +115,7 @@ const createOrder = async (req, res, next) => {
       orderID,
     });
 
+    // Money fields are recalculated in model hooks (pre('validate')/pre('save'))
     const saved = await newOrder.save();
 
     await logEvent({
@@ -131,39 +128,43 @@ const createOrder = async (req, res, next) => {
     res.status(201).json(saved);
   } catch (err) {
     console.error("❌ Error creating order:", err);
-
     if (err.name === "ValidationError") {
       for (const field in err.errors) {
         console.error(`→ ${field}: ${err.errors[field].message}`);
       }
     }
-
-    const message = err.message || "Unknown error";
-    next(new ApiError(message, 500));
+    next(new ApiError(err.message || "Unknown error", 500));
   }
 }; // end createOrder
 
 // ---------------------------------------------
 // 🟢 GET ALL ORDERS (GET /api/orders)
 // ---------------------------------------------
-// OrderController.getOrders (replaces current method)
 const getOrders = async (req, res, next) => {
   try {
     // ------ pagination & sort ------
     const page = Math.max(parseInt(req.query.page, 10) || 0, 0);
     const limitRaw = parseInt(req.query.limit, 10) || 0;
-    const limit = Math.min(Math.max(limitRaw, 0), 100); // 0 means "no limit" in legacy branch
+    const limit = Math.min(Math.max(limitRaw, 0), 100); // 0 = no limit for legacy path
 
-    const sortParam = (req.query.sort || "orderDate:desc").trim();
-    const [sortField, sortDir] = sortParam.split(":");
+    // Allow sorting by new money fields; keep legacy aliases
+    let sortParam = (req.query.sort || "orderDate:desc").trim();
+    let [sortField, sortDir] = sortParam.split(":");
+    // Legacy aliases → new field names
+    if (sortField === "total") sortField = "amountDue"; // legacy "total" → amountDue
+    if (sortField === "subtotal") sortField = "orderTotal"; // legacy "subtotal" → orderTotal
+
     const sortWhitelist = new Set([
       "orderDate",
       "createdAt",
-      "total",
+      "amountDue",
+      "orderTotal",
+      "itemsSubtotal",
       "orderID",
     ]);
     const dir = sortDir === "asc" ? 1 : -1;
-    // Compound sort for stability (ties)
+
+    // Stable, compound sort (ties broken by _id)
     let sort;
     if (sortWhitelist.has(sortField)) {
       if (sortField === "orderDate") {
@@ -171,7 +172,6 @@ const getOrders = async (req, res, next) => {
       } else if (sortField === "createdAt") {
         sort = { createdAt: dir, _id: dir };
       } else {
-        // other fields: add _id as a minimal tiebreaker
         sort = { [sortField]: dir, _id: dir };
       }
     } else {
@@ -180,12 +180,12 @@ const getOrders = async (req, res, next) => {
 
     // ------ filters ------
     const filter = {};
-    // Exclude cancelled by default (include them only if required)
+    // Exclude cancelled by default
     if (req.query.includeCancelled !== "true") {
       filter.status = { $ne: "cancelled" };
     }
 
-    // allow selecting which date field to filter by
+    // Select field used for date range filter
     const allowedDateFields = new Set([
       "orderDate",
       "deliverDate",
@@ -195,7 +195,7 @@ const getOrders = async (req, res, next) => {
       ? req.query.dateField
       : "orderDate";
 
-    // status group semantics unchanged
+    // Status filter (supports "pending" group)
     const raw = req.query.status;
     if (raw && String(raw).toLowerCase() === "pending") {
       filter.status = { $in: PENDING_GROUP };
@@ -203,7 +203,8 @@ const getOrders = async (req, res, next) => {
       const canon = normalizeStatus(raw);
       if (canon) filter.status = canon;
     }
-    // normalize date range to [from 00:00, to+1day 00:00)
+
+    // Normalize date range to [from 00:00, to+1day 00:00)
     if (req.query.from || req.query.to) {
       const dr = {};
       if (req.query.from) {
@@ -227,12 +228,32 @@ const getOrders = async (req, res, next) => {
     if (req.query.shipping === "false")
       filter["shipping.isRequired"] = { $in: [false, null] };
 
-    // quick count mode (kept)
+    // Quick count mode
     if (req.query.countOnly === "true") {
       const count = await Order.countDocuments(filter);
       return res.json({ count });
     }
+    // Open Balances filter
+    if (req.query.dueOnly === "true") {
+      filter.amountDue = { $gt: 0 };
 
+      // If the client didn't ask for a specific status, exclude completed (and keep cancelled excluded by default)
+      const statusFilterProvided = !!req.query.status;
+
+      if (!statusFilterProvided) {
+        // Merge with existing "exclude cancelled" (default) -> becomes $nin
+        if (
+          filter.status &&
+          typeof filter.status === "object" &&
+          "$ne" in filter.status &&
+          filter.status.$ne === "cancelled"
+        ) {
+          filter.status = { $nin: ["completed", "cancelled"] };
+        } else if (!filter.status) {
+          filter.status = { $ne: "completed" };
+        }
+      }
+    }
     // ------ text query over orderID + customer fields ------
     const q = (req.query.q || "").trim();
     const hasQ = q.length > 0;
@@ -242,32 +263,24 @@ const getOrders = async (req, res, next) => {
 
     // ------ LEGACY BRANCH (no page) ------
     if (!page) {
-      // keep existing behavior for Home "Recent Orders"
+      // Keep simple path used by Home "Recent Orders"
       const docs = await Order.find(
-        hasQ
-          ? {
-              ...filter,
-              $or: [{ orderID: regex }],
-            }
-          : filter
+        hasQ ? { ...filter, $or: [{ orderID: regex }] } : filter
       )
         .populate("customer")
         .sort(sort)
         .limit(limit);
-
-      // If you need q over customer.* in legacy, switch to aggregate; for Home it's fine.
       return res.json(docs);
     }
 
     // ------ PAGINATED BRANCH (returns { data, meta, stats? }) ------
-    const baseMatch = filter;
+    const pipeline = [{ $match: filter }];
 
-    const pipeline = [{ $match: baseMatch }];
-
+    // Join customer for searching by name/email
     pipeline.push(
       {
         $lookup: {
-          from: "customers", // ensure your collection is named "customers"
+          from: "customers",
           localField: "customer",
           foreignField: "_id",
           as: "customer",
@@ -289,10 +302,10 @@ const getOrders = async (req, res, next) => {
       });
     }
 
-    // Direct sorting; we already have "total" persisted *(orderDate + createdAt / _id)
+    // Sort by selected field (already persisted in the document)
     pipeline.push({ $sort: sort });
 
-    // ------ FACET (pagination + total count) ------
+    // Facet: pagination + total count
     pipeline.push({
       $facet: {
         data: [{ $skip: (page - 1) * limit }, { $limit: limit }],
@@ -321,8 +334,8 @@ const getOrders = async (req, res, next) => {
         month: {
           total: s.reduce((a, b) => a + b.count, 0),
           pending: (by.new || 0) + (by.pending || 0) + (by.inProgress || 0),
-          shipped: by.completed || 0, // adjust if you have a dedicated "shipped"
-          refunded: by.cancelled || 0, // adjust if you have a dedicated "refunded"
+          shipped: by.completed || 0, // adjust if you add a dedicated "shipped"
+          refunded: by.cancelled || 0, // adjust if you add a dedicated "refunded"
         },
       };
     }
@@ -347,26 +360,22 @@ const getOrders = async (req, res, next) => {
 }; // end getOrders
 
 // ────────────────────────────────────────────────────────────────────────────
-// Helper reutilizable: computa stats con la misma lógica de getOrderStats
+// Reusable helper: compute stats with same semantics as getOrderStats
 // ────────────────────────────────────────────────────────────────────────────
 async function computeOrderStatsFromQuery(query) {
   // ---- date range parsing ----
   const rangeQ = String(query.range || "month").toLowerCase();
   const now = new Date();
-  function startOfMonth(d) {
-    return new Date(d.getFullYear(), Math.trunc(d.getMonth()), 1);
-  }
-  function startOfQuarter(d) {
-    return new Date(d.getFullYear(), Math.trunc(d.getMonth() / 3) * 3, 1);
-  }
-  function startOfYear(d) {
-    return new Date(d.getFullYear(), 0, 1);
-  }
-  function addDays(d, n) {
+  const startOfMonth = (d) =>
+    new Date(d.getFullYear(), Math.trunc(d.getMonth()), 1);
+  const startOfQuarter = (d) =>
+    new Date(d.getFullYear(), Math.trunc(d.getMonth() / 3) * 3, 1);
+  const startOfYear = (d) => new Date(d.getFullYear(), 0, 1);
+  const addDays = (d, n) => {
     const x = new Date(d);
     x.setDate(x.getDate() + n);
     return x;
-  }
+  };
 
   let from = query.from ? new Date(query.from) : null;
   let toExcl = query.to ? new Date(query.to) : null;
@@ -429,11 +438,11 @@ async function computeOrderStatsFromQuery(query) {
     ? query.dateField
     : "orderDate";
 
-  // ---- filters (excluye cancelados por defecto) ----
+  // ---- filters (exclude cancelled by default) ----
   const filter = {};
   if (query.includeCancelled !== "true") filter.status = { $ne: "cancelled" };
 
-  // status (o grupo pending)
+  // Status (or pending group)
   const raw = query.status;
   if (raw && String(raw).toLowerCase() === "pending") {
     filter.status = { $in: PENDING_GROUP };
@@ -450,7 +459,7 @@ async function computeOrderStatsFromQuery(query) {
   if (query.shipping === "false")
     filter["shipping.isRequired"] = { $in: [false, null] };
 
-  // texto (opcional)
+  // Text (optional)
   const q = (query.q || "").trim();
   const hasQ = q.length > 0;
   const regex = hasQ
@@ -481,14 +490,17 @@ async function computeOrderStatsFromQuery(query) {
       }
     );
   }
+
+  // Project numeric money fields (new names), defaulting to 0
   pipeline.push(
     {
       $project: {
         status: 1,
-        gross: { $toDouble: { $ifNull: ["$gross", 0] } },
-        discount: { $toDouble: { $ifNull: ["$discount", 0] } },
-        subtotal: { $toDouble: { $ifNull: ["$subtotal", 0] } },
+        itemsSubtotal: { $toDouble: { $ifNull: ["$itemsSubtotal", 0] } },
+        discounts: { $toDouble: { $ifNull: ["$discounts", 0] } },
+        orderTotal: { $toDouble: { $ifNull: ["$orderTotal", 0] } },
         deposit: { $toDouble: { $ifNull: ["$deposit", 0] } },
+        amountDue: { $toDouble: { $ifNull: ["$amountDue", 0] } },
       },
     },
     {
@@ -506,10 +518,18 @@ async function computeOrderStatsFromQuery(query) {
         cancelled: {
           $sum: { $cond: [{ $eq: ["$status", "cancelled"] }, 1, 0] },
         },
-        gross: { $sum: "$gross" },
-        discount: { $sum: "$discount" },
-        subtotal: { $sum: "$subtotal" },
+
+        itemsSubtotal: { $sum: "$itemsSubtotal" },
+        discounts: { $sum: "$discounts" },
+        orderTotal: { $sum: "$orderTotal" },
         deposit: { $sum: "$deposit" },
+
+        // ⭐ Only count amountDue if status !== 'completed'
+        amountDue: {
+          $sum: {
+            $cond: [{ $eq: ["$status", "completed"] }, 0, "$amountDue"],
+          },
+        },
       },
     }
   );
@@ -522,11 +542,13 @@ async function computeOrderStatsFromQuery(query) {
     inProgress: 0,
     completed: 0,
     cancelled: 0,
-    gross: 0,
-    discount: 0,
-    subtotal: 0,
+    itemsSubtotal: 0,
+    discounts: 0,
+    orderTotal: 0,
     deposit: 0,
+    amountDue: 0,
   };
+
   return {
     range: {
       from: from.toISOString(),
@@ -544,12 +566,15 @@ async function computeOrderStatsFromQuery(query) {
       pendingGroup: (r.new || 0) + (r.pending || 0) + (r.inProgress || 0),
     },
     totals: {
-      gross: Math.round(r.gross || 0),
-      discount: Math.round(r.discount || 0),
-      subtotal: Math.round(r.subtotal || 0), // ventas netas de descuentos
-      deposit: Math.round(r.deposit || 0), // cobros a cuenta
-      due: Math.round((r.subtotal || 0) - (r.deposit || 0)),
-      net: Math.round(r.subtotal || 0), // alias de compatibilidad con el front actual
+      itemsSubtotal: Math.round(r.itemsSubtotal || 0), // sum of qty*price (pre-discount)
+      discounts: Math.round(r.discounts || 0), // total discounts applied
+      orderTotal: Math.round(r.orderTotal || 0), // revenue after discounts
+      deposit: Math.round(r.deposit || 0), // cash collected
+      amountDue: Math.round(r.amountDue || 0), // what customers still owe
+      // Optional aliases for UI clarity
+      revenue: Math.round(r.orderTotal || 0),
+      collected: Math.round(r.deposit || 0),
+      outstanding: Math.round(r.amountDue || 0),
     },
   };
 }
@@ -565,7 +590,7 @@ const getOrderStats = async (req, res, next) => {
     console.error("getOrderStats error:", err);
     next(new ApiError("Error retrieving order stats", 500));
   }
-}; // end of getOrderStats
+}; // end getOrderStats
 
 // ---------------------------------------------
 // 🟢 GET ORDER BY ID (GET /api/orders/:id)
@@ -627,9 +652,7 @@ const updateOrder = async (req, res, next) => {
 
     const originalStatus = order.status;
 
-    // ────────────────────────────────────────────────────────────────────────────
-    // PRE-VALIDATIONS (cheap checks before mutating the document)
-    // ────────────────────────────────────────────────────────────────────────────
+    // ── Pre-validations (cheap checks before mutating) ──
 
     // 1) Shipping: if required, must include at least one complete address
     if (req.body?.shipping?.isRequired) {
@@ -637,15 +660,12 @@ const updateOrder = async (req, res, next) => {
       if (!Array.isArray(addrs) || addrs.length === 0) {
         return next(new ApiError("Add at least one shipping address.", 400));
       }
-      // Normalize and validate required fields (trim + safe types)
       const normStr = (v) => {
-        // comments in English only
         if (v == null) return "";
         if (typeof v === "string") return v.trim();
         if (typeof v === "number") return String(v).trim();
-        return ""; // reject objects/arrays/booleans
+        return "";
       };
-
       const firstBad = addrs.findIndex((raw = {}) => {
         const street = normStr(raw.street ?? raw.address); // accept legacy "address"
         const city = normStr(raw.city);
@@ -654,7 +674,6 @@ const updateOrder = async (req, res, next) => {
         const country = normStr(raw.country);
         const phone = normStr(raw.phone);
         const phoneDigits = phone.replace(/\D/g, "");
-        // Require: street, city, state, zip, country, and phone (10+ digits)
         return !(
           street &&
           city &&
@@ -664,7 +683,6 @@ const updateOrder = async (req, res, next) => {
           phoneDigits.length >= 10
         );
       });
-
       if (firstBad !== -1) {
         const raw = addrs[firstBad] || {};
         const miss = [];
@@ -743,9 +761,7 @@ const updateOrder = async (req, res, next) => {
       }
     }
 
-    // ────────────────────────────────────────────────────────────────────────────
-    // CUSTOMER PATCH (if provided): update the referenced Customer document
-    // ────────────────────────────────────────────────────────────────────────────
+    // CUSTOMER PATCH (if provided): update referenced Customer doc
     if (req.body.customer) {
       const c = req.body.customer;
       const customerPatch = {};
@@ -758,14 +774,11 @@ const updateOrder = async (req, res, next) => {
 
       await Customer.findByIdAndUpdate(order.customer, customerPatch, {
         new: true,
-        runValidators: true, // ensure Customer schema validation
+        runValidators: true,
       });
     }
 
-    // ────────────────────────────────────────────────────────────────────────────
-    // ASSIGN ALLOWED FIELDS ONLY
-    // (Mongoose subdocs/arrays have change tracking; no markModified needed)
-    // ────────────────────────────────────────────────────────────────────────────
+    // Assign only allowed fields
     const allowedFields = [
       "status",
       "deposit",
@@ -781,15 +794,10 @@ const updateOrder = async (req, res, next) => {
       }
     }
 
-    // ────────────────────────────────────────────────────────────────────────────
-    // SAVE with schema validation
-    // (save() triggers validators; no need for markModified on typed subdocs)
-    // ────────────────────────────────────────────────────────────────────────────
+    // Save with schema validation & hooks (money + urgency recalculated in the model)
     await order.save();
 
-    // ────────────────────────────────────────────────────────────────────────────
-    // AUDIT LOG (minimal example)
-    // ────────────────────────────────────────────────────────────────────────────
+    // Audit example
     const changes = [];
     if (req.body.status && req.body.status !== originalStatus) {
       changes.push(`status: ${originalStatus} → ${req.body.status}`);
@@ -805,7 +813,6 @@ const updateOrder = async (req, res, next) => {
 
     return res.json(order);
   } catch (err) {
-    // Bubble up the real error to the global error handler
     return next(err);
   }
 };
@@ -813,17 +820,17 @@ const updateOrder = async (req, res, next) => {
 
 // ---------------------------------------------
 // 🔵 UPDATE ORDER (Atomic) (PUT /api/orders/:id/atomic)
-//    Variante B: no carga el doc; dispara pre('findOneAndUpdate')
+//    No full doc load; triggers pre('findOneAndUpdate') hooks
 // ---------------------------------------------
 const updateOrderAtomic = async (req, res, next) => {
   try {
-    // Sanitiza y limita campos permitidos
+    // Sanitize/limit allowed fields
     const update = buildSafeOrderUpdate(req.body);
 
     const updated = await Order.findByIdAndUpdate(req.params.id, update, {
       new: true,
-      runValidators: true, // valida según schema en updates
-      context: "query", // necesario para setters/validators en update
+      runValidators: true,
+      context: "query",
     })
       .populate("customer")
       .populate("products.glazes.interior")
@@ -831,7 +838,6 @@ const updateOrderAtomic = async (req, res, next) => {
 
     if (!updated) return next(new ApiError("Order not found", 404));
 
-    // (Opcional) Audit muy básico
     await logEvent({
       event: "order_updated",
       objectId: updated._id,
@@ -954,7 +960,6 @@ const cancelOrder = async (req, res, next) => {
       req,
     });
 
-    // Si el cliente pide refrescar stats, los calculamos y devolvemos
     if (req.query.refreshStats === "true") {
       const stats = await computeOrderStatsFromQuery(req.query);
       return res.json({ message: "Order cancelled", stats });
@@ -966,7 +971,7 @@ const cancelOrder = async (req, res, next) => {
 }; // end cancelOrder
 
 // ---------------------------------------------
-// 📦 EXPORT CONTROLLER METHODS
+// EXPORT CONTROLLER METHODS
 // ---------------------------------------------
 module.exports = {
   createOrder,

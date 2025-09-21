@@ -191,10 +191,10 @@ const OrderSchema = new mongoose.Schema(
 
     notes: { type: String, trim: true },
     // Materialized totals (for quick lists and sorting)
-    gross: { type: Number, default: 0, min: 0, index: true }, // Σ qty*price
-    discount: { type: Number, default: 0, min: 0, index: true }, // Σ qty*discount
-    subtotal: { type: Number, default: 0, min: 0, index: true }, // gross - discount
-    total: { type: Number, default: 0, min: 0, index: true }, // subtotal - deposit
+    itemsSubtotal: { type: Number, default: 0, min: 0, index: true }, // Σ qty*price
+    discounts: { type: Number, default: 0, min: 0, index: true }, // Σ qty*unitDiscount
+    orderTotal: { type: Number, default: 0, min: 0, index: true }, // itemsSubtotal - discounts
+    amountDue: { type: Number, default: 0, min: 0, index: true }, // orderTotal - deposit
     products: {
       type: [ProductItemSchema],
       validate: [(arr) => arr.length > 0, "At least one product is required."],
@@ -209,48 +209,30 @@ const OrderSchema = new mongoose.Schema(
 );
 
 // === Single recalculation utility (single source of truth) ===
-function recalcTotals(orderLike) {
-  const safe = (v, d = 0) => (Number.isFinite(Number(v)) ? Number(v) : d);
+function recalcMoney(orderLike) {
+  const n = (v, d = 0) => (Number.isFinite(Number(v)) ? Number(v) : d);
+
   const A = Array.isArray(orderLike?.products) ? orderLike.products : [];
-
-  let gross = 0;
+  let itemsSubtotal = 0;
   let discounts = 0;
+
   for (const p of A) {
-    const qty = Math.max(1, safe(p.quantity, 1));
-    const price = Math.max(0, safe(p.price, 0));
-    const disc = Math.max(0, safe(p.discount, 0));
-    gross += qty * price;
-    discounts += qty * Math.min(disc, price); // prevent discount > price
+    const qty = Math.max(1, n(p.quantity, 1));
+    const price = Math.max(0, n(p.price, 0));
+    const unitDisc = Math.max(0, Math.min(n(p.discount, 0), price)); // clamp
+    itemsSubtotal += qty * price;
+    discounts += qty * unitDisc;
   }
-  const subtotal = Math.max(0, Math.round(gross - discounts));
-  const deposit = Math.max(0, safe(orderLike?.deposit, 0));
-  const total = Math.max(0, Math.round(subtotal - deposit));
-  return {
-    gross: Math.round(gross),
-    discount: Math.round(discounts),
-    subtotal,
-    total,
-  };
+
+  itemsSubtotal = Math.round(itemsSubtotal);
+  discounts = Math.round(discounts);
+
+  const orderTotal = Math.max(0, Math.round(itemsSubtotal - discounts));
+  const deposit = Math.max(0, n(orderLike?.deposit, 0));
+  const amountDue = Math.max(0, Math.round(orderTotal - deposit));
+
+  return { itemsSubtotal, discounts, orderTotal, amountDue };
 }
-
-// === Recalculate totals BEFORE validating ===
-OrderSchema.pre("validate", function (next) {
-  const safeNum = (v, d = 0) => (Number.isFinite(Number(v)) ? Number(v) : d);
-  const products = Array.isArray(this.products) ? this.products : [];
-
-  // Line sum: qty * max(price - discount, 0)
-  const lineSum = products.reduce((acc, p) => {
-    const qty = Math.max(1, safeNum(p.quantity, 1));
-    const price = Math.max(0, safeNum(p.price, 0));
-    const disc = Math.max(0, safeNum(p.discount, 0));
-    const unit = Math.max(price - disc, 0);
-    return acc + qty * unit;
-  }, 0);
-
-  this.subtotal = Math.max(0, Math.round(lineSum));
-  this.total = Math.max(0, Math.round(lineSum - safeNum(this.deposit, 0)));
-  next();
-});
 
 // Normalize legacy variants on set (safety net)
 OrderSchema.path("status").set((v) => {
@@ -304,7 +286,9 @@ OrderSchema.index({ deliverDate: 1 });
 // 6.1) Stable ordering by date: orderDate DESC + createdAt DESC
 OrderSchema.index({ orderDate: -1, createdAt: -1 });
 
-OrderSchema.index({ total: -1 });
+OrderSchema.index({ itemsSubtotal: -1 });
+OrderSchema.index({ orderTotal: -1 });
+OrderSchema.index({ amountDue: -1 });
 
 // 7) (Text index) Full-text search in notes and product descriptions
 //    NOTE: MongoDB allows only **one** text index per collection.
@@ -322,15 +306,15 @@ OrderSchema.index({ "shipping.isRequired": 1, orderDate: -1 });
 
 // Virtual totals (whole pesos)
 OrderSchema.virtual("itemsTotal").get(function () {
-  return this.gross || 0;
+  return this.itemsSubtotal || 0;
 });
 OrderSchema.virtual("totalDue").get(function () {
-  return (this.subtotal || 0) - (this.deposit || 0);
+  return (this.orderTotal || 0) - (this.deposit || 0);
 });
 
 // Shipping guard
 OrderSchema.pre("validate", function (next) {
-  Object.assign(this, recalcTotals(this));
+  Object.assign(this, recalcMoney(this));
   if (this.shipping?.isRequired) {
     const hasAddr = (this.shipping.addresses || []).length > 0;
     if (!hasAddr)
@@ -342,7 +326,7 @@ OrderSchema.pre("validate", function (next) {
 // Urgency rule: auto if deliverDate - orderDate < 4 weeks
 OrderSchema.pre("save", function (next) {
   // Recalculate subtotal/total on any save()
-  Object.assign(this, recalcTotals(this));
+  Object.assign(this, recalcMoney(this));
 
   if (this.orderDate && this.deliverDate) {
     const ms = this.deliverDate.getTime() - this.orderDate.getTime();
@@ -358,70 +342,36 @@ OrderSchema.pre("save", function (next) {
 // === Hook for atomic updates ===
 OrderSchema.pre("findOneAndUpdate", async function (next) {
   try {
-    // 1) Enforce validations on updates
     this.setOptions({ runValidators: true, context: "query" });
 
     const update = this.getUpdate() || {};
-    const norm = (v) => (Number.isFinite(Number(v)) ? Number(v) : 0);
-
-    // 2) Normalize numeric inputs if they come in $set
-    if (update.$set) {
-      if ("deposit" in update.$set)
-        update.$set.deposit = norm(update.$set.deposit);
-      // Add other normalizations here if needed
-      // e.g. if ('products' in update.$set) {...}
-    }
-
-    // 3) Current doc to simulate post-update
     const doc = await this.model.findOne(this.getQuery());
-    if (!doc) return next(); // upsert or not found → let it continue
+    if (!doc) return next();
 
-    // 4) Build the "updated doc" (shallow merge)
+    // Shallow-merge current doc with patch to simulate post-update state
     const merged = doc.toObject();
     const patch = update.$set || update;
     Object.assign(merged, patch);
 
-    // 5) Recalculate subtotal/total (same formula as in pre('validate')/pre('save'))
-    const safeNum = (v, d = 0) => (Number.isFinite(Number(v)) ? Number(v) : d);
-    const products = Array.isArray(merged.products) ? merged.products : [];
-    const lineSum = products.reduce((acc, p) => {
-      const qty = Math.max(1, safeNum(p.quantity, 1));
-      const price = Math.max(0, safeNum(p.price, 0));
-      const disc = Math.max(0, safeNum(p.discount, 0));
-      const unit = Math.max(price - disc, 0);
-      return acc + qty * unit;
-    }, 0);
+    // Recompute money + urgency on the merged snapshot
+    const money = recalcMoney(merged);
 
-    const subtotal = Math.max(0, Math.round(lineSum));
-    const total = Math.max(
-      0,
-      Math.round(lineSum - safeNum(merged.deposit ?? doc.deposit, 0))
-    );
-
-    // 6) Recalculate urgency (same as your pre('save'))
-    const orderDate = new Date(
-      (merged.orderDate ?? doc.orderDate) || Date.now()
-    );
-    const deliverDate = new Date(
-      (merged.deliverDate ?? doc.deliverDate) || orderDate
-    );
+    // Urgency (same as pre('save'))
     let isUrgentAuto = false;
-    if (orderDate && deliverDate) {
-      const ms = deliverDate.getTime() - orderDate.getTime();
-      const weeks = ms / (1000 * 60 * 60 * 24 * 7);
-      isUrgentAuto = weeks < 4;
-    }
-    const isUrgentManual =
-      (merged.isUrgentManual ?? doc.isUrgentManual) || false;
+    const orderDate = new Date(merged.orderDate || doc.orderDate || Date.now());
+    const deliverDate = new Date(
+      merged.deliverDate || doc.deliverDate || orderDate
+    );
+    const weeks = (deliverDate - orderDate) / (1000 * 60 * 60 * 24 * 7);
+    isUrgentAuto = weeks < 4;
+    const isUrgentManual = merged.isUrgentManual ?? doc.isUrgentManual ?? false;
     const isUrgent = !!(isUrgentManual || isUrgentAuto);
 
-    // 7) Inject calculated fields into the final update
     this.setUpdate({
       ...update,
       $set: {
         ...(update.$set || {}),
-        subtotal,
-        total,
+        ...money,
         isUrgentAuto,
         isUrgent,
       },

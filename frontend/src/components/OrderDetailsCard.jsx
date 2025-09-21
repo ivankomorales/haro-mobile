@@ -30,18 +30,35 @@ function GlazeThumb({ glaze }) {
   return null
 }
 
-// 🔑 Single place to derive qty/unit/amount with smart fallbacks
+/** Per-unit discount model (display stays simple in rows):
+ *  - unitPrice = product.price
+ *  - unitDiscount = product.discount (per unit; used only for summary fallback)
+ *  - amount = qty * max(unitPrice - unitDiscount, 0) unless explicit total provided
+ */
 function deriveLine(p) {
-  const qty = Number(p?.quantity ?? 1)
-  // Treat price as UNIT by default
-  let unit = p?.unitPrice ?? p?.rate ?? (p?.price != null ? Number(p.price) : null)
-  // Prefer explicit totals if they exist
-  let amount = p?.total ?? p?.lineTotal ?? null
-  // If no explicit total, compute from unit×qty
-  if (amount == null && unit != null && qty) amount = unit * qty
-  // If total exists but no unit, infer unit from total/qty
-  if (unit == null && amount != null && qty) unit = amount / qty
-  return { qty, unit, amount }
+  const qty = Math.max(1, Number(p?.quantity ?? 1))
+  const unitPrice =
+    p?.price != null
+      ? Number(p.price)
+      : p?.unitPrice != null
+        ? Number(p.unitPrice)
+        : p?.rate != null
+          ? Number(p.rate)
+          : null
+
+  const unitDiscount = Math.max(0, Math.min(Number(p?.discount ?? 0), Number(unitPrice ?? 0)))
+  const unitNet = unitPrice != null ? Math.max(0, unitPrice - unitDiscount) : null
+
+  const amount =
+    p?.total != null
+      ? Number(p.total)
+      : p?.lineTotal != null
+        ? Number(p.lineTotal)
+        : unitNet != null
+          ? qty * unitNet
+          : null
+
+  return { qty, unitPrice, unitDiscount, unitNet, amount }
 }
 
 export default function OrderDetailsCard({ order = {}, glazes = [] }) {
@@ -54,8 +71,19 @@ export default function OrderDetailsCard({ order = {}, glazes = [] }) {
     products = [],
     shipping = {},
     currency = 'MXN',
+
+    // Preferred (new) fields
+    itemsSubtotal: itemsSubtotalFlat,
+    discounts: discountsFlat,
+    orderTotal: orderTotalFlat,
+    amountDue: amountDueFlat,
+    deposit: depositFlat,
+
+    // Legacy nested totals
     totals: totalsObj,
   } = order || {}
+
+  const glazeMap = useMemo(() => makeGlazeMap(glazes), [glazes])
 
   const nf = useMemo(
     () =>
@@ -64,27 +92,43 @@ export default function OrderDetailsCard({ order = {}, glazes = [] }) {
   )
   const $ = (v) => (v == null ? '—' : nf.format(Number(v)))
 
-  const glazeMap = useMemo(() => makeGlazeMap(glazes), [glazes])
+  // Fallbacks for old docs (compute from products)
+  const fallbackItemsSubtotal = products.reduce((sum, p) => {
+    const { qty, unitPrice } = deriveLine(p)
+    return sum + (unitPrice != null ? qty * unitPrice : 0)
+  }, 0)
 
-  // Totals (prefer backend; fallback to local sum of amounts)
-  const fallbackGross =
-    products.length > 0 ? products.reduce((sum, p) => sum + (deriveLine(p).amount ?? 0), 0) : null
+  const fallbackDiscounts = products.reduce((sum, p) => {
+    const { qty, unitDiscount } = deriveLine(p)
+    return sum + qty * (unitDiscount || 0)
+  }, 0)
 
-  const gross = (totalsObj && 'gross' in totalsObj ? totalsObj.gross : order.gross) ?? fallbackGross
-  const discount = (totalsObj && 'discount' in totalsObj ? totalsObj.discount : order.discount) ?? 0
-  const deposit = (totalsObj && 'deposit' in totalsObj ? totalsObj.deposit : order.deposit) ?? 0
-  const total =
-    (totalsObj && 'total' in totalsObj ? totalsObj.total : order.total) ??
-    (gross != null ? Number(gross) - Number(discount) - Number(deposit) : null)
+  const itemsSubtotal =
+    itemsSubtotalFlat ??
+    totalsObj?.itemsSubtotal ??
+    totalsObj?.gross ??
+    (products.length ? fallbackItemsSubtotal : null)
 
-  const goEditCustomer = () => {
-    if (!_id) return
-    navigate(`/orders/${_id}/edit`) // we’ll adjust tab routing later
-  }
-  const goEditProductAt = (index) => {
-    if (!_id) return
-    navigate(`/orders/${_id}/edit`) // we’ll adjust tab routing later
-  }
+  const discounts =
+    discountsFlat ??
+    totalsObj?.discounts ??
+    totalsObj?.discount ??
+    (products.length ? fallbackDiscounts : 0)
+
+  const deposit = depositFlat ?? totalsObj?.deposit ?? 0
+
+  const orderTotal =
+    orderTotalFlat ??
+    totalsObj?.orderTotal ??
+    (itemsSubtotal != null ? Math.max(0, Number(itemsSubtotal) - Number(discounts || 0)) : null)
+
+  const amountDue =
+    amountDueFlat ??
+    totalsObj?.amountDue ??
+    (orderTotal != null ? Math.max(0, Number(orderTotal) - Number(deposit || 0)) : null)
+
+  const goEditCustomer = () => _id && navigate(`/orders/${_id}/edit`)
+  const goEditProductAt = (index) => _id && navigate(`/orders/${_id}/edit`)
 
   const asDate = orderDate ? new Date(orderDate) : null
 
@@ -165,7 +209,7 @@ export default function OrderDetailsCard({ order = {}, glazes = [] }) {
         </div>
       </section>
 
-      {/* Desktop invoice table */}
+      {/* Desktop invoice table (simple: Product / Qty / Rate / Amount) */}
       <section className="mb-4 hidden overflow-hidden rounded-xl ring-1 ring-black/5 md:block dark:ring-white/10">
         <table className="min-w-full border-separate border-spacing-0">
           <thead className="bg-neutral-50 text-xs tracking-wide text-neutral-500 uppercase dark:bg-neutral-800 dark:text-neutral-400">
@@ -180,11 +224,12 @@ export default function OrderDetailsCard({ order = {}, glazes = [] }) {
               </th>
             </tr>
           </thead>
+
           <tbody className="divide-y divide-neutral-200 bg-white text-sm dark:divide-neutral-800 dark:bg-neutral-900">
             {products.map((p, index) => {
               const gi = resolveGlazeFlexible(p.glazes?.interior, glazeMap, p, 'interior')
               const ge = resolveGlazeFlexible(p.glazes?.exterior, glazeMap, p, 'exterior')
-              const { qty, unit, amount } = deriveLine(p)
+              const { qty, unitPrice, amount } = deriveLine(p)
 
               return (
                 <tr key={p._id || index} className="group">
@@ -222,7 +267,7 @@ export default function OrderDetailsCard({ order = {}, glazes = [] }) {
                     {qty}
                   </td>
                   <td className="px-3 py-3 text-right align-top text-neutral-900 dark:text-neutral-100">
-                    {unit != null ? $(unit) : '—'}
+                    {unitPrice != null ? $(unitPrice) : '—'}
                   </td>
                   <td className="px-4 py-3 text-right align-top font-medium text-neutral-900 dark:text-neutral-100">
                     {amount != null ? $(amount) : '—'}
@@ -245,7 +290,7 @@ export default function OrderDetailsCard({ order = {}, glazes = [] }) {
         </table>
       </section>
 
-      {/* Mobile list: type, qty, amount only */}
+      {/* Mobile list: product, qty, amount only */}
       <section className="mb-4 md:hidden">
         <div className="space-y-2">
           {products.map((p, index) => {
@@ -289,21 +334,34 @@ export default function OrderDetailsCard({ order = {}, glazes = [] }) {
         </div>
       </section>
 
-      {/* Summary */}
+      {/* Summary (right-aligned) */}
       <section className="ml-auto w-full max-w-sm">
         <div className="grid grid-cols-[1fr_auto] gap-y-1 text-sm">
           <div className="text-neutral-600 dark:text-neutral-400">
             {t('cart.subtotal') || 'Subtotal'}
           </div>
-          <div className="font-medium text-neutral-900 dark:text-neutral-100">{$(gross)}</div>
+          <div className="font-medium text-neutral-900 dark:text-neutral-100">
+            {$(itemsSubtotal)}
+          </div>
 
-          {discount != null && Number(discount) > 0 && (
+          {discounts != null && Number(discounts) > 0 && (
             <>
               <div className="text-neutral-600 dark:text-neutral-400">
                 {t('cart.discounts') || 'Discounts'}
               </div>
               <div className="font-medium text-emerald-600 dark:text-emerald-400">
-                −{$(discount)}
+                −{$(discounts)}
+              </div>
+            </>
+          )}
+
+          {orderTotal != null && (
+            <>
+              <div className="text-neutral-600 dark:text-neutral-400">
+                {t('cart.orderTotal') || 'Order total'}
+              </div>
+              <div className="font-medium text-neutral-900 dark:text-neutral-100">
+                {$(orderTotal)}
               </div>
             </>
           )}
@@ -313,11 +371,11 @@ export default function OrderDetailsCard({ order = {}, glazes = [] }) {
           </div>
           <div className="font-medium text-amber-600 dark:text-amber-400">−{$(deposit)}</div>
 
-          <div className="mt-2 border-t border-neutral-200 pt-2 text-base font-semibold dark:border-neutral-700 dark:text-neutral-400">
+          <div className="mt-2 border-t border-neutral-200 pt-2 text-base font-semibold dark:border-neutral-700 dark:text-neutral-100">
             {t('cart.total') || 'Total'}
           </div>
-          <div className="mt-2 border-t border-neutral-200 pt-2 text-base font-semibold dark:border-neutral-700 dark:text-neutral-400">
-            {$(total)}
+          <div className="mt-2 border-t border-neutral-200 pt-2 text-base font-semibold dark:border-neutral-700 dark:text-neutral-100">
+            {$(amountDue)}
           </div>
         </div>
       </section>

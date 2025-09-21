@@ -135,7 +135,7 @@ export default function Orders() {
   const [filters, setFilters] = useState(DEFAULT_FILTERS)
   const [sort, setSort] = useState('orderDate:desc')
   const [page, setPage] = useState(1)
-  const [limit, setLimit] = useState(5)
+  const [limit, setLimit] = useState(20)
   const debouncedSearch = useDebounced(search, 400)
   // Selection state
   const [selectedOrders, setSelectedOrders] = useState([])

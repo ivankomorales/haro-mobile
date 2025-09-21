@@ -23,7 +23,7 @@ export default function StatCard({
           <Spinner size={24} className="text-neutral-500 dark:text-neutral-300" />
         </div>
       ) : (
-        <div className="mt-2 mb-5 text-center text-2xl font-semibold tabular-nums sm:pl-2 sm:text-left sm:text-3xl">
+        <div className="mt-2 mb-5 text-center text-2xl font-semibold tabular-nums sm:pl-2 sm:text-left sm:text-xl">
           {value}
         </div>
       )}

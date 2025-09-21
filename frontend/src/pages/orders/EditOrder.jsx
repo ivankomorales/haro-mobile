@@ -18,7 +18,7 @@ import {
   Type as TypeIcon,
 } from 'lucide-react'
 import { useEffect, useRef, useState, useMemo } from 'react'
-import { useNavigate, useParams, useLocation,  } from 'react-router-dom'
+import { useNavigate, useParams, useLocation } from 'react-router-dom'
 import { getAllGlazes } from '../../api/glazes'
 import { getOrderById, updateOrderById } from '../../api/orders'
 import AddedProductsCart from '../../components/AddedProductsCart'
@@ -751,7 +751,7 @@ export default function EditOrder() {
                           className="h-11 w-full rounded-md border border-neutral-300 bg-white px-3 text-sm dark:border-neutral-700 dark:bg-neutral-800 dark:text-white"
                         >
                           <option value="new">{t('status.new')}</option>
-                          <option value="pending">{t('status.pending')}</option>
+                          {/* <option value="pending">{t('status.pending')}</option> */}
                           <option value="inProgress">{t('status.inProgress')}</option>
                           <option value="completed">{t('status.completed')}</option>
                           <option value="cancelled">{t('status.cancelled')}</option>

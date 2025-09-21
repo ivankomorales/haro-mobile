@@ -119,7 +119,7 @@ export default function DashboardLayout() {
             id="scrollable-content"
             className="min-h-0 flex-1 overflow-y-auto overscroll-contain"
           >
-            <div className="mx-auto max-w-7xl p-4 lg:p-6">
+            <div className="mx-auto max-w-[90%] xl:max-w-7xl p-4 lg:p-6">
               <Outlet />
             </div>
           </main>

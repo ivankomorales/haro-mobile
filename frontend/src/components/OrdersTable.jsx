@@ -4,12 +4,9 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 
 import ConfirmModal from './ConfirmModal'
-import { cancelOrderById } from '../api/orders' // NEW HELPER
 import { formatDMY } from '../utils/date'
 import { getMessage as t } from '../utils/getMessage'
-import { getOriginPath } from '../utils/navigationUtils'
 import { getStatusLabel, getStatusClasses } from '../utils/orderStatusUtils'
-import { showError, showSuccess } from '../utils/toastUtils'
 
 function IndeterminateCheckbox({ checked, indeterminate, onChange, ariaLabel }) {
   const ref = useRef(null)
@@ -29,38 +26,35 @@ function IndeterminateCheckbox({ checked, indeterminate, onChange, ariaLabel }) 
   )
 }
 
-// Payment Calculations
-function getOrderTotal(order) {
-  if (typeof order?.total === 'number') return order.total
-  // Fallback (por si entra uno sin backfill):
-  const items = Array.isArray(order?.products) ? order.products : []
-  const subtotal = items.reduce((acc, p) => {
-    const qty = Number(p?.quantity ?? 1)
-    const price = Number(p?.price ?? 0)
-    const disc = Number(p?.discount ?? 0)
-    return acc + qty * Math.max(price - disc, 0)
-  }, 0)
-  const deposit = Number(order?.deposit ?? 0)
-  return Math.round(subtotal - deposit)
+// ─────────────────────────────────────────────────────────────────────────────
+// Money helpers (prefer new fields; fallback to safe local calc)
+// ─────────────────────────────────────────────────────────────────────────────
+function getOrderNet(o) {
+  // New model
+  if (typeof o?.orderTotal === 'number') return Math.round(o.orderTotal)
+
+  // Fallback (legacy docs or partial payloads)
+  const items = Array.isArray(o?.products) ? o.products : []
+  let gross = 0
+  let discounts = 0
+  for (const p of items) {
+    const qty = Math.max(1, Number(p?.quantity ?? 1))
+    const price = Math.max(0, Number(p?.price ?? 0))
+    const unitDisc = Math.max(0, Math.min(Number(p?.discount ?? 0), price)) // clamp ≤ price
+    gross += qty * price
+    discounts += qty * unitDisc
+  }
+  return Math.max(0, Math.round(gross - discounts))
 }
 
-function getOrderSubtotal(order) {
-  if (typeof order?.subtotal === 'number') return Math.round(order.subtotal)
-  // Fallback (por si entra uno sin backfill):
-  const items = Array.isArray(order?.products) ? order.products : []
-  const subtotal = items.reduce((acc, p) => {
-    const qty = Number(p?.quantity ?? 1)
-    const price = Number(p?.price ?? 0)
-    const disc = Number(p?.discount ?? 0)
-    return acc + qty * Math.max(price - disc, 0)
-  }, 0)
-  return Math.round(subtotal)
-}
+function getOrderDue(o) {
+  // New model
+  if (typeof o?.amountDue === 'number') return Math.round(o.amountDue)
 
-function getOrderDue(order) {
-  const subtotal = getOrderSubtotal(order)
-  const deposit = Number(order?.deposit ?? 0)
-  return Math.max(0, Math.round(subtotal - deposit))
+  // Fallback from net − deposit
+  const net = getOrderNet(o)
+  const deposit = Math.max(0, Number(o?.deposit ?? 0))
+  return Math.max(0, Math.round(net - deposit))
 }
 
 function StatusPill({ value }) {
@@ -91,51 +85,8 @@ function SortHeader({ label, column, sort, onSort }) {
   )
 }
 
-const handleConfirm = async () => {
-  if (confirmType !== 'delete' || !confirmId) return
-  setLoading(true)
-  try {
-    // si quieres súper simple: sin filtros, usa solo refreshStats=true
-    const qs = toQS({ refreshStats: true })
-
-    const res = await fetch(`/api/orders/${confirmId}?${qs}`, {
-      method: 'DELETE',
-      headers: {
-        'Content-Type': 'application/json',
-        // si usas JWT:
-        Authorization: `Bearer ${localStorage.getItem('token') || ''}`,
-      },
-    })
-    const data = await res.json()
-    if (!res.ok) throw new Error(data?.message || 'Cancel failed')
-
-    // ⬇️ Actualiza tus StatCards (asumiendo tienes setStats en props/estado)
-    if (data.stats) {
-      setStats(data.stats)
-    } else {
-      // por si aún no pegaste computeOrderStatsFromQuery en backend:
-      const resStats = await fetch('/api/orders/stats')
-      const stats = await resStats.json()
-      setStats(stats)
-    }
-
-    // (opcional) también puedes reflejar el cambio en la tabla localmente:
-    // setRows((rows) => rows.map(r => r._id === confirmId ? { ...r, status: 'cancelled' } : r))
-
-    // feedback
-    // toast.success('Pedido cancelado')
-  } catch (err) {
-    console.error(err)
-    // toast.error(err.message || 'No se pudo cancelar')
-  } finally {
-    setLoading(false)
-    setConfirmOpen(false)
-    setConfirmId(null)
-    setConfirmType(null)
-  }
-}
 /**
- * OrdersTable: simple desktop table with page-local selection.
+ * OrdersTable
  *
  * Props:
  * - orders: array of orders (current page)
@@ -143,9 +94,12 @@ const handleConfirm = async () => {
  * - onToggleRow(id)
  * - onTogglePage(checked)  -> select/unselect all rows on this page
  * - onRowClick(order)
- * - sort: 'orderDate:desc' | 'orderDate:asc' | ...
+ * - sort: 'orderDate:desc' | 'orderDate:asc' | 'orderTotal:desc' | ...
  * - onSort(nextSort)
+ * - onCancelOrder(id): Promise<void>
  * - currency: e.g. 'MXN' (defaults to MXN)
+ * - moneyColumn: 'net' | 'due'   (what to show in the main money column; default 'net')
+ * - showDueColumn: boolean        (adds a separate Due column; default false)
  */
 export default function OrdersTable({
   orders,
@@ -157,18 +111,18 @@ export default function OrdersTable({
   onSort,
   onCancelOrder,
   currency = 'MXN',
+  moneyColumn = 'net',
+  showDueColumn = false,
 }) {
-  // Modal
+  // Modal state
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [confirmId, setConfirmId] = useState(null)
-  const [confirmType, setConfirmType] = useState(null)
   const [busyId, setBusyId] = useState(null)
 
-  //Navigation
+  // Navigation
   const navigate = useNavigate()
   const location = useLocation()
 
-  const pageIds = useMemo(() => orders.map((o) => o._id), [orders])
   const selectedOnPage = useMemo(
     () => orders.filter((o) => selectedIds.includes(o._id)).length,
     [orders, selectedIds]
@@ -181,7 +135,22 @@ export default function OrdersTable({
       style: 'currency',
       currency,
       maximumFractionDigits: 2,
-    }).format(n ?? 0)
+    }).format(Number.isFinite(Number(n)) ? Number(n) : 0)
+
+  // Which column and label do we use for the main money column?
+  const mainMoneyGetter = moneyColumn === 'due' ? getOrderDue : getOrderNet
+  const mainMoneySortField = moneyColumn === 'due' ? 'amountDue' : 'orderTotal'
+  const mainMoneyLabel =
+    moneyColumn === 'due'
+      ? t('headers.due') || 'Due'
+      : t('headers.net') || t('headers.total') || 'Total'
+
+  // Header col count (for empty row colSpan)
+  const headerCols =
+    1 /*checkbox*/ +
+    5 /*id, customer, date, status, money*/ +
+    1 /*actions*/ +
+    (showDueColumn ? 1 : 0)
 
   return (
     <div className="overflow-x-auto rounded-xl border border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-900">
@@ -196,6 +165,7 @@ export default function OrdersTable({
                 ariaLabel="Select all on this page"
               />
             </th>
+
             <th className="px-3 py-2 font-semibold">
               <SortHeader
                 label={t('headers.orderID') || 'ORD#'}
@@ -204,6 +174,7 @@ export default function OrdersTable({
                 onSort={onSort}
               />
             </th>
+
             <th className="px-3 py-2 font-semibold">
               <SortHeader
                 label={t('headers.customer') || 'Customer'}
@@ -212,6 +183,7 @@ export default function OrdersTable({
                 onSort={onSort}
               />
             </th>
+
             <th className="px-3 py-2 font-semibold">
               <SortHeader
                 label={t('headers.orderDate') || 'Order date'}
@@ -220,6 +192,7 @@ export default function OrdersTable({
                 onSort={onSort}
               />
             </th>
+
             <th className="px-3 py-2 font-semibold">
               <SortHeader
                 label={t('headers.status') || 'Status'}
@@ -228,22 +201,39 @@ export default function OrdersTable({
                 onSort={onSort}
               />
             </th>
+
+            {/* Main money column (Net or Due) */}
             <th className="px-3 py-2 text-right font-semibold">
               <SortHeader
-                label={t('headers.total') || 'Total'}
-                column="total"
+                label={mainMoneyLabel}
+                column={mainMoneySortField}
                 sort={sort}
                 onSort={onSort}
               />
             </th>
-            <th className="px-3 py-2 text-right font-semibold">Actions</th>
+
+            {/* Optional separate "Due" column */}
+            {showDueColumn && (
+              <th className="px-3 py-2 text-right font-semibold">
+                <SortHeader
+                  label={t('headers.due') || 'Due'}
+                  column="amountDue"
+                  sort={sort}
+                  onSort={onSort}
+                />
+              </th>
+            )}
+
+            <th className="px-3 py-2 text-right font-semibold">
+              {t('headers.actions') || 'Actions'}
+            </th>
           </tr>
         </thead>
 
         <tbody>
           {orders.length === 0 ? (
             <tr>
-              <td colSpan={6} className="px-3 py-6 text-center text-neutral-500">
+              <td colSpan={headerCols} className="px-3 py-6 text-center text-neutral-500">
                 {t('order.empty') || 'No orders'}
               </td>
             </tr>
@@ -254,22 +244,25 @@ export default function OrdersTable({
                 `${o.customer?.name ?? ''} ${o.customer?.lastName ?? ''}`.trim() || '—'
               const dateStr = o.orderDate ? formatDMY(new Date(o.orderDate)) : '—'
 
-              // Edit Order
               const handleEdit = () => {
-                navigate(`/orders/${o._id}/edit`, { state: { originPath: location.pathname } }) // o '/orders/:id/edit-products'
+                navigate(`/orders/${o._id}/edit`, { state: { originPath: location.pathname } })
               }
 
-              // Delete Order (soft-delete)
-              const handleDelete = (orderId) => {
+              const askCancel = (orderId) => {
+                // Open confirm modal; we defer to onCancelOrder prop on confirm
+                // (keeps this component UI-only, no fetch here)
+                // eslint-disable-next-line no-undef
                 setConfirmId(orderId)
-                setConfirmType('delete')
+                // eslint-disable-next-line no-undef
                 setConfirmOpen(true)
               }
 
               return (
                 <tr
                   key={o._id}
-                  className={`border-t border-neutral-200 hover:bg-neutral-50/60 dark:border-neutral-800 dark:hover:bg-neutral-800/50 ${isSel ? 'bg-neutral-50 dark:bg-neutral-800/60' : ''}`}
+                  className={`border-t border-neutral-200 hover:bg-neutral-50/60 dark:border-neutral-800 dark:hover:bg-neutral-800/50 ${
+                    isSel ? 'bg-neutral-50 dark:bg-neutral-800/60' : ''
+                  }`}
                 >
                   <td className="px-3 py-2 align-middle">
                     <input
@@ -306,18 +299,26 @@ export default function OrdersTable({
                     <StatusPill value={o.status} />
                   </td>
 
+                  {/* Main money column */}
                   <td className="px-3 py-2 text-right align-middle">
                     <span className="font-medium tabular-nums">
-                      {fmtCurrency(getOrderSubtotal(o))}
+                      {fmtCurrency(mainMoneyGetter(o))}
                     </span>
                   </td>
+
+                  {/* Optional separate "Due" column */}
+                  {showDueColumn && (
+                    <td className="px-3 py-2 text-right align-middle">
+                      <span className="tabular-nums">{fmtCurrency(getOrderDue(o))}</span>
+                    </td>
+                  )}
 
                   {/* Actions */}
                   <td className="px-3 py-2 align-middle">
                     <div className="flex items-center justify-end gap-2">
                       <button
                         type="button"
-                        title={t('button.edit')}
+                        title={t('button.edit') || 'Edit'}
                         onClick={(e) => {
                           e.stopPropagation()
                           handleEdit()
@@ -331,7 +332,8 @@ export default function OrdersTable({
                         title={t('button.delete') || 'Delete'}
                         onClick={(e) => {
                           e.stopPropagation()
-                          handleDelete(o._id)
+                          setConfirmId(o._id)
+                          setConfirmOpen(true)
                         }}
                         className="rounded p-1 text-red-600 hover:bg-neutral-100 dark:text-red-400/70 dark:hover:bg-neutral-700 dark:hover:text-red-400/90"
                       >
@@ -345,10 +347,12 @@ export default function OrdersTable({
           )}
         </tbody>
       </table>
+
+      {/* Cancel order confirmation */}
       <ConfirmModal
         open={confirmOpen}
         onClose={() => {
-          if (busyId) return // do not close while working the request
+          if (busyId) return // don't close while working
           setConfirmOpen(false)
           setConfirmId(null)
         }}
