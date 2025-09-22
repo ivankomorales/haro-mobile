@@ -48,28 +48,31 @@ export default function StatCards({
         key: 'inRange',
         title: t?.('stats.inRange') || 'Orders (range)',
         value: count?.total ?? 0,
+        accentClass: 'bg-blue-500', // blue accent
       },
       {
         key: 'completed',
         title: t?.('stats.completed') || 'Completed',
         value: count?.completed ?? 0,
+        accentClass: 'bg-emerald-500', // green accent
       },
       {
         key: 'pending',
         title: t?.('stats.pending') || 'Pending',
         value: count?.pendingGroup ?? 0,
+        accentClass: 'bg-amber-500', // amber accent
       },
       {
         key: 'netSales',
         title: t?.('stats.netSales') || 'Net sales',
-        // Your backend exposes `totals.subtotal` as gross - discount (net sales)
         value: fmt.format(totals?.orderTotal ?? 0),
+        accentClass: 'bg-indigo-500',
       },
       {
         key: 'amountDue',
         title: t?.('stats.amountDue') || 'Amount due',
-        // From backend: totals.due (alias of subtotal - deposit)
         value: fmt.format(totals?.amountDue ?? 0),
+        accentClass: 'bg-rose-500',
       },
     ],
     [count, totals, t, fmt]
@@ -95,6 +98,7 @@ export default function StatCards({
             value={cards[i].value}
             subtitle={cards[i].subtitle}
             loading={loading}
+            accentClass={cards[i].accentClass}
           />
 
           {/* Left chevron */}
@@ -140,6 +144,7 @@ export default function StatCards({
             value={c.value}
             subtitle={c.subtitle}
             loading={loading}
+            accentClass={c.accentClass}
           />
         ))}
       </div>

@@ -1,8 +1,7 @@
 // components/FormInput.jsx
-import { Eye, EyeOff, Calendar, XCircle } from 'lucide-react'
+import { Eye, EyeOff, Calendar } from 'lucide-react'
 import { useState } from 'react'
 import DatePicker from 'react-datepicker'
-
 import 'react-datepicker/dist/react-datepicker.css'
 import { fromYMD, toYMD } from '../utils/date'
 
@@ -44,44 +43,45 @@ export default function FormInput({
   showToggle = false,
   floating = true,
   icon = null,
-  
+  inputClassName = '',
   ...props
 }) {
   const [show, setShow] = useState(false)
-
   const inputType = type === 'password' && showToggle ? (show ? 'text' : 'password') : type
-
   const hasRightIcon =
     (type === 'password' && showToggle) || (icon === 'calendar' && type === 'date')
 
   return (
     <div className="w-full">
+      {/* Classic label OUTSIDE the relative wrapper */}
+      {!floating && (
+        <label
+          htmlFor={name}
+          className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300"
+        >
+          {label}
+        </label>
+      )}
+
+      {/* Control wrapper (relative): prefix/right-icon/floating-label anchor here */}
       <div className="relative w-full">
-        {/* Prefix (left aligned inside input) */}
+        {/* Prefix vertically centered against the control height */}
         {prefix && (
-          <span className="pointer-events-none absolute top-2/3 left-3 -translate-y-1/2 text-sm text-gray-500 dark:text-gray-300">
+          <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-sm text-gray-500 dark:text-gray-300">
             {prefix}
           </span>
         )}
 
-        {/* Classic label (if floating is disabled) */}
-        {!floating && (
-          <label
-            htmlFor={name}
-            className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300"
-          >
-            {label}
-          </label>
-        )}
-
-        {/* Input field logic */}
+        {/* Control */}
         {as === 'select' ? (
           <select
             name={name}
             id={name}
             value={value}
             onChange={onChange}
-            className={`peer min-h-[44px] w-full appearance-none rounded-lg border bg-white px-3 py-2 text-sm text-gray-900 focus:ring-2 focus:ring-blue-500 focus:outline-none dark:bg-neutral-700 dark:text-white ${error ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} ${floating ? 'pt-5' : ''} `}
+            className={`peer min-h-[44px] w-full appearance-none rounded-lg border bg-white px-3 py-2 text-sm text-gray-900 focus:ring-2 focus:ring-blue-500 focus:outline-none dark:bg-neutral-700 dark:text-white ${
+              error ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
+            } ${floating ? 'pt-5' : ''} ${inputClassName}`}
             {...props}
           >
             {props.children}
@@ -90,16 +90,13 @@ export default function FormInput({
           <DatePicker
             selected={value ? fromYMD(value) : null}
             onChange={(date) => {
-              const syntheticEvent = {
-                target: {
-                  name,
-                  value: date ? toYMD(date) : '',
-                },
-              }
+              const syntheticEvent = { target: { name, value: date ? toYMD(date) : '' } }
               onChange(syntheticEvent)
             }}
             dateFormat="dd-MM-yyyy"
-            className={`peer w-full ${prefix ? 'pl-10' : 'px-3'} min-h-[44px] rounded-lg border bg-white py-1 text-sm text-gray-900 focus:ring-2 focus:ring-blue-500 focus:outline-none dark:bg-neutral-700 dark:text-white ${error ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} ${floating ? 'pt-5' : ''} ${hasRightIcon ? 'pr-11' : ''} `}
+            className={`peer w-full ${prefix ? 'pl-10' : 'px-3'} min-h-[44px] rounded-lg border bg-white py-1 text-sm text-gray-900 focus:ring-2 focus:ring-blue-500 focus:outline-none dark:bg-neutral-700 dark:text-white ${
+              error ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
+            } ${floating ? 'pt-5' : ''} ${hasRightIcon ? 'pr-11' : ''} ${inputClassName}`}
             wrapperClassName="w-full"
             placeholderText={floating ? ' ' : (props.placeholder ?? label)}
             showPopperArrow={false}
@@ -118,22 +115,26 @@ export default function FormInput({
             max={max}
             step={step}
             required={required}
-            className={`peer w-full ${prefix ? 'pl-10' : 'px-3'} min-h-[44px] rounded-lg border bg-white py-1 text-sm text-gray-900 focus:ring-2 focus:ring-blue-500 focus:outline-none dark:bg-neutral-700 dark:text-white ${error ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} ${floating ? 'pt-5' : ''} ${hasRightIcon ? 'pr-11' : ''} `}
+            className={`peer w-full ${prefix ? 'pl-10' : 'px-3'} min-h-[44px] rounded-lg border bg-white py-1 text-sm text-gray-900 focus:ring-2 focus:ring-blue-500 focus:outline-none dark:bg-neutral-700 dark:text-white ${
+              error ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
+            } ${floating ? 'pt-5' : ''} ${hasRightIcon ? 'pr-11' : ''} ${inputClassName}`}
             {...props}
           />
         )}
 
-        {/* Floating label (if enabled) */}
+        {/* Floating label ONLY when floating=true (keep it inside the relative wrapper) */}
         {floating && (
           <label
             htmlFor={name}
-            className={`absolute top-1 left-3 origin-[0] -translate-y-0.5 scale-75 transform text-sm text-gray-500 transition-all peer-placeholder-shown:translate-y-2 peer-placeholder-shown:scale-100 peer-focus:-translate-y-1.5 peer-focus:scale-75 dark:text-gray-400 ${error ? 'text-red-500' : 'peer-focus:text-blue-600 dark:peer-focus:text-blue-400'} `}
+            className={`absolute top-1 left-3 origin-[0] -translate-y-0.5 scale-75 transform text-sm text-gray-500 transition-all peer-placeholder-shown:translate-y-2 peer-placeholder-shown:scale-100 peer-focus:-translate-y-1.5 peer-focus:scale-75 dark:text-gray-400 ${
+              error ? 'text-red-500' : 'peer-focus:text-blue-600 dark:peer-focus:text-blue-400'
+            }`}
           >
             {label}
           </label>
         )}
 
-        {/* Icon wrapper (right-aligned) */}
+        {/* Right icon wrapper (password/calendar) */}
         {hasRightIcon && (
           <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center">
             {type === 'password' && showToggle && (
@@ -147,15 +148,14 @@ export default function FormInput({
                 {show ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
             )}
-
             {icon === 'calendar' && type === 'date' && (
-              <Calendar size={18} className="translate-y-2.5 text-gray-500 dark:text-gray-300" />
+              <Calendar size={18} className="text-gray-500 dark:text-gray-300" />
             )}
           </div>
         )}
       </div>
 
-      {/* Error message (below input) */}
+      {/* Error message */}
       {error && (
         <p className="mt-1 text-sm text-red-500">
           {errorFormatter ? errorFormatter(error) : error}

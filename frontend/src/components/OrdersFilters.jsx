@@ -88,14 +88,20 @@ export default function OrdersFilters({
         id="orders-filter-button"
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-gray-200 px-3 hover:bg-neutral-100 focus:ring-2 focus:ring-blue-500 focus:outline-none dark:border-neutral-700 dark:hover:bg-neutral-800"
+        // fixed size + relative so the badge overlays and never changes width
+        className="relative inline-flex h-10 w-10 items-center justify-center rounded-md border border-gray-200 hover:bg-neutral-100 focus:ring-2 focus:ring-blue-500 focus:outline-none dark:border-neutral-700 dark:hover:bg-neutral-800"
         aria-haspopup="menu"
         aria-expanded={open}
         title={tt('filters.title')}
       >
         <SlidersHorizontal className="h-5 w-5" />
+
+        {/* DO NOT put this in the flow; overlay it */}
         {activeCount > 0 && (
-          <span className="ml-1 inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-blue-600 px-1.5 text-[11px] font-semibold text-white">
+          <span
+            className="pointer-events-none absolute -top-1 -right-1 inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-blue-600 px-1.5 text-[11px] leading-none font-semibold text-white ring-2 ring-white dark:ring-neutral-900"
+            aria-hidden="true"
+          >
             {activeCount}
           </span>
         )}

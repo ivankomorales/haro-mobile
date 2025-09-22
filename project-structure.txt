@@ -1,0 +1,206 @@
+﻿assets_temp/
+├── 001.jpg
+├── 002.jpg
+├── 003.jpg
+├── 004.jpg
+├── 005.jpg
+├── 101.jpg
+├── 102.jpg
+├── 103.jpg
+├── 201.jpg
+├── 301.jpg
+├── 302.jpg
+├── 401.jpg
+├── 402.jpg
+├── 403.jpg
+├── 501.jpg
+├── 502.jpg
+├── 601.jpg
+├── 602.jpg
+├── 701.jpg
+├── 801.JPG
+├── esmalte_amarillo.JPG
+├── esmalte_chocolate.JPG
+├── esmalte_durazno.JPG
+├── esmalte_jade.JPG
+├── esmalte_morado.JPG
+├── esmalte_rojo.JPG
+└── esmalte_rosa.JPG
+
+backend/
+├── .env
+├── app.js
+├── eslint.config.mjs
+├── package.json
+├── package-lock.json
+├── README.md
+├── config/
+│   └── db.js
+├── controllers/
+│   ├── auditController.js
+│   ├── authController.js
+│   ├── customerController.js
+│   ├── exportController.js
+│   ├── glazeController.js
+│   ├── orderController.js
+│   └── userController.js
+├── middleware/
+│   ├── auth.js
+│   ├── checkRole.js
+│   ├── errorHandler.js
+│   └── verifyOwnershipOrAdmin.js
+├── models/
+│   ├── AuditLog.js
+│   ├── Counter.js
+│   ├── Customer.js
+│   ├── Glaze.js
+│   ├── Order.js
+│   ├── OrderDraft.js
+│   └── User.js
+├── routes/
+│   ├── auditRoutes.js
+│   ├── authRoutes.js
+│   ├── customerRoutes.js
+│   ├── glazeRoutes.js
+│   ├── orderDrafts.js
+│   ├── orderRoutes.js
+│   └── userRoutes.js
+├── scriptsTemp/
+│   ├── createAdmin.js
+│   ├── migrate-money-v2.js
+│   └── migrate-statuses.cjs
+└── utils/
+    ├── ApiError.js
+    ├── audit.js
+    └── validators.js
+
+frontend/
+├── .env
+├── .prettierignore
+├── .prettierrc
+├── eslint.config.js
+├── index.html
+├── package.json
+├── package-lock.json
+├── README.md
+├── README_DEV.md
+├── tailwind.config.js
+├── vite.config.js
+├── public/
+│   └── vite.svg
+├── src/
+│   ├── App.jsx
+│   ├── index.css
+│   ├── main.jsx
+│   ├── api/
+│   │   ├── auth.js
+│   │   ├── glazes.js
+│   │   ├── orderDrafts.js
+│   │   ├── orders.js
+│   │   └── users.js
+│   ├── assets/
+│   ├── components/
+│   │   ├── AccountMenu.jsx
+│   │   ├── AddedProductsCart.jsx
+│   │   ├── AddedProductsCart copy.jsx
+│   │   ├── AddressInput.jsx
+│   │   ├── AppBar.jsx
+│   │   ├── BottomNavBar.jsx
+│   │   ├── ConfirmModal.jsx
+│   │   ├── DropWrap.jsx
+│   │   ├── ExcelModal.jsx
+│   │   ├── FormActions.jsx
+│   │   ├── FormAddress.jsx
+│   │   ├── FormInput.jsx
+│   │   ├── GlazeTypeahead.jsx
+│   │   ├── ImageUploader.jsx
+│   │   ├── OpenBalancesTable.jsx
+│   │   ├── OrderActionsBar.jsx
+│   │   ├── OrderCard.jsx
+│   │   ├── OrderDetailsCard.jsx
+│   │   ├── OrderDetailsModal.jsx
+│   │   ├── OrdersFilters.jsx
+│   │   ├── OrdersTable.jsx
+│   │   ├── PaginationBar.jsx
+│   │   ├── ScrollManager.jsx
+│   │   ├── ScrollToTop.jsx
+│   │   ├── Sidebar.jsx
+│   │   ├── Spinner.jsx
+│   │   ├── SplitActionButton.jsx
+│   │   ├── StatCard.jsx
+│   │   ├── StatCards.jsx
+│   │   ├── StatusModal.jsx
+│   │   └── TableSkeleton.jsx
+│   ├── context/
+│   │   ├── AuthContext.jsx
+│   │   ├── ConfirmContext.jsx
+│   │   └── LayoutContext.jsx
+│   ├── hooks/
+│   │   ├── useAuth.js
+│   │   ├── useAuthedFetch.js
+│   │   ├── useCreateGlaze.js
+│   │   ├── useCreateUser.js
+│   │   ├── useDarkMode.js
+│   │   ├── useHideBars.js
+│   │   ├── useKeyboardOpen.js
+│   │   ├── useOrderStats.js
+│   │   └── useShippingAddresses.js
+│   ├── layouts/
+│   │   └── DashboardLayout.jsx
+│   ├── locales/
+│   │   ├── en.js
+│   │   └── es.js
+│   ├── pages/
+│   │   ├── Dashboard.jsx
+│   │   ├── Home.jsx
+│   │   ├── Login.jsx
+│   │   ├── glazes/
+│   │   │   ├── AddGlaze.jsx
+│   │   │   ├── EditGlaze.jsx
+│   │   │   └── GlazeListPage.jsx
+│   │   ├── orders/
+│   │   │   ├── AddProduct.jsx
+│   │   │   ├── EditOrder.jsx
+│   │   │   ├── NewOrder.jsx
+│   │   │   ├── OrderConfirmation.jsx
+│   │   │   ├── OrderConfirmationOld.jsx
+│   │   │   ├── OrderDetails.jsx
+│   │   │   └── Orders.jsx
+│   │   └── users/
+│   │       ├── AddUser.jsx
+│   │       └── UserProfile.jsx
+│   ├── routes/
+│   │   ├── PrivateRoute.jsx
+│   │   ├── PrivateRoutesWrapper.jsx
+│   │   ├── privateRoutes.jsx
+│   │   ├── PublicRoutesWrapper.jsx
+│   │   └── publicRoutes.jsx
+│   └── utils/
+│       ├── constants.js
+│       ├── date.js
+│       ├── errorUtils.js
+│       ├── exportUtils.js
+│       ├── fetchWithAuth.js
+│       ├── getMessage.js
+│       ├── glazeUtils.js
+│       ├── jwt.js
+│       ├── navigationUtils.js
+│       ├── orderPayload.js
+│       ├── orderStatusUtils.js
+│       ├── smartNavigate.js
+│       ├── toastUtils.js
+│       ├── transformProducts.js
+│       ├── uploadToCloudinary.js
+│       ├── useRequireState.js
+│       └── mappers/
+│           ├── baseOrder.js
+│           └── product.js
+├── test-results/
+│   └── .last-run.json
+└── tests/
+    └── fetchWithAuth.test.js
+
+package.json
+package-lock.json
+project-structure.txt
+README.md

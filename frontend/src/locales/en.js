@@ -218,7 +218,7 @@ export const en = {
     notes: 'Notes',
     datePlaceholder: 'DD/MM/YYYY',
 
-    search: 'Name, email, orderID',
+    search: 'Search by orderID, Name or email. ',
     details: 'Order Details',
 
     exportingPDF: 'Generating PDF...',
@@ -468,7 +468,7 @@ export const en = {
     from: 'From',
     to: 'To',
     urgent: 'Urgent',
-    shippingRequired: 'Shipping Required',
+    shippingRequired: 'Shipping',
     ignore: 'Ignore',
     yes: 'Yes',
     no: 'No',

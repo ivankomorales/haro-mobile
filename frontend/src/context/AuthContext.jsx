@@ -1,3 +1,4 @@
+// src/context/AuthContext.jsx
 // comments in English only
 import { createContext, useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'

@@ -1,16 +1,15 @@
 // comments in English only
 // External libs
-import { XCircle, Plus, X, Calendar } from 'lucide-react' // Icons
+import { XCircle, Plus, X, Calendar, Trash2 } from 'lucide-react' // Icons
 import { useEffect, useMemo, useState, useCallback } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 // API
 import { getOrdersPage, updateManyOrderStatus, cancelOrderById } from '../../api/orders'
 // App hooks & context
-import FormInput from '../../components/FormInput'
 import OrderActionsBar from '../../components/OrderActionsBar'
 import { OrderCard } from '../../components/OrderCard'
 import OrderDetailsModal from '../../components/OrderDetailsModal'
-import OrdersFilters from '../../components/OrdersFilters'
+import ExcelModal from '../../components/ExcelModal'
 import OrdersTable from '../../components/OrdersTable'
 import PaginationBar from '../../components/PaginationBar'
 import StatCards from '../../components/StatCards'
@@ -22,6 +21,8 @@ import { parseFlexible, formatDMY } from '../../utils/date'
 import { getMessage as t } from '../../utils/getMessage'
 import { showError, showSuccess, showLoading, dismissToast } from '../../utils/toastUtils'
 import { formatProductsWithLabels } from '../../utils/transformProducts'
+import { exportSelectedOrdersToPDF, exportSelectedOrdersToExcel } from '../../utils/exportUtils'
+import { saveExportFields } from '../../components/ExcelModal'
 // UI components
 import TableSkeleton from '../../components/TableSkeleton'
 // Constants
@@ -87,7 +88,6 @@ function MobileOrdersSkeleton({ count = 8 }) {
                     className="mt-1 h-3 w-24 rounded bg-neutral-200 dark:bg-neutral-700"
                     aria-hidden="true"
                   />
-                  setStats
                 </div>
 
                 {/* RIGHT: order id + status (non-shrinking block) */}
@@ -129,6 +129,7 @@ export default function Orders() {
   const [loading, setLoading] = useState(true)
   const [showStatusModal, setShowStatusModal] = useState(false)
   const [selectedOrder, setSelectedOrder] = useState(null)
+  const [exportOpen, setExportOpen] = useState(false) // Excel modal open/close
 
   // Query state
   const [search, setSearch] = useState('')
@@ -140,6 +141,7 @@ export default function Orders() {
   // Selection state
   const [selectedOrders, setSelectedOrders] = useState([])
 
+  const userId = JSON.parse(localStorage.getItem('user') || '{}')?.id ?? 'guest'
   // Stats (cards)
   const {
     stats: agg,
@@ -297,6 +299,21 @@ export default function Orders() {
     setFilters(DEFAULT_FILTERS)
   }, [])
 
+  function handleExportPDFClick() {
+    if (!selectedOrders.length) return
+    // Your existing util:
+    exportSelectedOrdersToPDF(selectedOrders)
+  }
+
+  const handleExportConfirm = async (fields) => {
+    try {
+      if (saveExportFields) saveExportFields(userId, fields)
+    } catch (_) {}
+
+    await exportSelectedOrdersToExcel(selectedOrders, fields)
+    setExportOpen(false)
+  }
+
   async function handleBulkStatusUpdate(newStatus) {
     const toastId = showLoading('order.updatingStatus')
     try {
@@ -398,8 +415,8 @@ export default function Orders() {
             </select>
           </div>
 
-          {/* Row 2: Stat cards + range selector spacer */}
-          <div className="mt-2 flex items-center justify-between gap-2">
+          {/* Stat cards + range selector spacer */}
+          <div className="mt-2 mb-8 flex items-center justify-between gap-2">
             <StatCards
               stats={agg} // only hook
               loading={statsLoading} // does not depends on table loading state
@@ -407,82 +424,44 @@ export default function Orders() {
               size="sm"
               className="flex-1"
             />
-            <div className="shrink-0" />
           </div>
-
-          {/* Row 3: Search + Filters */}
-          <div className="mt-2 flex items-end gap-2">
-            {/* Search (shorter, with clear X) */}
-            <div className="relative max-w-[520px] flex-1">
-              <FormInput
-                name="search"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                floating={false}
-                placeholder={t('order.search')}
-                inputClassName="pr-9" // keep right padding so X does not overlap text
-              />
-              {search && (
-                <button
-                  type="button"
-                  onClick={() => setSearch('')}
-                  aria-label={t('button.clear') || 'Clear'}
-                  className="absolute top-1/2 right-2 -translate-y-1/2 rounded p-1 text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-800"
-                >
-                  <XCircle className="h-5 w-5" />
-                </button>
-              )}
-            </div>
-
-            {/* Filters */}
-            <OrdersFilters
-              t={t}
-              value={filters}
-              onChange={(v) => {
-                setPage(1)
-                setFilters(v)
-              }}
-            />
-          </div>
-
-          {/* Row 4: Filter chips */}
-          {chips.length > 0 && (
-            <div className="mt-2 flex flex-wrap items-center gap-2">
-              {chips.map((c) => (
-                <span
-                  key={c.key}
-                  className="inline-flex items-center gap-2 rounded-full bg-neutral-100 px-2.5 py-1 text-sm dark:bg-neutral-800"
-                >
-                  {c.label}
-                  <button
-                    onClick={() => clearChip(c.key)}
-                    className="inline-flex h-5 w-5 items-center justify-center rounded-full hover:bg-neutral-200 dark:hover:bg-neutral-700"
-                    title={t('button.clear') || 'Clear'}
-                  >
-                    <X className="h-3 w-3" />
-                  </button>
-                </span>
-              ))}
-              <button
-                onClick={clearAllChips}
-                className="ml-1 rounded px-2 py-1 text-sm hover:bg-neutral-100 dark:hover:bg-neutral-800"
-                title={t('clear') || 'Clear all'}
-              >
-                {t('clear') || 'Clear all'}
-              </button>
-            </div>
-          )}
         </div>
       </div>
 
       {/* Table Actions Bar */}
       <OrderActionsBar
-        selectedOrders={selectedOrders}
-        allVisibleOrders={orders} // server-paged slice
-        onClearSelection={() => setSelectedOrders([])}
-        onSelectAll={(ids) => setSelectedOrders(ids)}
-        onBulkStatusChange={() => setShowStatusModal(true)}
         t={t}
+        // Search
+        searchValue={search}
+        onSearchChange={(val) => {
+          setSearch(val)
+          setPage(1)
+        }}
+        // Filters (controlled here)
+        filtersValue={filters}
+        onFiltersChange={(v) => {
+          setFilters(v)
+          setPage(1)
+        }}
+        // Selection => disable kebab items
+        selectedIds={selectedOrders}
+        // Kebab actions
+        onExportPDFClick={handleExportPDFClick}
+        onOpenExcelClick={() => setExportOpen(true)}
+        onBulkStatusChange={() => setShowStatusModal(true)}
+        // Chips
+        chips={chips}
+        onClearChip={clearChip}
+        onClearAllChips={clearAllChips}
+        chipsBreakpoint="md" // show chips from md+; hidden on mobile
+      />
+
+      {/* Excel fields selection modal (your component) */}
+      <ExcelModal
+        open={exportOpen}
+        onClose={() => setExportOpen(false)}
+        onConfirm={handleExportConfirm} // <-- tu handler de confirmación
+        userId={userId}
       />
 
       <div className="p-0">

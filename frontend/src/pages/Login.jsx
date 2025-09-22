@@ -1,10 +1,9 @@
 import { useState } from 'react'
 import { useEffect } from 'react'
-
+import { Mail, LockKeyhole } from 'lucide-react'
 import FormInput from '../components/FormInput'
 import { useAuth } from '../hooks/useAuth'
 import { getMessage as t } from '../utils/getMessage'
-
 
 export default function Login() {
   const { login } = useAuth()
@@ -48,10 +47,11 @@ export default function Login() {
         onSubmit={handleSubmit}
         className="flex w-full max-w-sm flex-col gap-4 rounded-xl bg-white p-6 shadow-md dark:bg-neutral-800"
       >
-        <h2 className="text-center text-xl font-semibold">Login</h2>
+        <h2 className="text-center text-xl font-semibold dark:text-white">Login</h2>
 
         <FormInput
           label={t('login.email')}
+          floating={false}
           name="email"
           type="email"
           value={email}
@@ -61,11 +61,14 @@ export default function Login() {
           }}
           error={errors.email}
           errorFormatter={t}
+          prefix={<Mail className="h-5 w-5" />}
+          placeholder=""
         />
 
         <FormInput
           label={t('login.password')}
-          name="password"
+          floating={false}
+          // name="password"
           type="password"
           value={password}
           onChange={(e) => {
@@ -75,6 +78,8 @@ export default function Login() {
           showToggle
           error={errors.password}
           errorFormatter={t}
+          prefix={<LockKeyhole className="h-5 w-5" />}
+          placeholder=""
         />
 
         {/* Mensaje de error general */}
@@ -84,7 +89,7 @@ export default function Login() {
 
         <button
           type="submit"
-          className="rounded-full bg-black p-3 font-medium text-white transition hover:bg-neutral-900 dark:bg-amber-500"
+          className="rounded-full bg-black p-3 font-medium text-white transition hover:bg-neutral-900 dark:bg-blue-500"
         >
           {t('button.login')}
         </button>

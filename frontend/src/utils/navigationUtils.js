@@ -1,3 +1,4 @@
+// src/utils/navigationUtils.js
 const EXCLUDED_PATHS = [
   '/orders/new',
   '/orders/edit',

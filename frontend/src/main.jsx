@@ -20,7 +20,6 @@ createRoot(document.getElementById('root')).render(
     <BrowserRouter>
       <AuthProvider>
         <LayoutProvider>
-          {/* Mount once for the whole app, inside BrowserRouter */}
           <ScrollManager selector={SCROLL_CONTAINER_SELECTOR} behavior="auto" respectBackForward />
           <App />
         </LayoutProvider>

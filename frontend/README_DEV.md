@@ -6,159 +6,195 @@ This document is a technical reference for developers working on the Haro Mobile
 
 ```
 haro-mobile/backend
+├── backend/
+│   ├── config/
+│   │   └── db.js                     # MongoDB connection setup
+│   │
+│   ├── controllers/
+│   │   ├── auditController.js        # Handles fetching audit logs (admin-only)
+│   │   ├── authController.js         # Login, logout, password update
+│   │   ├── customerController.js     # Customer CRUD operations
+│   │   ├── exportController.js       # PDF and Excel exports
+│   │   ├── glazeController.js        # CRUD for glazes with audit logging
+│   │   ├── orderController.js        # Create, update, cancel orders
+│   │   └── userController.js         # User CRUD, soft delete, role updates
+│   │
+│   ├── middleware/
+│   │   ├── auth.js                   # JWT verification, attaches user to req
+│   │   ├── checkRole.js              # Restricts access by role (admin/employee)
+│   │   ├── errorHandler.js           # Centralized error handler for Express
+│   │   └── verifyOwnershipOrAdmin.js # Protects resources by ownership or admin
+│   │
+│   ├── models/
+│   │   ├── AuditLog.js               # Logs critical system events (with TTL index)
+│   │   ├── Counter.js                # For auto-increment order IDs (ORD-000X)
+│   │   ├── Customer.js               # Customer schema (linked to orders)
+│   │   ├── Glaze.js                  # Glaze data, soft deletable
+│   │   ├── Order.js                  # Main order schema with nested products
+│   │   ├── OrderDraft.js
+│   │   └── User.js                   # User schema with hashed password + roles
+│   │
+│   ├── routes/
+│   │   ├── auditRoutes.js            # /api/logs → Audit logs (admin only)
+│   │   ├── authRoutes.js             # /api/auth → Login, logout, password
+│   │   ├── customerRoutes.js         # /api/customers → Customer endpoints
+│   │   ├── glazeRoutes.js            # /api/glazes → CRUD for glazes
+│   │   ├── orderDrafts.js
+│   │   ├── orderRoutes.js            # /api/orders → Order endpoints
+│   │   └── userRoutes.js             # /api/users → User management
+│   │
+│   ├── utils/
+│   │   ├── ApiError.js               # Standardized error object for consistent error handling
+│   │   ├── audit.js                  # logEvent helper for consistent logging
+│   │   └── validators.js             # Express-validator middleware sets for input validation
+│   │
+│   ├── scriptsTemp/
+│   │   ├── createAdmin.js
+│   │   ├── migrate-money-v2.js
+│   │   └── migrate-statuses.cjs
+│   │
+│   ├── .env                          # Environment variables (gitignored)
+│   ├── app.js                        # Main Express app config and routes
+│   ├── eslint.config.mjs
+│   ├── package.json                  # Project metadata and dependencies
+│   ├── package-lock.json
+│   └── README.md                     # Project overview and setup instructions
 │
-├── config/
-│   └── db.js                     # MongoDB connection setup
+├── frontend/
+│   ├── public/
+│   │   └── vite.svg
+│   │
+│   ├── src/
+│   │   ├── api/                          # Wrapper functions around backend API endpoints
+│   │   │   ├── auth.js
+│   │   │   ├── glazes.js
+│   │   │   ├── orderDrafts.js
+│   │   │   ├── orders.js
+│   │   │   └── users.js
+│   │   │
+│   │   ├── assets/
+│   │   │
+│   │   ├── components/                   # Reusable UI components
+│   │   │   ├── AddressInput.jsx          # Grouped address input fields
+│   │   │   ├── AppBar.jsx                # Form footer with Cancel and Submit buttons
+│   │   │   ├── BottomNavBar.jsx          #
+│   │   │   ├── ConfirmModal.jsx          # Generic confirmation modal (uses Headless UI)
+│   │   │   ├── DropWrap.jsx              # Image drop zone
+│   │   │   ├── ExcelModal.jsx            # Modal for excel export options selection
+│   │   │   ├── FormActions.jsx           # Form action buttons with cancel confirmation
+│   │   │   ├── FormAddress.jsx           # Dynamic list of shipping address sections
+│   │   │   ├── FormInput.jsx             # Reusable input supporting multiple types (prev FloatingInput)
+│   │   │   ├── GlazeTypeahead.jsx        # Searchable glaze selector (autocomplete)
+│   │   │   ├── ImageUploader.jsx         # Upload with preview and delete options
+│   │   │   ├── OpenBalancesTable.jsx
+│   │   │   ├── OrderActionsBar.jsx       # Search bar w/filters and kebab menu (excel, pdf export + change status)
+│   │   │   ├── OrderCard.jsx             # Mobile Order card
+│   │   │   ├── OrderDetailsCard.jsx      # Displays full order and customer details
+│   │   │   ├── OrderDetailsModal.jsx     #
+│   │   │   ├── OrdersFilters.jsx         # Advanced filters for OrderActionsBar Search
+│   │   │   ├── OrdersTable.jsx           # Orders sortabale presentation
+│   │   │   ├── PaginationBar.jsx         # Bottom pagination for OrdersTable
+│   │   │   ├── ScrollManager.jsx         # Component to scroll to top
+│   │   │   ├── ScrollToTop.jsx           #
+│   │   │   ├── Sidebar.jsx               # Sidebar Navigation
+│   │   │   ├── Spinner.jsx
+│   │   │   ├── SplitActionButton.jsx     # Button with optional dropdown for extra actions
+│   │   │   ├── StatCard.jsx
+│   │   │   ├── StatCards.jsx
+│   │   │   ├── StatusModal.jsx           # Modal to change status used in OrderActionsBar
+│   │   │   └── TableSkeleton.jsx
+│   │   │
+│   │   ├── context/                      # Global app state using React Context
+│   │   │   ├── AuthContext.jsx
+│   │   │   ├── ConfirmContext.jsx        # Global confirmation modal handler
+│   │   │   └── LayoutContext.jsx         # Shared layout state (e.g., hiding navs)
+│   │   │
+│   │   ├── hooks/                        # Custom React hooks
+│   │   │   ├── useAuth.js
+│   │   │   ├── useAuthedFetch.js
+│   │   │   ├── useCreateGlaze.js         # POST request helper for new glazes
+│   │   │   ├── useCreateUser.js
+│   │   │   ├── useDarkMode.js            # (not implemented yet)
+│   │   │   ├── useHideBars.js            # Hides nav bars based on route or screen size
+│   │   │   ├── useKeyboardOpen.js        # Hides bottom bar when keyboard opens on mobile devices
+│   │   │   ├── useOrderStats.js
+│   │   │   └── useShippingAddresses.js
+│   │   │
+│   │   ├── layouts/                      # App layout components
+│   │   │   └── DashboardLayout.jsx       # Main layout with sidebar and app bar
+│   │   │
+│   │   ├── locales/
+│   │   │   ├── en.js
+│   │   │   └── es.js
+│   │   │
+│   │   ├── pages/                        # Top-level pages grouped by domain
+│   │   │   ├── Dashboard.jsx
+│   │   │   ├── Home.jsx                  # Dashboard/home screen
+│   │   │   ├── Login.jsx                 # Authentication/login screen
+│   │   │   ├── glazes/
+│   │   │   │   ├── AddGlaze.jsx          # Form to create a new glaze
+│   │   │   │   ├── EditGlaze.jsx         # Edit an existing glaze
+│   │   │   │   └── GlazeListPage.jsx     # Form to create a new glaze
+│   │   │   ├── orders/
+│   │   │   │   ├── AddProduct.jsx        # Add a product to an order
+│   │   │   │   ├── EditOrder.jsx         # Edit an existing order
+│   │   │   │   ├── NewOrder.jsx          # Create a new order
+│   │   │   │   ├── OrderConfirmation.jsx # Confirmation screen after placing an order
+│   │   │   │   ├── OrderConfirmationOld.jsx
+│   │   │   │   ├── OrderDetails.jsx      # View order summary/details
+│   │   │   │   └── Orders.jsx            # List of all orders
+│   │   │   └── users/
+│   │   │       ├── AddUser.jsx           # Add a new user
+│   │   │       └── UserProfile.jsx       # User profile page
+│   │   │
+│   │   ├── routes/                       # Route guards and wrappers
+│   │   │   ├── PrivateRoute.jsx          # Wrapper component to protect private routes
+│   │   │   ├── privateRoutes.jsx         # Path list for routes that require authentication
+│   │   │   ├── PrivateRoutesWrapper.jsx
+│   │   │   ├── publicRoutes.jsx
+│   │   │   └── PublicRoutesWrapper.jsx
+│   │   │
+│   │   └── utils/                        # Reusable utilities and helpers
+│   │       ├── constants.js              # Paths where header/sidebar should be hidden (e.g., login pages)
+│   │       ├── date.js
+│   │       ├── errorUtils.js
+│   │       ├── exportUtils.js
+│   │       ├── fetchWithAuth.js          # Wrapper for fetch that adds authorization headers
+│   │       ├── getMessage.js             # Access nested error messages safely using dot notation
+│   │       ├── glazeUtils.js
+│   │       ├── jwt.js                    # Decode JWT from localStorage to extract user info
+│   │       ├── mappers/
+│   │       │   ├── baseOrder.js
+│   │       │   └── product.js
+│   │       ├── navigationUtils.js
+│   │       ├── orderPayload.js
+│   │       ├── orderStatusUtils.js       # Logic to manage and display order statuses
+│   │       ├── smartNavigate.js          # Navigation helper to prevent users leaving critical flows
+│   │       ├── toastUtils.js             # Consistent toast notifications using react-hot-toast
+│   │       ├── transformProducts.js      # Format product items to standardized format
+│   │       ├── uploadToCloudinary.js     # Upload images to Cloudinary from forms
+│   │       └── useRequireState.js        # Custom hook to block routes missing required `location.state`
+│   │
+│   ├── .env
+│   ├── .prettierignore
+│   ├── .prettierrc
+│   ├── eslint.config.js
+│   ├── index.html
+│   ├── package.json
+│   ├── package-lock.json
+│   ├── README.md
+│   ├── README_DEV.md
+│   ├── tailwind.config.js
+│   ├── vite.config.js
+│   ├── test-results/
+│   │   └── .last-run.json
+│   └── tests/
+│       └── fetchWithAuth.test.js
 │
-├── controllers/
-│   ├── auditController.js        # Handles fetching audit logs (admin-only)
-│   ├── authController.js         # Login, logout, password update
-│   ├── customerController.js     # Customer CRUD operations
-│   ├── exportController.js       # PDF and Excel exports
-│   ├── glazeController.js        # CRUD for glazes with audit logging
-│   ├── orderController.js        # Create, update, cancel orders
-│   └── userController.js         # User CRUD, soft delete, role updates
-│
-├── middleware/
-│   ├── auth.js                   # JWT verification, attaches user to req
-│   ├── checkRole.js              # Restricts access by role (admin/employee)
-│   ├── errorHandler.js           # Centralized error handler for Express
-│   └── verifyOwnershipOrAdmin.j  # Protects resources by ownership or admin
-│
-├── models/
-│   ├── AuditLog.js               # Logs critical system events (with TTL index)
-│   ├── Counter.js                # For auto-increment order IDs (ORD-000X)
-│   ├── Customer.js               # Customer schema (linked to orders)
-│   ├── Glaze.js                  # Glaze data, soft deletable
-│   ├── Order.js                  # Main order schema with nested products
-│   └── User.js                   # User schema with hashed password + roles
-│
-├── routes/
-│   ├── auditRoutes.js            # /api/logs → Audit logs (admin only)
-│   ├── authRoutes.js             # /api/auth → Login, logout, password
-│   ├── customerRoutes.js         # /api/customers → Customer endpoints
-│   ├── glazeRoutes.js            # /api/glazes → CRUD for glazes
-│   ├── orderRoutes.js            # /api/orders → Order endpoints
-│   └── userRoutes.js             # /api/users → User management
-│
-├── utils/
-│   ├── ApiError.js               # Standardized error object for consistent error handling
-│   ├── audit.js                  # logEvent helper for consistent logging
-│   └── validators.js             # Express-validator middleware sets for input validation
-│
-├── .env                          # Environment variables (gitignored)
-├── .gitignore                    # Ignore node_modules, env files, etc.
-├── app.js                        # Main Express app config and routes
-├── package.json                  # Project metadata and dependencies
-└── README.md                     # Project overview and setup instructions
-
-
-```
-
-```
-haro-mobile/frontend
-src/
-├── api/                          # Wrapper functions around backend API endpoints
-│   ├── auth.js
-│   ├── glazes.js
-│   ├── orders.js
-│   └── users.js
-│
-├── assets/
-|
-├── components/                   # Reusable UI components
-
-│   ├── AddressInput.jsx          # Grouped address input fields
-│   ├── AppBar.jsx                # Form footer with Cancel and Submit buttons
-│   ├── BottomNavBar.jsx          #
-│   ├── ConfirmModal.jsx          # Generic confirmation modal (uses Headless UI)
-│   ├── DropWrap.jsx              #
-│   ├── ExcelModal.jsx            #
-│   ├── FormActions.jsx           # Form action buttons with cancel confirmation
-│   ├── FormAddress.jsx           # Dynamic list of shipping address sections
-│   ├── FormInput.jsx             # Reusable input supporting multiple types (prev FloatingInput)
-│   ├── GlazeSelect.jsx           # Searchable glaze selector (autocomplete)
-│   ├── ImageUploader.jsx         # Upload with preview and delete options
-│   ├── OrderActionsBar.jsx       #
-│   ├── OrderCard.jsx             #
-│   ├── OrderDetailsCard.jsx      # Displays full order and customer details
-│   ├── OrderDetailsModal.jsx     #
-│   ├── OrderFilters.jsx          #
-│   ├── ScrollToTop.jsx           #
-│   ├── Sidebar.jsx               #
-│   ├── SplitActionButton.jsx     # Button with optional dropdown for extra actions
-│   └── StatusModal.jsx           #
-|
-├── context/                      # Global app state using React Context
-│   ├── AuthContext.jsx
-│   ├── ConfirmContext.jsx        # Global confirmation modal handler
-│   └── LayoutContext.jsx         # Shared layout state (e.g., hiding navs)
-|
-├── hooks/                        # Custom React hooks
-│   ├── useAuth.js
-│   ├── useCreateGlaze.js         # POST request helper for new glazes
-│   ├── useCreateUser.js
-│   ├── useDarkMode.js            # (not implemented yet)
-│   ├── useHideBars.js            # Hides nav bars based on route or screen size
-│   └── useKeyboardOpen.js        # Hides bottom bar when keyboard opens on mobile devices
-|
-├── layouts/                      # App layout components
-│   └── DashboardLayout.jsx       # Main layout with sidebar and app bar
-|
-├── locales/
-│   ├── es.js
-│   └── en.js
-|
-├── pages/                        # Top-level pages grouped by domain
-│   ├── glazes/
-│   |   ├── AddGlaze.jsx          # Form to create a new glaze
-│   |   ├── EditGlaze.js
-│   │   └── GlazeListPage.jsx          # Form to create a new glaze
-│
-│   ├── orders/
-│   │   ├── AddProduct.jsx        # Add a product to an order
-│   │   ├── EditOrder.jsx         # Edit an existing order
-│   │   ├── NewOrder.jsx          # Create a new order
-│   │   ├── OrderConfirmation.jsx # Confirmation screen after placing an order
-│   │   ├── OrderDetails.jsx      # View order summary/details
-│   │   └── Orders.jsx            # List of all orders
-│
-│   ├── users/
-│   │   ├── AddUser.jsx           # Add a new user
-│   │   └── UserProfile.jsx       # User profile page
-│
-│   ├── Home.jsx                  # Dashboard/home screen
-│   └── Login.jsx                 # Authentication/login screen
-|
-├── routes/                       # Route guards and wrappers
-│   ├── PrivateRoute.jsx          # Wrapper component to protect private routes
-│   ├── privateRoutes.jsx         # Path list for routes that require authentication
-│   ├── PrivateRoutes.jsx         # Component that protects private routes (e.g., dashboard, orders)
-│   ├── publicroutes.jsx          # Path list for routes accessible without authentication
-│   └── PublicRoute.jsx           # Wrapper for routes like login, signup, etc.
-│
-├── services/                     # Reserved for future service abstractions (e.g., API clients)
-│
-├── utils/                        # Reusable utilities and helpers
-│   ├── constants.js              # Paths where header/sidebar should be hidden (e.g., login pages)
-│   ├── date.js
-│   ├── exportUtils.js
-│   ├── fetchWithAuth.js          # Wrapper for fetch that adds authorization headers
-│   ├── getMessage.js             # Access nested error messages safely using dot notation
-│   ├── jwt.js                    # Decode JWT from localStorage to extract user info
-│   ├── navigationUtils.js
-│   ├── orderBuilder.js           # Helpers to create or update order objects
-│   ├── orderStatusUtils.js       # Logic to manage and display order statuses
-│   ├── productBuilder.js         # Create product payloads for submission
-│   ├── smartNavigate.js          # Navigation helper to prevent users leaving critical flows
-│   ├── toastUtils.js             # Consistent toast notifications using react-hot-toast
-│   ├── transformProducts.js      # Format product items to standardized format
-│   ├── uploadToCloudinary.js     # Upload images to Cloudinary from forms
-│   └── useRequireState.js        # Custom hook to block routes missing required `location.state`
-│
-├── App.jsx                       # Main layout, route rendering, and global components
-├── index.css                     # TailwindCSS and base global styles
-├── main.jsx                      # React root file, renders <App/> and sets up context/providers
+├── package.json
+├── package-lock.json
+├── project-structure.txt
+└── README.md
 ```
 
 ### File & Module Responsibilities
@@ -252,13 +288,16 @@ Wrapper over fetch() to:
 Responsible for setting up the app root, router and context provider.
 
 ```
-<StrictMode>
-  <BrowserRouter>
-    <AuthProvider>
-      <App />
-    </AuthProvider>
-  </BrowserRouter>
-</StrictMode>
+  <StrictMode>
+    <BrowserRouter>
+      <AuthProvider>
+        <LayoutProvider>
+          <ScrollManager selector={SCROLL_CONTAINER_SELECTOR} behavior="auto" respectBackForward />
+          <App />
+        </LayoutProvider>
+      </AuthProvider>
+    </BrowserRouter>
+  </StrictMode>
 ```
 
 This allows the entire app to:
@@ -543,7 +582,7 @@ productBuilder() utility to normalize DB vs in-memory products.
 
 Scroll-to-top logic (window.scroll(0,0)) for smooth UX navigation.
 
-Added ScrollToTop component.
+Added ScrollToTop component. (Replaced by ScrollManager)
 
 ## 🔁 New Contexts and Hooks
 
@@ -746,3 +785,5 @@ Added subtotal and total to orderSchema for faster loading.
 Removed special total sort logic from orderController.
 
 Optimized stats payload with $project and $group.
+
+### 2025-09-29 → 2025-08-02
