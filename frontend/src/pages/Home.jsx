@@ -7,6 +7,7 @@ import { OrderCard } from '../components/OrderCard'
 import OrderDetailsModal from '../components/OrderDetailsModal'
 import { useLayout } from '../context/LayoutContext'
 import { getMessage as t } from '../utils/getMessage'
+import { useAuthedFetch } from '../hooks/useAuthedFetch'
 
 export default function Home() {
   const [lastUpdated, setLastUpdated] = useState(null)
@@ -16,6 +17,7 @@ export default function Home() {
   const [glazes, setGlazes] = useState(null) // lazy: null = not loaded yet
   const navigate = useNavigate()
   const { setTitle, setShowSplitButton } = useLayout()
+  const authedFetch = useAuthedFetch()
 
   useEffect(() => {
     setTitle(t('home.title'))
@@ -28,18 +30,25 @@ export default function Home() {
   }, [])
 
   useEffect(() => {
-    async function fetchData() {
+    let mounted = true
+    ;(async () => {
       try {
-        const [recent, pending] = await Promise.all([getRecentOrders(), getPendingCount()])
-        setRecentOrders(recent)
-        setPendingCount(pending)
+        const [recent, pending] = await Promise.all([
+          getRecentOrders({}, { fetcher: authedFetch }),
+          getPendingCount({}, { fetcher: authedFetch }),
+        ])
+        if (!mounted) return
+        setRecentOrders(Array.isArray(recent) ? recent : [])
+        setPendingCount(typeof pending === 'number' ? pending : Number(pending) || 0)
         setLastUpdated(new Date())
       } catch (err) {
         console.error('Error fetching orders:', err)
       }
+    })()
+    return () => {
+      mounted = false
     }
-    fetchData()
-  }, [])
+  }, [authedFetch])
 
   return (
     <div className="h-full min-h-0 bg-white font-sans text-gray-800 dark:bg-neutral-900 dark:text-gray-100">
@@ -75,8 +84,11 @@ export default function Home() {
                   // Lazy-load glazes only when user opens an order
                   if (!glazes) {
                     try {
-                      const mod = await import('../api/glazes')
-                      const all = await mod.getAllGlazes({ navigate }) // TODO
+                      const mod = await import('../api/glazes') // ajusta path si aplica
+                      const all = await mod.getAllGlazes(
+                        { includeInactive: true },
+                        { fetcher: authedFetch }
+                      )
                       setGlazes(all)
                     } catch (e) {
                       console.error('Error loading glazes', e)

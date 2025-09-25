@@ -9,7 +9,6 @@ import FormAddress from '../../components/FormAddress'
 import FormInput from '../../components/FormInput'
 import { useLayout } from '../../context/LayoutContext'
 import { useShippingAddresses } from '../../hooks/useShippingAddresses'
-import { getMessage as t } from '../../utils/getMessage'
 import { normalizeBaseOrder } from '../../utils/mappers/baseOrder'
 import { getOriginPath } from '../../utils/navigationUtils'
 import { prefillFormFromDraft, validateBaseForm, buildBaseOrder } from '../../utils/orderBuilder'
@@ -54,15 +53,15 @@ export default function NewOrder() {
     notes: '',
   })
 
-  // after formData state init
-  useEffect(() => {
-    if (!formData.orderDate) {
-      const today = new Date().toISOString().slice(0, 10)
-      setFormData((prev) => ({ ...prev, orderDate: today }))
-    }
-    // run once on mount
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  // // after formData state init
+  // useEffect(() => {
+  //   if (!formData.orderDate) {
+  //     const today = new Date().toISOString().slice(0, 10)
+  //     setFormData((prev) => ({ ...prev, orderDate: today }))
+  //   }
+  //   // run once on mount
+  //   // eslint-disable-next-line react-hooks/exhaustive-deps
+  // }, [])
 
   // TITLE AND SPLITACTION BUTTON
   useEffect(() => {

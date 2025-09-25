@@ -1,4 +1,4 @@
-import { createContext, useContext, useMemo, useState } from 'react'
+import { createContext, useContext, useMemo, useState, useCallback } from 'react'
 
 /**
  * LayoutContext (React Context Provider)
@@ -25,31 +25,37 @@ import { createContext, useContext, useMemo, useState } from 'react'
 
 const DEFAULT_TITLE = 'Haro Mobile' // TODO: i18n
 const DEFAULT_SPLIT = true
+const DEFAULT = { title: DEFAULT_TITLE, showSplitButton: DEFAULT_SPLIT }
 
 const LayoutContext = createContext(null)
 LayoutContext.displayName = 'LayoutContext'
 
 export function LayoutProvider({ children }) {
-  const [title, setTitle] = useState(DEFAULT_TITLE)
-  const [showSplitButton, setShowSplitButton] = useState(DEFAULT_SPLIT)
+  const [state, setState] = useState(DEFAULT)
 
-  const resetLayout = () => {
-    setTitle(DEFAULT_TITLE)
-    setShowSplitButton(DEFAULT_SPLIT)
-  }
+  const setTitle = useCallback((s) => {
+    setState((p) => ({ ...p, title: s }))
+  }, [])
 
-  // Avoid recreating object on every render
+  const setShowSplitButton = useCallback((b) => {
+    setState((p) => ({ ...p, showSplitButton: b }))
+  }, [])
+
+  const resetLayout = useCallback(() => {
+    setState(DEFAULT)
+  }, [])
+
   const value = useMemo(
     () => ({
-      title,
+      title: state.title,
+      showSplitButton: state.showSplitButton,
       setTitle,
-      showSplitButton,
       setShowSplitButton,
       resetLayout,
       DEFAULT_TITLE,
       DEFAULT_SPLIT,
     }),
-    [title, showSplitButton]
+    [state, setTitle, setShowSplitButton, resetLayout]
   )
 
   return <LayoutContext.Provider value={value}>{children}</LayoutContext.Provider>

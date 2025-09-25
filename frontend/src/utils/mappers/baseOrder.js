@@ -36,10 +36,24 @@ export function normalizeBaseOrder(raw = {}) {
     socialMedia: raw.customer?.socialMedia || {},
   }
 
-  // Dates (yyyy-mm-dd or empty)
-  const onlyDate = (v) => (v && /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : '')
-  const orderDate = onlyDate(raw.orderDate)
-  const deliverDate = onlyDate(raw.deliverDate)
+  // Dates: accept ISO or Date and convert to 'YYYY-MM-DD' for UI;
+  // keep empty only when truly invalid.
+  const pad = (n) => String(n).padStart(2, '0')
+  const toYMD = (v) => {
+    if (!v) return ''
+    // Already 'YYYY-MM-DD'
+    if (typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v)) return v
+    // Try to parse ISO or any date-like string
+    const d = new Date(v)
+    if (Number.isNaN(d.getTime())) return ''
+    const y = d.getFullYear()
+    const m = pad(d.getMonth() + 1)
+    const d2 = pad(d.getDate())
+    return `${y}-${m}-${d2}`
+  }
+
+  const orderDate = toYMD(raw.orderDate)
+  const deliverDate = toYMD(raw.deliverDate)
 
   return {
     ...raw,

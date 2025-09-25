@@ -14,7 +14,7 @@ function getInitials(nameOrEmail = '') {
 }
 
 export default function AccountMenu({
-  email = 'user@example.com',
+  email = '', // TODO Done (removed placeholder 'user@example.com')
   name = '',
   avatarUrl = '',
   onLogout, // required: function
@@ -27,7 +27,12 @@ export default function AccountMenu({
   const buttonRef = useRef(null)
   const fileInputRef = useRef(null)
 
-  // Cerrar al hacer click fuera
+  // Keep preview in sync if parent updates avatarUrl (e.g., after refreshUser)
+  useEffect(() => {
+    setPreviewUrl(avatarUrl || '')
+  }, [avatarUrl])
+
+  // Close when clicking outside
   useEffect(() => {
     function handleClickOutside(e) {
       if (

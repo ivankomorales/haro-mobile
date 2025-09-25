@@ -10,7 +10,7 @@ import {
   updateOrderDraft,
   deleteOrderDraft,
 } from '../../api/orderDrafts'
-import { createOrder } from '../../api/orders'
+import { createOrder } from '../../../hooks/useAuthedFetch'
 import AddedProductsCart from '../../components/AddedProductsCart'
 import FormActions from '../../components/FormActions'
 import FormInput from '../../components/FormInput'
@@ -31,6 +31,7 @@ import { uploadToCloudinary } from '../../utils/uploadToCloudinary'
 export default function AddProduct() {
   const navigate = useNavigate()
   const location = useLocation()
+  const authedFetch = useAuthedFetch()
   const originPath = getOriginPath(location.state?.originPath ?? location.state?.from)
   // --- DRAFT HOOKS & STATE ---
   const [searchParams, setSearchParams] = useSearchParams()
@@ -125,7 +126,10 @@ export default function AddProduct() {
           products: baseOrder?.products || [],
           productForm: null,
         }
-        const { _id } = await createOrderDraft({ label, data: initialData })
+        const { _id } = await createOrderDraft(
+          { label, data: initialData },
+          { fetcher: authedFetch }
+        )
         if (ignore) return
         setDraftId(_id)
         // put ?draft in the URL so refresh keeps the draft
@@ -149,7 +153,7 @@ export default function AddProduct() {
     ;(async () => {
       if (!draftIdFromUrl) return
       try {
-        const { data } = await getOrderDraft(draftIdFromUrl)
+        const { data } = await getOrderDraft(draftIdFromUrl, { fetcher: authedFetch })
         if (ignore || !data) return
         // hydrate lists & form
         if (Array.isArray(data.products)) setProducts(data.products)
@@ -165,28 +169,30 @@ export default function AddProduct() {
     return () => {
       ignore = true
     }
-    // only run when the url-provided id changes
-  }, [draftIdFromUrl, setProducts, setFormData])
+    // only when the url-provided id changes (and fetcher identity is stable)
+  }, [draftIdFromUrl, authedFetch])
 
   // 3) Debounced autosave whenever products/form change (and we have a draftId)
   useEffect(() => {
     if (!draftId || bootstrapping) return
-    const t = setTimeout(() => {
+    const timer = setTimeout(() => {
       const payload = {
         baseOrder: baseDraft,
         products,
         productForm: formData,
       }
-      updateOrderDraft(draftId, { data: payload }).catch((e) => console.warn('autosave failed', e))
+      updateOrderDraft(draftId, { data: payload }, { fetcher: authedFetch }).catch((e) =>
+        console.warn('autosave failed', e)
+      )
     }, 600)
-    return () => clearTimeout(t)
-  }, [draftId, products, formData, baseDraft, bootstrapping])
+    return () => clearTimeout(timer)
+  }, [draftId, products, formData, baseDraft, bootstrapping, authedFetch])
 
   // Fetch Glazes
   useEffect(() => {
     async function fetchGlazes() {
       try {
-        const response = await getAllGlazes({ navigate })
+        const response = await getAllGlazes({ includeInactive: false }, { fetcher: authedFetch })
         setGlazes(response)
       } catch (error) {
         console.error('Failed to fetch glazes', error)
@@ -194,7 +200,7 @@ export default function AddProduct() {
     }
     fetchGlazes()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [authedFetch])
 
   // Seed form if editing
   useEffect(() => {
@@ -381,14 +387,16 @@ export default function AddProduct() {
         { ...draft, products: hydratedProducts },
         { allGlazes: glazes, glazesLoaded: glazes.length > 0, quick: false }
       )
-
+      console.debug('[Submit] baseDraft.orderDate =', baseDraft?.orderDate)
+      console.debug('[Submit] draft.orderDate =', draft?.orderDate)
+      console.debug('[Submit] payload.orderDate =', payload?.orderDate)
       // 6) Create order
-      const saved = await createOrder(payload)
+      const saved = await createOrder(payload, { fetcher: authedFetch })
       dismissToast()
       showSuccess(t('success.order.created'))
       // Clear server draft and remove ?draft from URL
       if (draftId) {
-        deleteOrderDraft(draftId).catch(() => {})
+        deleteOrderDraft(draftId, { fetcher: authedFetch }).catch(() => {})
         const sp = new URLSearchParams(searchParams)
         sp.delete('draft')
         setSearchParams(sp, { replace: true })

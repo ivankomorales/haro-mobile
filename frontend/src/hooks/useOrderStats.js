@@ -1,6 +1,6 @@
 // src/hooks/useOrderStats.js
 import { useCallback, useEffect, useMemo, useState } from 'react'
-
+import { useAuthedFetch } from './useAuthedFetch'
 import { getOrderStats } from '../api/orders'
 
 export function useOrderStats({
@@ -8,6 +8,7 @@ export function useOrderStats({
   dateField = 'orderDate',
   includeCancelled = false,
 } = {}) {
+  const authedFetch = useAuthedFetch()
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [stats, setStats] = useState(null)
@@ -34,7 +35,7 @@ export function useOrderStats({
     setLoading(true)
     setError(null)
     try {
-      const data = await getOrderStats(params)
+      const data = await getOrderStats(params, { fetcher: authedFetch })
       setStats(data)
     } catch (e) {
       console.error('[useOrderStats] fetch error', e)
@@ -42,7 +43,7 @@ export function useOrderStats({
     } finally {
       setLoading(false)
     }
-  }, [params])
+  }, [params, authedFetch])
 
   useEffect(() => {
     fetchStats()

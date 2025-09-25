@@ -16,6 +16,8 @@ import StatCards from '../../components/StatCards'
 import StatusModal from '../../components/StatusModal'
 import { useLayout } from '../../context/LayoutContext'
 import { useOrderStats } from '../../hooks/useOrderStats'
+import { useAuth } from '../../hooks/useAuth'
+import { useAuthedFetch } from '../../hooks/useAuthedFetch' // inject fetcher
 // Utils
 import { parseFlexible, formatDMY } from '../../utils/date'
 import { getMessage as t } from '../../utils/getMessage'
@@ -25,6 +27,7 @@ import { exportSelectedOrdersToPDF, exportSelectedOrdersToExcel } from '../../ut
 import { saveExportFields } from '../../components/ExcelModal'
 // UI components
 import TableSkeleton from '../../components/TableSkeleton'
+
 // Constants
 const DEFAULT_FILTERS = {
   status: 'all',
@@ -72,36 +75,15 @@ function MobileOrdersSkeleton({ count = 8 }) {
         {Array.from({ length: count }).map((_, i) => (
           <li key={i} className="rounded border border-neutral-200 p-3 dark:border-neutral-800">
             <div className="flex animate-pulse items-center gap-3">
-              {/* Left: avatar / color box */}
               <div className="h-5 w-5 rounded-md border bg-neutral-200 dark:bg-neutral-700" />
-
               <div className="flex w-full items-center justify-between">
-                {/* LEFT: name + date */}
                 <div className="min-w-0 flex-1 pr-3">
-                  {/* Name */}
-                  <div
-                    className="h-4 w-2/3 rounded bg-neutral-200 dark:bg-neutral-700"
-                    aria-hidden="true"
-                  />
-                  {/* Date */}
-                  <div
-                    className="mt-1 h-3 w-24 rounded bg-neutral-200 dark:bg-neutral-700"
-                    aria-hidden="true"
-                  />
+                  <div className="h-4 w-2/3 rounded bg-neutral-200 dark:bg-neutral-700" />
+                  <div className="mt-1 h-3 w-24 rounded bg-neutral-200 dark:bg-neutral-700" />
                 </div>
-
-                {/* RIGHT: order id + status (non-shrinking block) */}
                 <div className="flex shrink-0 flex-col items-end gap-2 whitespace-nowrap">
-                  {/* ORD#6010 */}
-                  <div
-                    className="h-4 w-24 rounded bg-neutral-200 dark:bg-neutral-700"
-                    aria-hidden="true"
-                  />
-                  {/* Status pill */}
-                  <div
-                    className="h-6 w-28 rounded-full bg-neutral-200 dark:bg-neutral-700"
-                    aria-hidden="true"
-                  />
+                  <div className="h-4 w-24 rounded bg-neutral-200 dark:bg-neutral-700" />
+                  <div className="h-6 w-28 rounded-full bg-neutral-200 dark:bg-neutral-700" />
                 </div>
               </div>
             </div>
@@ -118,6 +100,11 @@ export default function Orders() {
   const navigate = useNavigate()
   const location = useLocation()
   const { setTitle, setShowSplitButton, resetLayout } = useLayout()
+  const { logout } = useAuth()
+
+  // get authenticated fetcher once and reuse
+  const authedFetch = useAuthedFetch()
+  const opts = { fetcher: authedFetch }
 
   // Data state
   const [orders, setOrders] = useState([])
@@ -138,10 +125,12 @@ export default function Orders() {
   const [page, setPage] = useState(1)
   const [limit, setLimit] = useState(20)
   const debouncedSearch = useDebounced(search, 400)
+
   // Selection state
   const [selectedOrders, setSelectedOrders] = useState([])
 
-  const userId = JSON.parse(localStorage.getItem('user') || '{}')?.id ?? 'guest'
+  const userId = JSON.parse(localStorage.getItem('user') || '{}')?.id ?? 'guest' // TODO PREFS
+
   // Stats (cards)
   const {
     stats: agg,
@@ -149,18 +138,17 @@ export default function Orders() {
     refresh: refreshStats,
     range,
     setRange,
-    // Optional if we need to expose them later
-    // includeCancelled, setIncludeCancelled,
-    // dateField, setDateField,
   } = useOrderStats({ range: 'all', dateField: 'orderDate' })
 
   // Derived values
   const pageIds = useMemo(() => orders.map((o) => o._id), [orders])
 
+  // ✅ chips builder robust to strings/booleans and mobile visibility
   const chips = useMemo(() => {
     const arr = []
-    if (filters.status !== 'all')
+    if (filters.status && filters.status !== 'all') {
       arr.push({ key: 'status', label: `${t('status.label')}: ${t(`status.${filters.status}`)}` })
+    }
     if (filters.dateFrom) {
       const d = parseFlexible(filters.dateFrom)
       arr.push({
@@ -172,16 +160,22 @@ export default function Orders() {
       const d = parseFlexible(filters.dateTo)
       arr.push({ key: 'dateTo', label: `${t('labels.to')}: ${d ? formatDMY(d) : filters.dateTo}` })
     }
-    if (filters.isUrgent !== '')
+    const normBool = (v) => (typeof v === 'boolean' ? v : v === 'true')
+    const hasBool = (v) => v !== '' && v !== undefined && v !== null
+    if (hasBool(filters.isUrgent)) {
+      const yes = normBool(filters.isUrgent)
       arr.push({
         key: 'isUrgent',
-        label: `${t('labels.urgent')}: ${filters.isUrgent === 'true' ? t('labels.yes') : t('labels.no')}`,
+        label: `${t('labels.urgent')}: ${yes ? t('labels.yes') : t('labels.no')}`,
       })
-    if (filters.shippingRequired !== '')
+    }
+    if (hasBool(filters.shippingRequired)) {
+      const yes = normBool(filters.shippingRequired)
       arr.push({
         key: 'shippingRequired',
-        label: `${t('labels.shippingRequired')}: ${filters.shippingRequired === 'true' ? t('labels.yes') : t('labels.no')}`,
+        label: `${t('labels.shippingRequired')}: ${yes ? t('labels.yes') : t('labels.no')}`,
       })
+    }
     return arr
   }, [filters])
 
@@ -205,20 +199,29 @@ export default function Orders() {
     async function fetchPaged() {
       setLoading(true)
       try {
-        const payload = await getOrdersPage({
-          page,
-          limit,
-          sort,
-          status: filters.status !== 'all' ? filters.status : undefined,
-          from: filters.dateFrom || undefined,
-          to: filters.dateTo || undefined,
-          q: debouncedSearch || undefined,
-          signal: ac.signal, // API can opt-in later; safe to pass now
-          urgent: filters.isUrgent === '' ? undefined : filters.isUrgent === 'true',
-          shipping:
-            filters.shippingRequired === '' ? undefined : filters.shippingRequired === 'true',
-          includeStats: false,
-        })
+        // ✅ pass fetcher in opts (2nd arg)
+        const payload = await getOrdersPage(
+          {
+            page,
+            limit,
+            sort,
+            status: filters.status !== 'all' ? filters.status : undefined,
+            from: filters.dateFrom || undefined,
+            to: filters.dateTo || undefined,
+            q: debouncedSearch || undefined,
+            // NOTE: if your API supports AbortController, wire it inside fetchWithAuth to read options.signal
+            urgent:
+              filters.isUrgent === ''
+                ? undefined
+                : filters.isUrgent === 'true' || filters.isUrgent === true,
+            shipping:
+              filters.shippingRequired === ''
+                ? undefined
+                : filters.shippingRequired === 'true' || filters.shippingRequired === true,
+            includeStats: false,
+          },
+          opts
+        )
         if (ignore) return
 
         if (payload.legacy) {
@@ -234,7 +237,7 @@ export default function Orders() {
           })
           setStats(null)
         } else {
-          const { data, meta /*stats*/ } = payload
+          const { data, meta /*, stats: s */ } = payload
           const list = Array.isArray(data) ? data : []
           setOrders(list)
 
@@ -244,7 +247,8 @@ export default function Orders() {
             totalDocs: typeof meta?.totalDocs === 'number' ? meta.totalDocs : 0,
           })
           setMeta(safeMeta)
-          setStats(stats || null)
+          // 🔧 tiny fix: avoid name shadowing; use payload.stats if/when backend sends it
+          // setStats(s || null)
 
           if (safeMeta.page > safeMeta.totalPages) setPage(safeMeta.totalPages || 1)
         }
@@ -252,7 +256,7 @@ export default function Orders() {
       } catch (e) {
         if (e?.name === 'AbortError') return
         console.error('Failed to fetch paged orders', e)
-        showError('labels.orderLoadingError') // or your key
+        showError('labels.orderLoadingError')
       } finally {
         if (!ignore) setLoading(false)
       }
@@ -262,7 +266,7 @@ export default function Orders() {
       ignore = true
       ac.abort()
     }
-  }, [page, limit, sort, filters, debouncedSearch])
+  }, [page, limit, sort, filters, debouncedSearch, authedFetch]) // ✅ include authedFetch
 
   // Handlers (memoized)
   const onToggleRow = useCallback((id) => {
@@ -299,25 +303,28 @@ export default function Orders() {
     setFilters(DEFAULT_FILTERS)
   }, [])
 
-  function handleExportPDFClick() {
+  const handleExportPDFClick = useCallback(() => {
     if (!selectedOrders.length) return
-    // Your existing util:
-    exportSelectedOrdersToPDF(selectedOrders)
-  }
+    exportSelectedOrdersToPDF(selectedOrders, { navigate, logout })
+  }, [selectedOrders, navigate, logout])
 
-  const handleExportConfirm = async (fields) => {
-    try {
-      if (saveExportFields) saveExportFields(userId, fields)
-    } catch (_) {}
+  const handleExportConfirm = useCallback(
+    async (fields) => {
+      try {
+        if (saveExportFields) saveExportFields(userId, fields)
+      } catch (_) {}
 
-    await exportSelectedOrdersToExcel(selectedOrders, fields)
-    setExportOpen(false)
-  }
+      await exportSelectedOrdersToExcel(selectedOrders, fields, { navigate, logout })
+      setExportOpen(false)
+    },
+    [selectedOrders, userId, navigate, logout]
+  )
 
   async function handleBulkStatusUpdate(newStatus) {
     const toastId = showLoading('order.updatingStatus')
     try {
-      await updateManyOrderStatus(selectedOrders, newStatus)
+      // ✅ inject fetcher
+      await updateManyOrderStatus(selectedOrders, newStatus, opts)
       // optimistic local update
       setOrders((prev) =>
         prev.map((o) => (selectedOrders.includes(o._id) ? { ...o, status: newStatus } : o))
@@ -337,7 +344,8 @@ export default function Orders() {
   const onCancelOrder = useCallback(
     async (orderId) => {
       try {
-        await cancelOrderById(orderId) // DELETE (tu helper actual)
+        // ✅ inject fetcher
+        await cancelOrderById(orderId, opts)
         // Optimistic list update
         const showingCancelled = filters.status === 'cancelled'
         setOrders((prev) =>
@@ -346,7 +354,7 @@ export default function Orders() {
             : prev.filter((o) => o._id !== orderId)
         )
         setSelectedOrders((sel) => sel.filter((id) => id !== orderId))
-        await refreshStats() // ya tienes el hook; evita segunda llamada manual
+        await refreshStats()
         showSuccess('success.order.cancelled')
       } catch (err) {
         console.error(err)
@@ -354,7 +362,7 @@ export default function Orders() {
         throw err
       }
     },
-    [filters.status, refreshStats]
+    [filters.status, refreshStats, authedFetch]
   )
 
   // ───────────────────────────────────────────────────────────────────────────
@@ -394,7 +402,6 @@ export default function Orders() {
 
           {/* Tiny range selector; optional to move inside OrdersFilters later */}
           <div className="relative inline-block">
-            {/* Overlaid icon */}
             <Calendar
               className="pointer-events-none absolute top-1/2 left-2 h-4 w-4 -translate-y-1/2 text-neutral-500 dark:text-neutral-400"
               aria-hidden="true"
@@ -417,13 +424,7 @@ export default function Orders() {
 
           {/* Stat cards + range selector spacer */}
           <div className="mt-2 mb-8 flex items-center justify-between gap-2">
-            <StatCards
-              stats={agg} // only hook
-              loading={statsLoading} // does not depends on table loading state
-              t={t}
-              size="sm"
-              className="flex-1"
-            />
+            <StatCards stats={agg} loading={statsLoading} t={t} size="sm" className="flex-1" />
           </div>
         </div>
       </div>
@@ -453,22 +454,20 @@ export default function Orders() {
         chips={chips}
         onClearChip={clearChip}
         onClearAllChips={clearAllChips}
-        chipsBreakpoint="md" // show chips from md+; hidden on mobile
+        aria-label={t('button.clearAll') || 'Clear all'}
       />
 
-      {/* Excel fields selection modal (your component) */}
+      {/* Excel fields selection modal */}
       <ExcelModal
         open={exportOpen}
         onClose={() => setExportOpen(false)}
-        onConfirm={handleExportConfirm} // <-- tu handler de confirmación
+        onConfirm={handleExportConfirm}
         userId={userId}
       />
 
       <div className="p-0">
-        {/* Loading / Empty / Content */}
         {loading ? (
           <>
-            {/* Desktop skeleton (table) */}
             <div className="hidden lg:block">
               <TableSkeleton
                 rows={limit}
@@ -479,7 +478,6 @@ export default function Orders() {
                 spinnerLabel={t('labels.orderLoading')}
               />
             </div>
-            {/* Mobile skeleton (cards) */}
             <div className="lg:hidden">
               <MobileOrdersSkeleton count={Math.min(limit, 10)} />
             </div>
@@ -499,7 +497,8 @@ export default function Orders() {
                   if (!glazes) {
                     try {
                       const { getAllGlazes } = await import('../../api/glazes')
-                      const all = await getAllGlazes({ navigate })
+                      // ✅ inject fetcher when dynamically importing
+                      const all = await getAllGlazes({}, opts)
                       setGlazes(all)
                     } catch (e) {
                       console.error(e)
@@ -531,7 +530,8 @@ export default function Orders() {
                       if (!glazes) {
                         try {
                           const { getAllGlazes } = await import('../../api/glazes')
-                          const all = await getAllGlazes({ navigate })
+                          // ✅ inject fetcher here too
+                          const all = await getAllGlazes({}, opts)
                           setGlazes(all)
                         } catch (e) {
                           console.error(e)
@@ -548,7 +548,6 @@ export default function Orders() {
           </>
         )}
 
-        {/* Pagination */}
         {!loading && (
           <PaginationBar
             page={meta.page || 1}
@@ -562,7 +561,7 @@ export default function Orders() {
               setPage(1)
               setLimit(val)
             }}
-            variant="auto" // sticky on mobile, block on desktop
+            variant="auto"
             leftContent={
               selectedOrders.length > 0 && (
                 <span className="text-sm" aria-live="polite">
@@ -575,7 +574,6 @@ export default function Orders() {
           />
         )}
 
-        {/* Modals */}
         <OrderDetailsModal
           open={!!selectedOrder}
           order={selectedOrder}

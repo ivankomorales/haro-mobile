@@ -13,12 +13,12 @@ export const en = {
     users: 'Users',
     catalog: 'Catalog',
     products: 'Products',
-    // glazes: usa glaze.list existente
+    // glazes: use existing glaze.list
   },
   // ─── ERRORS & VALIDATION ──────────────────────────────── (KEEP THESE)
   errors: {
-    zip: { mx5digits: 'El CP debe tener 5 dígitos' },
-    user: { invalidPhone: 'El teléfono debe tener 10 dígitos' },
+    zip: { mx5digits: 'ZIP code must be 5 digits.' },
+    user: { invalidPhone: 'Phone number must be 10 digits.' },
     address: {
       missingAddress: 'Address is required',
       missingCity: 'City is required',
@@ -83,7 +83,10 @@ export const en = {
     glaze: {
       added: 'Glaze added successfully.',
       loaded: 'Glazes loaded successfully.',
+      created: 'Glaze created successfully',
       updated: 'Glaze updated successfully.',
+      activated: 'Glaze activated',
+      deactivated: 'Glaze deactivated',
     },
     image: {
       uploaded: 'Images uploaded successfully!',
@@ -139,10 +142,12 @@ export const en = {
     code: 'Code (optional)',
     new: 'New glaze', // ← NEW (actualizado)
     list: 'Glazes', // ← NEW
+    creating: 'Creating Glaze',
     updating: 'Updating glaze...',
     updateFailed: 'Failed to update glaze.',
 
     loading: 'Loading glazes...', // ← NEW
+    loadingFailed: 'Loading failed',
     empty: 'No glazes', // ← NEW
     searchPlaceholder: 'Search by name, code, hex…', // ← NEW
 
@@ -218,7 +223,7 @@ export const en = {
     notes: 'Notes',
     datePlaceholder: 'DD/MM/YYYY',
 
-    search: 'Search by orderID, Name or email. ',
+    search: 'Search by Order ID, name or email. ',
     details: 'Order Details',
 
     exportingPDF: 'Generating PDF...',
@@ -552,6 +557,7 @@ export const en = {
   loading: {
     image: 'Loading Images...',
     orderCreate: 'Creating Order',
+    order: 'Loading Order',
   },
   invoice: {
     product: 'Product',

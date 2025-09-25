@@ -1,47 +1,34 @@
 // src/api/auth.js
-import fetchWithAuth from '../utils/fetchWithAuth'
-/**
- * Login user and receive token.
- *
- * @param {object} credentials - Must include email and password.
- * @returns {Promise<{ token: string, user: object }>}
- */
-export const login = async (credentials) => {
-  const res = await fetch('/api/auth/login', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(credentials),
+// comments in English only
+
+// Plain JSON fetch helper for public endpoints (no Bearer, no 401 redirect logic)
+async function fetchJson(url, { method = 'GET', body } = {}) {
+  const res = await fetch(url, {
+    method,
+    headers: { 'Content-Type': 'application/json' },
+    body: body ? JSON.stringify(body) : undefined,
   })
-
-  const data = await res.json()
-
+  let data = null
+  try {
+    data = await res.json()
+  } catch {}
   if (!res.ok) {
-    throw new Error(data.message || 'Login failed')
+    const msg = (data && (data.message || data.error)) || 'Request failed'
+    throw new Error(msg)
   }
-
   return data
 }
 
-/**
- * Logout user by clearing session and redirecting.
- *
- * @param {function} navigate - Router navigate function.
- */
-export const logout = (navigate) => {
-  localStorage.removeItem('token')
-  navigate('/')
-}
+/** Login (no token, no authed fetch) */
+export const login = (credentials) =>
+  fetchJson('/api/auth/login', { method: 'POST', body: credentials })
 
-export async function apiLogin(email, password) {
-  return await fetchWithAuth('/api/auth/login', {
-    method: 'POST',
-    body: { email, password },
-  })
-}
-
-export function apiLogout() {
-  // optional server call if you had one; for now just a placeholder
+/** Optional server-side logout/audit; keep name distinct from AuthContext.logout() */
+export const logoutServer = async () => {
+  // If you add a real endpoint later, do it here with fetchJson or fetchWithAuth
   return Promise.resolve()
 }
+
+// TEMP aliases if you still import the old names elsewhere:
+export const apiLogin = login
+export const apiLogout = logoutServer

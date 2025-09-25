@@ -6,6 +6,7 @@ import { useNavigate } from 'react-router-dom'
 import { getMessage as t } from '../utils/getMessage'
 import { makeGlazeMap, resolveGlazeFlexible } from '../utils/glazeUtils'
 
+// Helpers
 function GlazeThumb({ glaze }) {
   if (!glaze) return null
   if (glaze.image) {
@@ -28,6 +29,35 @@ function GlazeThumb({ glaze }) {
     )
   }
   return null
+}
+
+function ProductImages({ images = [] }) {
+  const list = Array.isArray(images)
+    ? images
+        .map((img) =>
+          typeof img === 'string'
+            ? { src: img, alt: '' }
+            : { src: img?.url || '', alt: img?.alt || '' }
+        )
+        .filter((x) => x.src)
+    : []
+
+  if (!list.length) return null
+
+  return (
+    <div className="mt-2 flex gap-2 overflow-x-auto">
+      {list.map((im, i) => (
+        <img
+          key={`${im.src}-${i}`}
+          src={im.src}
+          alt={im.alt}
+          className="h-20 w-20 rounded-md object-cover"
+          loading="lazy"
+          referrerPolicy="no-referrer"
+        />
+      ))}
+    </div>
+  )
 }
 
 /** Per-unit discount model (display stays simple in rows):
@@ -247,7 +277,6 @@ export default function OrderDetailsCard({ order = {}, glazes = [] }) {
                         <SquarePen className="h-4 w-4" />
                       </button>
                     </div>
-
                     {(gi || ge) && (
                       <div className="mt-1 flex items-center gap-2 text-xs text-neutral-600 dark:text-neutral-300">
                         <span>{t('glaze.list') || 'Glazes'}:</span>
@@ -261,6 +290,7 @@ export default function OrderDetailsCard({ order = {}, glazes = [] }) {
                         {p.description}
                       </div>
                     )}
+                    <ProductImages images={p.images} />
                   </td>
 
                   <td className="px-3 py-3 text-right align-top text-neutral-900 dark:text-neutral-100">
@@ -321,6 +351,7 @@ export default function OrderDetailsCard({ order = {}, glazes = [] }) {
                   <div className="ml-auto font-semibold text-neutral-900 dark:text-neutral-100">
                     {amount != null ? $(amount) : '—'}
                   </div>
+                  <ProductImages images={p.images} />
                 </div>
               </div>
             )

@@ -6,6 +6,7 @@ import OrderDetailsCard from '../../components/OrderDetailsCard'
 import { getMessage as t } from '../../utils/getMessage'
 import { showError } from '../../utils/toastUtils'
 import { formatProductsWithLabels } from '../../utils/transformProducts'
+import { useAuthedFetch } from '../../hooks/useAuthedFetch' // ✅ inject fetcher
 
 export default function OrderDetails() {
   const { id } = useParams()
@@ -15,10 +16,13 @@ export default function OrderDetails() {
   const location = useLocation()
   const originPath = location.state?.originPath || '/orders'
 
+  const authedFetch = useAuthedFetch() // ✅
+  const opts = { fetcher: authedFetch } // ✅
+
   useEffect(() => {
     async function fetchOrder() {
       try {
-        const data = await getOrderById(id)
+        const data = await getOrderById(id, opts) // ✅ pass fetcher
         const labeled = formatProductsWithLabels(data.products, t)
         setOrder({ ...data, products: labeled })
       } catch (err) {
@@ -30,7 +34,7 @@ export default function OrderDetails() {
       }
     }
     fetchOrder()
-  }, [id])
+  }, [id, authedFetch, navigate]) // ✅ include authedFetch (stable) & navigate
 
   if (loading) return <p className="p-4">{t('loading.order')}</p>
   if (!order) return <p className="p-4">{t('errors.order.notFound')}</p>

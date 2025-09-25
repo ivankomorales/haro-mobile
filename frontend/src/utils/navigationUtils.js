@@ -17,3 +17,11 @@ export function getOriginPath(originCandidate, fallback = '/home') {
     ? fallback
     : originCandidate
 }
+
+export function getCurrentFullPath() {
+  try {
+    return window.location.pathname + window.location.search + window.location.hash
+  } catch {
+    return '/'
+  }
+}

@@ -50,6 +50,32 @@ function toISOLocalNoon(value) {
   return d.toISOString()
 }
 
+// Keep the exact instant if an ISO with 'T' is already provided.
+// For 'YYYY-MM-DD', convert to local noon ISO to avoid TZ drifting.
+function toISOConservative(value) {
+  if (!value) return undefined
+
+  // 1) If it's an ISO-like string with 'T', DO NOT re-anchor time.
+  if (typeof value === 'string' && /\d{4}-\d{2}-\d{2}T/.test(value)) {
+    const d = new Date(value)
+    return isNaN(d) ? undefined : d.toISOString()
+  }
+
+  // 2) If it's a Date object, keep its instant.
+  if (value instanceof Date && !isNaN(value)) {
+    return value.toISOString()
+  }
+
+  // 3) If it's 'YYYY-MM-DD', anchor to local noon to minimize TZ drift.
+  if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    const d = new Date(`${value}T12:00:00`)
+    return isNaN(d) ? undefined : d.toISOString()
+  }
+
+  // 4) Fallback parsing
+  const d = new Date(value)
+  return isNaN(d) ? undefined : d.toISOString()
+}
 /* ------------------------------ Image helper ------------------------------ */
 
 export function normalizeImage(img) {
@@ -248,7 +274,6 @@ export function buildOrderPayload(orderDraft, options = {}) {
     quick = false,
   } = options
 
-  // Customer
   const customer = {
     name: (orderDraft.customer?.name || orderDraft.customer?.firstName || '').trim(),
     lastName: (orderDraft.customer?.lastName || '').trim(),
@@ -258,22 +283,15 @@ export function buildOrderPayload(orderDraft, options = {}) {
     socialMedia: orderDraft.customer?.socialMedia,
   }
 
-  // Dates (ISO strings at local noon)
-  const orderDate = toISOLocalNoon(orderDraft.orderDate)
-  const deliverDate = toISOLocalNoon(orderDraft.deliverDate)
+  // Dates (be conservative: do not re-anchor existing ISO)
+  const orderDate = toISOConservative(orderDraft.orderDate)
+  const deliverDate = toISOConservative(orderDraft.deliverDate)
 
-  // Deposit (omit if empty)
   const deposit = normalizeDeposit(orderDraft.deposit)
-
-  // Shipping (single consistent shape)
   const shipping = normalizeShipping(orderDraft.shipping || {})
-
-  // Products
   const products = quick
     ? undefined
     : (orderDraft.products || []).map((p) => toProductPayload(p, allGlazes, { glazesLoaded }))
-
-  // Notes
   const notes = (orderDraft.notes || '').trim()
 
   const payload = {

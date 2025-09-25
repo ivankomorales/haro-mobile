@@ -786,4 +786,106 @@ Removed special total sort logic from orderController.
 
 Optimized stats payload with $project and $group.
 
-### 2025-09-29 → 2025-08-02
+### 2025-09-15 → 2025-09-24
+
+## Updates & Decisions
+# Infrastructure & Fetch Patterns
+
+useAuthedFetch (hook)
+Wrapper around fetch with auth handling. On 401/403 → logs out cleanly, shows “session expired” toast, and redirects with postLoginRedirect.
+Replaces silent window.location.assign and ensures consistent toasts.
+
+fetchWithAuth (default) → returns JSON.
+
+fetchWithAuthResponse → returns raw Response for .blob() (PDF/Excel).
+Both share consistent 401/403 handling (cleanup, sessionStorage flag, redirect).
+
+# API Layer
+
+All src/api/\*.js functions accept optional opts with fetcher (defaults to fetchWithAuth).
+
+Pages/containers inject useAuthedFetch() when needed.
+
+# AuthContext
+
+refreshUser() calls /api/me; on 401/403, cleans local state without loops.
+
+Toast for “session expired” shown only once (via location.search + sessionStorage).
+
+logout(expired=false) differentiates manual vs. expired logout for correct messages.
+
+apiLogin still used by handleLogin.
+
+Optional apiLogout kept as audit call (not required).
+
+# Pages & Components
+
+### Glazes
+
+AddGlaze: uploads to Cloudinary, creates via API with useAuthedFetch.
+
+EditGlaze: fixed infinite loop → separated layout vs. data effects. Stable dirty state when changing images.
+
+GlazeListPage: enable/disable with fetcher, busy states + confirmation modal.
+
+### Orders
+
+Draft lifecycle (create/get/update/delete) migrated to new API pattern.
+
+Images uploaded before createOrder, clean payloads, consistent toasts.
+
+Exports (PDF/Excel) fixed → now work with fetchWithAuthResponse + .blob().
+
+### Home
+
+Loads recentOrders + pendingCount with fetcher.
+
+Lazy-loads glazes with import() and injected fetcher.
+
+### Users
+
+createUser uses fetcher.
+
+Local validation for password mismatch with i18n key (no hardcode).
+
+FormActions recommends type="submit" for accessibility.
+
+🖼️ Layout & Navigation
+
+LayoutContext: memoized helpers (setTitle, setShowSplitButton, resetLayout) → stable refs, no loops.
+
+DashboardLayout:
+
+Manual logout → toast shows “logged out” (not “expired”).
+
+Avatar upload: Cloudinary → updateMe → refreshUser → syncs in AccountMenu.
+
+AccountMenu: no ghost user, uses user?.email || ''. Updates preview when avatar changes.
+
+🧹 Cleanups
+
+One default: fetchWithAuth = JSON. For binaries, explicitly use fetchWithAuthResponse.
+
+Removed global navigate in utils (only used on 401/403).
+
+Only direct fetch( calls left in: Login, Cloudinary, and Exports.
+
+fetchWithAuth tests remain valid.
+
+🐞 Bugs Fixed
+
+Infinite loop in EditGlaze (unstable deps) → fixed with separated effects.
+
+Broken exports (“blob is not a function”) → fixed via fetchWithAuthResponse.
+
+Ghost user user@example.com → removed; now always from AuthContext/getMe.
+
+Manual logout no longer shows “session expired”.
+
+🚧 Next Steps
+
+Full i18n runtime (react-i18next) → planned for Pass C.
+
+User preferences (/api/me/preferences/:namespace, useUserPrefs) → theme, language, Excel fields, modal state.
+
+README & diagrams polishing once fetch patterns are fully stable.

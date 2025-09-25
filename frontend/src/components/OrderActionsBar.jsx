@@ -64,7 +64,7 @@ export default function OrderActionsBar({
       <div className="flex min-w-0 flex-row flex-nowrap items-center gap-2">
         {/* Chips: same namespace as search/filters, hidden on mobile */}
         {chips?.length > 0 && (
-          <div className={`mt-1 hidden ${chipsBreakpoint}:flex flex-wrap items-center gap-2`}>
+          <div className="mt-1 hidden flex-wrap items-center gap-2 md:flex">
             {chips.map((c) => (
               <span
                 key={c.key}

@@ -3,15 +3,16 @@ import { useEffect, useRef, useState } from 'react'
 import { useMediaQuery } from 'react-responsive'
 import { Outlet, useNavigate } from 'react-router-dom'
 
-import { logout } from '../api/auth'
 import { updateMe } from '../api/users'
 import AccountMenu from '../components/AccountMenu'
 import AppBar from '../components/AppBar'
 import BottomNavBar from '../components/BottomNavBar'
+import LanguageSwitcher from '../components/LanguageSwitcher'
 import SideBar from '../components/Sidebar'
 import SplitActionButton from '../components/SplitActionButton'
 import { useLayout } from '../context/LayoutContext'
 import { useAuth } from '../hooks/useAuth'
+import { useAuthedFetch } from '../hooks/useAuthedFetch'
 import useHideBars from '../hooks/useHideBars'
 import useKeyboardOpen from '../hooks/useKeyboardOpen'
 import { getMessage as t } from '../utils/getMessage'
@@ -21,12 +22,14 @@ export default function DashboardLayout() {
   const isDesktop = useMediaQuery({ minWidth: 1024 })
   const hideBars = useHideBars()
   const kbOpen = useKeyboardOpen()
-  const { isAdmin, user, logout, refreshUser } = useAuth()
+  const { isAdmin, user, logout: authLogout, refreshUser } = useAuth()
   const { title } = useLayout()
   const [showMenu, setShowMenu] = useState(false)
   const menuRef = useRef(null)
   const avatarRef = useRef(null)
   const navigate = useNavigate()
+  const { logout } = useAuth()
+  const authedFetch = useAuthedFetch()
 
   useEffect(() => {
     function handleClickOutside(event) {
@@ -43,7 +46,8 @@ export default function DashboardLayout() {
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  const handleLogout = () => logout(navigate)
+  // Manual logout → success toast (not "session expired")
+  const handleLogout = () => authLogout() // or authLogout(false)
 
   const splitLabels = {
     main: t('splitAction.new'),
@@ -65,7 +69,7 @@ export default function DashboardLayout() {
     // 1) sube a Cloudinary
     const url = await uploadToCloudinary(file, 'haromobile/avatars')
     // 2) guarda en tu backend
-    await updateMe({ avatarUrl: url })
+    await updateMe({ avatarUrl: url }, { fetcher: authedFetch })
     // 3) refresca el contexto (para email/ nombre/ avatar)
     await refreshUser()
     // 4) regresa la URL para que AccountMenu actualice el preview al instante
@@ -92,17 +96,20 @@ export default function DashboardLayout() {
                 title={title}
                 extra={
                   isDesktop ? (
-                    <SplitActionButton
-                      showSecondary={isAdmin}
-                      labels={splitLabels}
-                      show={splitShow}
-                    />
+                    <div className="flex items-center gap-4">
+                      <SplitActionButton
+                        showSecondary={isAdmin}
+                        labels={splitLabels}
+                        show={splitShow}
+                      />
+                      <LanguageSwitcher />
+                    </div>
                   ) : null
                 }
                 right={
                   <div className="relative mr-4">
                     <AccountMenu
-                      email={user?.email || 'user@example.com'}
+                      email={user?.email ?? ''} // TODO Check
                       name={[user?.name, user?.lastName].filter(Boolean).join(' ')}
                       avatarUrl={user?.avatarUrl || ''}
                       onLogout={handleLogout}

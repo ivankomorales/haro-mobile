@@ -286,9 +286,9 @@ OrderSchema.index({ deliverDate: 1 });
 // 6.1) Stable ordering by date: orderDate DESC + createdAt DESC
 OrderSchema.index({ orderDate: -1, createdAt: -1 });
 
-OrderSchema.index({ itemsSubtotal: -1 });
-OrderSchema.index({ orderTotal: -1 });
-OrderSchema.index({ amountDue: -1 });
+// OrderSchema.index({ itemsSubtotal: -1 });
+// OrderSchema.index({ orderTotal: -1 });
+// OrderSchema.index({ amountDue: -1 });
 
 // 7) (Text index) Full-text search in notes and product descriptions
 //    NOTE: MongoDB allows only **one** text index per collection.

@@ -181,7 +181,7 @@ export default function AddedProductsCart({
               </div>
             )}
 
-            {/* IVA (commented for future use) */}
+            {/* IVA (commented for future use Do not delete) */}
             {/*
             const ivaRate = 0.16 // 16% example
             const ivaAmount = Math.max(0, (subtotal - discounts - depositSafe) * ivaRate)

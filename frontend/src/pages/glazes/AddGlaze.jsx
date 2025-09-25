@@ -1,3 +1,5 @@
+// src/pages/glazes/AddGlaze.jsx
+// comments in English only
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 
@@ -14,18 +16,18 @@ export default function AddGlaze() {
   const navigate = useNavigate()
   const location = useLocation()
   const returnTo = location.state?.returnTo
-  const originPath = getOriginPath(location.state?.originPath ?? location.state?.from)
+  const originPath = getOriginPath(
+    location.state?.originPath ?? location.state?.from,
+    '/products/glazes'
+  )
 
-  const { create } = useCreateGlaze(navigate)
+  const { create } = useCreateGlaze()
 
   // Top bar actions
   const { setTitle, setShowSplitButton, resetLayout } = useLayout()
-
   useEffect(() => {
     setTitle(t('glaze.new'))
-    // si NO necesitas el botón “split”, apágalo:
     setShowSplitButton(false)
-
     return resetLayout
   }, [setTitle, setShowSplitButton, resetLayout])
 
@@ -36,47 +38,48 @@ export default function AddGlaze() {
     code: '',
     images: [],
   })
-
-  const [error, setError] = useState(null)
-  const [success, setSuccess] = useState(null)
   const [loading, setLoading] = useState(false)
 
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value })
-    setError(null)
-    setSuccess(null)
+  function handleChange(e) {
+    setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }))
   }
 
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-    setLoading(true)
-    setError(null)
-    setSuccess(null)
+  function validate() {
+    if (!formData.name.trim()) throw new Error(t('glaze.errors.nameRequired') || 'Name is required')
+    if (!/^#[0-9a-fA-F]{6}$/.test(formData.hex))
+      throw new Error(t('glaze.errors.hexInvalid') || 'Invalid hex color')
+  }
 
+  async function handleSubmit(e) {
+    e.preventDefault()
+    if (loading) return
+    setLoading(true)
     try {
-      // Upload all images to Cloudinary
+      validate()
+      // Upload images (only the first will be used as main image for now)
       const urls = await Promise.all(
-        formData.images.map((img) => uploadToCloudinary(img, 'haromobile/glazes'))
+        (formData.images || []).map((img) => uploadToCloudinary(img, 'haromobile/glazes'))
       )
 
-      // Build glaze payload
-      const glazeData = {
-        name: formData.name,
+      const payload = {
+        name: formData.name.trim(),
         colorHex: formData.hex,
-        code: formData.code,
-        image: urls[0] || '', // Only first image for now
+        code: formData.code.trim(),
+        image: urls[0] || '',
       }
 
-      await create(glazeData)
+      await create(payload)
 
-      setSuccess(`Esmalte ${formData.name} creado!`)
-      setFormData({ name: '', hex: '#ffffff', code: '', images: [] })
-      if (imageInputRef.current) {
-        imageInputRef.current.value = ''
-      }
+      // Reset local form
+      setFormData({ name: '', hex: '#000000', code: '', images: [] })
+      if (imageInputRef.current) imageInputRef.current.value = ''
+
+      // Navigate back to list or origin
+      navigate(returnTo || originPath || '/products/glazes', { replace: true })
     } catch (err) {
+      // The hook already shows a toast; keep this for extra safety in case it's a validation error
+      // Avoid double-toasting: only console.error here or show a tiny helper text if you want
       console.error(err)
-      setError(err.message || 'Error creating glaze')
     } finally {
       setLoading(false)
     }
@@ -84,8 +87,6 @@ export default function AddGlaze() {
 
   return (
     <div className="h-full min-h-0 bg-white px-4 font-sans text-gray-800 dark:bg-neutral-900 dark:text-gray-100">
-      {/* AppBar already provides top offset via .app-main padding-top */}
-      {/* Avoid big extra top padding; add small spacing if needed */}
       <div className="pt-2 pb-4">
         <form onSubmit={handleSubmit} className="mx-auto max-w-md space-y-6">
           <div className="flex items-center gap-4">
@@ -94,16 +95,18 @@ export default function AddGlaze() {
               name="name"
               value={formData.name}
               onChange={handleChange}
+              disabled={loading}
               required
             />
           </div>
+
           <div className="flex items-center gap-4">
-            {/* Code optional */}
             <FormInput
               label={t('glaze.code')}
               name="code"
               value={formData.code}
               onChange={handleChange}
+              disabled={loading}
             />
             <div className="flex items-center gap-2">
               <input
@@ -111,6 +114,7 @@ export default function AddGlaze() {
                 name="hex"
                 value={formData.hex}
                 onChange={handleChange}
+                disabled={loading}
                 className="h-10 w-10 cursor-pointer rounded border border-gray-300 dark:border-gray-600"
               />
               <span className="w-16 text-sm text-gray-700 dark:text-gray-300">{formData.hex}</span>
@@ -118,16 +122,21 @@ export default function AddGlaze() {
           </div>
 
           <ImageUploader
+            ref={imageInputRef}
             multiple={false}
+            disabled={loading}
             value={formData.images}
             onChange={(imgs) => setFormData((prev) => ({ ...prev, images: imgs }))}
           />
 
-          {error && <div className="text-sm text-red-500">{error}</div>}
-          {success && <div className="text-sm text-green-600">{success}</div>}
+          {/* Keep inline helper only if you want to show local validation messages
+              otherwise rely on toasts and remove this block */}
+          {/* {error && <div className="text-sm text-red-500">{error}</div>} */}
 
           <FormActions
+            // Important: avoid double-calling. Make sure FormActions submit button is type="submit".
             onSubmit={handleSubmit}
+            submitDisabled={loading}
             cancelRedirect={returnTo || originPath || '/products/glazes'}
           />
         </form>

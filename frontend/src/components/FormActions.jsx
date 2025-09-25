@@ -42,6 +42,10 @@ export default function FormActions({
 
   const isSubmitDisabled = Boolean(submitDisabled || submitLoading)
   const isCancelDisabled = Boolean(lockCancelWhileSubmitting && submitLoading)
+  // Auto-detect context:
+  // - If parent passed onSubmit → assume we're OUTSIDE a <form> (button click).
+  // - If not → assume we're INSIDE a <form> (use type="submit" and let form.onSubmit handle it).
+  const isFormContext = onSubmit == null
 
   const handleCancel = () => {
     setIsCancelOpen(false)
@@ -78,8 +82,8 @@ export default function FormActions({
 
       {/* Submit */}
       <button
-        type="button"
-        onClick={onSubmit}
+        type={isFormContext ? 'submit' : 'button'}
+        onClick={isFormContext ? undefined : onSubmit}
         disabled={isSubmitDisabled}
         aria-disabled={isSubmitDisabled}
         aria-busy={submitLoading}

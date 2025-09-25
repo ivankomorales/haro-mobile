@@ -1,62 +1,69 @@
 // src/api/glazes.js
-import fetchWithAuth from '../utils/fetchWithAuth'
+// comments in English only
+import { fx } from './_fetcher'
 
 /**
  * Fetch all glazes.
- *
- * @param {function|null} navigate - Optional navigation handler for redirecting on auth error.
+ * @param {{ includeInactive?: boolean }} params
+ * @param {{ fetcher?: Function }} opts
  * @returns {Promise<any[]>}
  */
-// normalize 3rd arg so callers can pass either `navigate` or `{ navigate }`
-const ctx = (x) => (typeof x === 'function' ? { navigate: x } : x || {})
-/**
- * Fetch all glazes.
- * @param {{navigate?: Function, includeInactive?: boolean}} opts
- */
-export const getAllGlazes = (opts = {}) => {
-  const { navigate, includeInactive = false } = opts // default: active only (keeps AddProduct behavior)
-  const qs = includeInactive ? '?includeInactive=true' : ''
-  return fetchWithAuth(`/api/glazes${qs}`, {}, ctx(navigate))
+export async function getAllGlazes(params = {}, { fetcher } = {}) {
+  const f = fx(fetcher)
+  const { includeInactive = false } = params
+  const qs = new URLSearchParams(includeInactive ? { includeInactive: 'true' } : {}).toString()
+  const url = qs ? `/api/glazes?${qs}` : '/api/glazes'
+  return f(url)
 }
 
 /**
  * Fetch a single glaze by ID.
- *
- * @param {string} id - Glaze ID.
- * @param {function|null} navigate
- * @returns {Promise<any>}
+ * @param {string} id
+ * @param {{ fetcher?: Function }} opts
  */
-export const getGlazeById = (id, nav) => fetchWithAuth(`/api/glazes/${id}`, {}, ctx(nav))
+export async function getGlazeById(id, { fetcher } = {}) {
+  const f = fx(fetcher)
+  return f(`/api/glazes/${id}`)
+}
 
 /**
  * Create a new glaze.
- *
- * @param {object} glazeData - Glaze properties (e.g., name, color, etc).
- * @param {function|null} navigate
- * @returns {Promise<any>}
+ * @param {object} glazeData
+ * @param {{ fetcher?: Function }} opts
  */
-export const createGlaze = (glazeData, nav) =>
-  fetchWithAuth('/api/glazes', { method: 'POST', body: glazeData }, ctx(nav))
+export async function createGlaze(glazeData, { fetcher } = {}) {
+  const f = fx(fetcher)
+  return f('/api/glazes', { method: 'POST', body: glazeData })
+}
 
 /**
- * Delete a glaze by ID.
- *
- * @param {string} id - Glaze ID to delete.
- * @param {function|null} navigate
- * @returns {Promise<any>}
+ * Update a glaze.
+ * @param {string} id
+ * @param {object} glazeData
+ * @param {{ fetcher?: Function }} opts
  */
-export const deactivateGlaze = (id, nav) =>
-  fetchWithAuth(`/api/glazes/${id}/deactivate`, { method: 'PATCH' }, ctx(nav))
-
-export const updateGlaze = (id, glazeData, nav) =>
-  fetchWithAuth(`/api/glazes/${id}`, { method: 'PUT', body: glazeData }, ctx(nav))
+export async function updateGlaze(id, glazeData, { fetcher } = {}) {
+  const f = fx(fetcher)
+  return f(`/api/glazes/${id}`, { method: 'PUT', body: glazeData })
+}
 
 /**
- * Activate a glaze by ID.
- *
- * @param {string} id - Glaze ID to activate.
- * @param {function|null} navigate
- * @returns {Promise<any>}
+ * Deactivate a glaze.
+ * @param {string} id
+ * @param {{ fetcher?: Function }} opts
  */
-export const activateGlaze = (id, nav) =>
-  fetchWithAuth(`/api/glazes/${id}/activate`, { method: 'PATCH' }, ctx(nav))
+export async function deactivateGlaze(id, { fetcher } = {}) {
+  const f = fx(fetcher)
+  // If your API uses DELETE instead, switch method/path accordingly
+  return f(`/api/glazes/${id}/deactivate`, { method: 'PATCH' })
+}
+
+/**
+ * Activate a glaze.
+ * @param {string} id
+ * @param {{ fetcher?: Function }} opts
+ */
+export async function activateGlaze(id, { fetcher } = {}) {
+  const f = fx(fetcher)
+  return f(`/api/glazes/${id}/activate`, { method: 'PATCH' })
+}

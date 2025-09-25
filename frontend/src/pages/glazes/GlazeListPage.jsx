@@ -1,4 +1,5 @@
 // src/pages/glazes/GlazeListPage.jsx
+// comments in English only
 import { Pencil, Trash2, Plus, ArrowUpDown, ChevronUp, ChevronDown, RotateCcw } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
@@ -8,8 +9,9 @@ import ConfirmModal from '../../components/ConfirmModal'
 import TableSkeleton from '../../components/TableSkeleton'
 import { useLayout } from '../../context/LayoutContext'
 import { getMessage as t } from '../../utils/getMessage'
-
-// Skeleton
+import { useI18n } from '../../context/I18nContext'
+import { useAuthedFetch } from '../../hooks/useAuthedFetch' // ⬅️ NEW
+import { showError, showSuccess, showLoading, dismissToast } from '../../utils/toastUtils' // ⬅️ NEW
 
 function norm(s) {
   return (s || '')
@@ -28,13 +30,11 @@ export default function GlazeListPage() {
   const [loading, setLoading] = useState(true)
   const [busyId, setBusyId] = useState(null)
 
-  // tabs: 'active' | 'inactive' | 'all'
-  const [tab, setTab] = useState('active')
+  const [tab, setTab] = useState('active') // 'active' | 'inactive' | 'all'
   const [search, setSearch] = useState('')
-  // sorting: 'name' | 'code' | 'hex' | 'status'
-  const [sortKey, setSortKey] = useState('name')
+  const [sortKey, setSortKey] = useState('name') // 'name' | 'code' | 'hex' | 'status'
   const [sortDir, setSortDir] = useState('asc') // 'asc' | 'desc'
-  // Modal
+
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [confirmType, setConfirmType] = useState(null) // 'deactivate' | 'activate'
   const [confirmId, setConfirmId] = useState(null)
@@ -44,22 +44,27 @@ export default function GlazeListPage() {
   const here = location.pathname || '/products/glazes'
 
   const { setTitle, setShowSplitButton, resetLayout } = useLayout()
+  const { t, locale } = useI18n()
+  const authedFetch = useAuthedFetch() // ⬅️ NEW
 
-  // one-time: put the page into "list mode" (no split button)
+  // one-time layout
   useEffect(() => {
     setTitle(t('glaze.list') || 'Glazes')
     setShowSplitButton(false)
     return resetLayout
-  }, [setTitle, setShowSplitButton, resetLayout])
+  }, [setTitle, setShowSplitButton, resetLayout, locale])
 
   // load glazes
   useEffect(() => {
     let mounted = true
     ;(async () => {
       try {
-        const res = await getAllGlazes({ navigate, includeInactive: true })
-        const list = Array.isArray(res) ? res : []
-        if (mounted) setItems(list)
+        setLoading(true)
+        const res = await getAllGlazes({ includeInactive: true }, { fetcher: authedFetch }) // ⬅️ NEW
+        if (mounted) setItems(Array.isArray(res) ? res : [])
+      } catch (e) {
+        console.error(e)
+        showError('glaze.loadingFailed') // i18n key
       } finally {
         if (mounted) setLoading(false)
       }
@@ -67,7 +72,7 @@ export default function GlazeListPage() {
     return () => {
       mounted = false
     }
-  }, [navigate])
+  }, [authedFetch]) // ⬅️ NEW (navigate ya no es necesario)
 
   const counts = useMemo(() => {
     const actives = items.filter((g) => g.isActive).length
@@ -127,7 +132,6 @@ export default function GlazeListPage() {
       setSortDir('asc')
     }
   }
-
   function openConfirm(type, id) {
     setConfirmType(type)
     setConfirmId(id)
@@ -135,12 +139,18 @@ export default function GlazeListPage() {
   }
 
   async function handleDeactivate(id) {
+    setBusyId(id)
+    const toastId = showLoading('glaze.updating') // i18n
     try {
-      setBusyId(id)
-      await deactivateGlaze(id, { navigate })
-      const fresh = await getAllGlazes({ navigate, includeInactive: true })
-      setItems(Array.isArray(fresh) ? fresh : [])
+      await deactivateGlaze(id, { fetcher: authedFetch }) // ⬅️ NEW
+      // optimistic update
+      setItems((prev) => prev.map((g) => (g._id === id ? { ...g, isActive: false } : g)))
+      showSuccess('success.glaze.deactivated')
+    } catch (e) {
+      console.error(e)
+      showError('glaze.deactivateFailed')
     } finally {
+      dismissToast(toastId)
       setBusyId(null)
       setConfirmOpen(false)
       setConfirmId(null)
@@ -149,12 +159,18 @@ export default function GlazeListPage() {
   }
 
   async function handleActivate(id) {
+    setBusyId(id)
+    const toastId = showLoading('glaze.updating')
     try {
-      setBusyId(id)
-      await activateGlaze(id, { navigate })
-      const fresh = await getAllGlazes({ navigate, includeInactive: true })
-      setItems(Array.isArray(fresh) ? fresh : [])
+      await activateGlaze(id, { fetcher: authedFetch }) // ⬅️ NEW
+      // optimistic update
+      setItems((prev) => prev.map((g) => (g._id === id ? { ...g, isActive: true } : g)))
+      showSuccess('success.glaze.activated')
+    } catch (e) {
+      console.error(e)
+      showError('glaze.activateFailed')
     } finally {
+      dismissToast(toastId)
       setBusyId(null)
       setConfirmOpen(false)
       setConfirmId(null)
@@ -162,15 +178,7 @@ export default function GlazeListPage() {
     }
   }
 
-  // skeleton config to "look like" the table layout
-  const skeletonColumns = [
-    'w-15', // Image
-    'flex-[2]', // Name (wider)
-    'w-32', // Code
-    'w-40', // Hex
-    'w-28', // Status
-    'w-32', // Actions
-  ]
+  const skeletonColumns = ['w-15', 'flex-[2]', 'w-32', 'w-40', 'w-28', 'w-32']
 
   function MobileCardsSkeleton({ count = 6 }) {
     return (
@@ -178,18 +186,13 @@ export default function GlazeListPage() {
         {Array.from({ length: count }).map((_, i) => (
           <div key={i} className="rounded border border-neutral-200 p-3 dark:border-neutral-800">
             <div className="flex animate-pulse items-start gap-3">
-              {/* Imagen/hex */}
               <div className="h-12 w-12 rounded-md border bg-neutral-200 dark:bg-neutral-700" />
-
-              {/* Texto */}
               <div className="min-w-0 flex-1">
                 <div className="h-4 w-2/3 rounded bg-neutral-200 dark:bg-neutral-700" />
                 <div className="mt-2 h-3 w-1/2 rounded bg-neutral-200 dark:bg-neutral-700" />
                 <div className="mt-1 h-3 w-1/3 rounded bg-neutral-200 dark:bg-neutral-700" />
                 <div className="mt-2 h-5 w-20 rounded bg-neutral-200 dark:bg-neutral-700" />
               </div>
-
-              {/* Botones */}
               <div className="flex shrink-0 flex-col items-end gap-2">
                 <div className="h-6 w-8 rounded bg-neutral-200 dark:bg-neutral-700" />
                 <div className="h-6 w-8 rounded bg-neutral-200 dark:bg-neutral-700" />
@@ -206,7 +209,6 @@ export default function GlazeListPage() {
       {/* Header */}
       <div className="space-y-2">
         <div className="flex items-center gap-2 sm:justify-end">
-          {/* Compact search (mobile) */}
           <input
             type="search"
             placeholder={t('glaze.searchPlaceholder')}
@@ -214,8 +216,6 @@ export default function GlazeListPage() {
             onChange={(e) => setSearch(e.target.value)}
             className="h-10 w-full rounded border border-neutral-300 px-3 text-sm sm:w-80 dark:border-neutral-700 dark:bg-neutral-900 dark:text-white"
           />
-
-          {/* New glaze: icon-only on mobile, label on desktop */}
           <button
             type="button"
             onClick={() =>
@@ -226,9 +226,7 @@ export default function GlazeListPage() {
             aria-label={t('glaze.new')}
             title={t('glaze.new')}
             className={[
-              // mobile: icon button
               'inline-flex h-10 w-11 items-center justify-center rounded bg-blue-600 text-white',
-              // desktop: regular button with label
               'sm:h-auto sm:w-auto sm:rounded-md sm:px-3 sm:py-2 dark:bg-blue-600',
               'hover:bg-blue-700 dark:hover:bg-blue-800',
             ].join(' ')}
@@ -239,7 +237,7 @@ export default function GlazeListPage() {
         </div>
       </div>
 
-      {/* Chips/ Tabs */}
+      {/* Tabs */}
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex flex-wrap items-center gap-2">
           <TabButton
@@ -260,10 +258,9 @@ export default function GlazeListPage() {
         </div>
       </div>
 
-      {/* Loading vs Content */}
+      {/* Content */}
       {loading ? (
         <>
-          {/* Desktop skeleton: tabla */}
           <div className="hidden sm:block">
             <TableSkeleton
               rows={10}
@@ -274,8 +271,6 @@ export default function GlazeListPage() {
               spinnerLabel={t('glaze.loading')}
             />
           </div>
-
-          {/* Mobile skeleton: cards */}
           <div className="sm:hidden">
             <MobileCardsSkeleton count={6} />
           </div>
@@ -346,21 +341,17 @@ export default function GlazeListPage() {
                         </div>
                       )}
                     </td>
-
-                    {/* Name */}
                     <td
                       className="px-3 py-2 font-medium break-words whitespace-normal"
                       title={g.name || ''}
                     >
                       {g.name || t('common.na')}
                     </td>
-
                     <td className="px-3 py-2">
                       <span className="text-sm text-neutral-600 dark:text-neutral-400">
                         {g.code || t('glaze.noCode')}
                       </span>
                     </td>
-
                     <td className="px-3 py-2">
                       {g.hex ? (
                         <div className="flex items-center gap-2">
@@ -377,7 +368,6 @@ export default function GlazeListPage() {
                         <span className="text-sm text-neutral-400">{t('glaze.noHex')}</span>
                       )}
                     </td>
-
                     <td className="px-3 py-2">
                       {g.isActive ? (
                         <span className="rounded bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700 dark:bg-green-900/30 dark:text-green-300">
@@ -389,7 +379,6 @@ export default function GlazeListPage() {
                         </span>
                       )}
                     </td>
-
                     <td className="px-3 py-2">
                       <div className="flex items-center justify-end gap-2">
                         <IconButton
@@ -402,7 +391,6 @@ export default function GlazeListPage() {
                         >
                           <Pencil className="h-4 w-4 dark:text-blue-400/70 dark:hover:text-blue-400/90" />
                         </IconButton>
-
                         {g.isActive ? (
                           <IconButton
                             title={t('button.deactivate')}
@@ -424,7 +412,6 @@ export default function GlazeListPage() {
                     </td>
                   </tr>
                 ))}
-
                 {sorted.length === 0 && (
                   <tr>
                     <td colSpan={6} className="px-3 py-10 text-center text-neutral-500">
@@ -462,7 +449,6 @@ export default function GlazeListPage() {
                       {t('common.na')}
                     </div>
                   )}
-
                   <div className="min-w-0 flex-1">
                     <div className="font-medium break-words whitespace-normal">
                       {g.name || t('common.na')}
@@ -497,7 +483,6 @@ export default function GlazeListPage() {
                       )}
                     </div>
                   </div>
-
                   <div className="flex shrink-0 flex-col items-end gap-2">
                     <IconButton
                       title={t('button.edit')}
@@ -509,7 +494,6 @@ export default function GlazeListPage() {
                     >
                       <Pencil className="h-4 w-4" />
                     </IconButton>
-
                     {g.isActive ? (
                       <IconButton
                         title={t('button.deactivate')}
@@ -531,7 +515,6 @@ export default function GlazeListPage() {
                 </div>
               </div>
             ))}
-
             {sorted.length === 0 && (
               <div className="py-10 text-center text-neutral-500">{t('glaze.empty')}</div>
             )}
@@ -575,7 +558,6 @@ export default function GlazeListPage() {
   )
 }
 
-/** Small tab button */
 function TabButton({ active, onClick, label }) {
   return (
     <button
@@ -593,7 +575,6 @@ function TabButton({ active, onClick, label }) {
   )
 }
 
-/** Small icon button */
 function IconButton({ title, onClick, disabled, children }) {
   return (
     <button
@@ -611,7 +592,6 @@ function IconButton({ title, onClick, disabled, children }) {
   )
 }
 
-/** Sortable header cell */
 function SortableTH({ label, active, dir, onClick, className = '' }) {
   return (
     <th

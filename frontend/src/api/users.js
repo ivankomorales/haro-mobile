@@ -1,63 +1,57 @@
 // src/api/users.js
-
-import fetchWithAuth from '../utils/fetchWithAuth'
+// comments in English only
+import { fx } from './_fetcher'
 
 /**
- * Create a new user.
- * Requires admin privileges on the backend.
- *
- * @param {object} userData - Object containing name, email, password, and role.
- * @returns {Promise<any>}
+ * Create a new user (admin only)
+ * @param {object} userData
+ * @param {{ fetcher?: Function }} opts
  */
-export const createUser = (userData) => {
-  return fetchWithAuth('/api/users', {
+export async function createUser(userData, { fetcher } = {}) {
+  const f = fx(fetcher)
+  return f('/api/users', {
     method: 'POST',
-    body: JSON.stringify(userData),
+    body: userData,
   })
 }
 
 /**
- * Get the list of all users.
- * Requires admin privileges.
- *
- * @returns {Promise<any[]>}
+ * Get list of all users (admin only)
+ * @param {{ fetcher?: Function }} opts
  */
-export const getUsers = () => {
-  return fetchWithAuth('/api/users')
+export async function getUsers({ fetcher } = {}) {
+  const f = fx(fetcher)
+  return f('/api/users')
 }
 
 /**
- * Delete a user by ID.
- * Requires admin privileges.
- *
- * @param {string} id - User ID to delete.
- * @returns {Promise<any>}
+ * Delete a user by ID (admin only)
+ * @param {string} id
+ * @param {{ fetcher?: Function }} opts
  */
-export const deleteUser = (id) => {
-  return fetchWithAuth(`/api/users/${id}`, {
-    method: 'DELETE',
-  })
+export async function deleteUser(id, { fetcher } = {}) {
+  const f = fx(fetcher)
+  return f(`/api/users/${id}`, { method: 'DELETE' })
 }
 
 /**
- * Get information about the currently authenticated user.
- *
- * @returns {Promise<any>}
+ * Get info about the currently authenticated user
+ * @param {{ fetcher?: Function }} opts
  */
-export const getMe = () => {
-  return fetchWithAuth('/api/users/me')
+export async function getMe({ fetcher } = {}) {
+  const f = fx(fetcher)
+  return f('/api/users/me')
 }
 
 /**
- * Update information of the currently authenticated user.
- *
- * @param {object} patch - Object containing the fields to update
- * (e.g., { name?, lastName?, email?, avatarUrl? }).
- * @returns {Promise<any>}
+ * Update info of the currently authenticated user
+ * @param {object} patch
+ * @param {{ fetcher?: Function }} opts
  */
-export const updateMe = (patch) => {
-  return fetchWithAuth('/api/users/me', {
+export async function updateMe(payload, { fetcher } = {}) {
+  const f = fx(fetcher)
+  return f('/api/users/me', {
     method: 'PATCH',
-    body: JSON.stringify(patch),
+    body: payload,
   })
 }

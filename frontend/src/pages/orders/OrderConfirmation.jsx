@@ -11,6 +11,7 @@ import { buildOrderPayload } from '../../utils/orderPayload'
 import { showError, showSuccess, showLoading, dismissToast } from '../../utils/toastUtils'
 import { formatProductsWithLabels } from '../../utils/transformProducts'
 import { useRequireState } from '../../utils/useRequireState'
+import { useAuthedFetch } from '../../hooks/useAuthedFetch' // ✅ inject fetcher
 
 // comments in English only
 function getApiMessage(err, fallback = 'error.generic') {
@@ -100,6 +101,10 @@ export default function OrderConfirmation() {
   const navigate = useNavigate()
   const rawOrder = location.state || null
 
+  // ✅ get authenticated fetcher from hook
+  const authedFetch = useAuthedFetch()
+  const opts = { fetcher: authedFetch }
+
   // Normalize the incoming state once
   const order = useMemo(() => normalizeOrderForConfirmation(rawOrder), [rawOrder])
   if (!order) return null
@@ -177,7 +182,8 @@ export default function OrderConfirmation() {
       )
 
       console.log('Payload being sent to createOrder:', payload)
-      const saved = await createOrder(payload)
+      // ✅ inject fetcher so it uses auth + logout/redirection on 401/403
+      const saved = await createOrder(payload, opts)
 
       dismissToast()
       showSuccess(t('success.order.created'))

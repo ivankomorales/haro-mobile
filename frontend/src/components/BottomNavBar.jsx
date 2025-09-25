@@ -26,7 +26,7 @@ export default function BottomNavBar({ t }) {
           <nav className="fixed bottom-0 left-0 right-0 h-[var(--bottom-bar-h)] pb-[var(--safe-bottom)] bg-white/90 dark:bg-neutral-900/90 backdrop-blur border-t border-neutral-200 dark:border-neutral-800 z-50"> */}
       <div className="mx-auto grid h-full max-w-lg grid-cols-5">
         {/* Home */}
-        <button
+        <button type="button"
           aria-label={t('navBar.home')}
           onClick={() =>
             smartNavigate(navigate, pathname, '/home', {
@@ -53,7 +53,7 @@ export default function BottomNavBar({ t }) {
         </button>
 
         {/* Orders */}
-        <button
+        <button type="button"
           aria-label={t('navBar.orders')}
           onClick={() =>
             smartNavigate(navigate, pathname, '/orders', {
@@ -81,7 +81,7 @@ export default function BottomNavBar({ t }) {
 
         {/* Central Plus Button */}
         <div className="flex items-center justify-center">
-          <button
+          <button type="button"
             aria-label={t('navBar.newOrder')}
             onClick={() =>
               navigate('/orders/new', {
@@ -96,7 +96,7 @@ export default function BottomNavBar({ t }) {
         </div>
 
         {/* Glazes */}
-        <button
+        <button type="button"
           aria-label={t('navBar.glazes')}
           onClick={() =>
             smartNavigate(navigate, pathname, '/products/glazes', {
@@ -125,7 +125,7 @@ export default function BottomNavBar({ t }) {
         </button>
 
         {/* Profile */}
-        <button
+        <button type="button"
           aria-label={t('navBar.profile')}
           onClick={() =>
             smartNavigate(navigate, pathname, '/profile', {

@@ -11,10 +11,9 @@ import { getOriginPath } from '../../utils/navigationUtils'
 import { showSuccess, showError } from '../../utils/toastUtils'
 
 export default function AddUser() {
-  const navigate = useNavigate()
   const location = useLocation()
   const originPath = getOriginPath(location.state?.originPath ?? location.state?.from)
-  const { create } = useCreateUser(navigate)
+  const { create } = useCreateUser()
 
   // Top Bar Actions
   const { setTitle, setShowSplitButton, resetLayout } = useLayout()
@@ -36,9 +35,6 @@ export default function AddUser() {
   })
 
   const [loading, setLoading] = useState(false)
-
-  // console.log('📦 location.state:', location.state)
-  // console.log('📍 originPath (raw):', location.state?.originPath)
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value })
@@ -69,18 +65,6 @@ export default function AddUser() {
 
   return (
     <div className="min-h-screen bg-white px-4 pt-10 pb-24 font-sans text-gray-800 dark:bg-neutral-900 dark:text-gray-100">
-      {/* <button
-        onClick={() => navigate(-1)}
-        className="mb-4 flex items-center text-sm text-blue-600 dark:text-blue-400 hover:underline "
-      >
-        <ChevronLeft className="h-5 w-5 mr-1" />
-        {t('button.back')}
-      </button> */}
-
-      {/* <h1 className="text-xl font-semibold mb-6 text-center">
-        {t('user.title')}
-      </h1> */}
-
       <form onSubmit={handleSubmit} className="mx-auto max-w-md space-y-6">
         <FormInput
           label={t('user.name')}
@@ -141,7 +125,7 @@ export default function AddUser() {
           </select>
         </div>
 
-        <FormActions onSubmit={handleSubmit} cancelRedirect={originPath} />
+        <FormActions cancelRedirect={originPath} />
       </form>
     </div>
   )

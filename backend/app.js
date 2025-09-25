@@ -45,6 +45,9 @@ app.use("/api/customers", customerRoutes);
 const orderDraftRoutes = require("./routes/orderDrafts");
 app.use("/api/order-drafts", orderDraftRoutes);
 
+const mePreferencesRoutes = require("./routes/mePreferences");
+app.use("/api/me/preferences", mePreferencesRoutes);
+
 // 🛑 Catch all unknown routes
 app.use((req, res, next) => {
   const error = new Error(`Not Found - ${req.originalUrl}`);

@@ -31,6 +31,7 @@ import { getOriginPath } from '../../utils/navigationUtils'
 import { toProductPayload, buildOrderPayload } from '../../utils/orderPayload'
 import { showError, showSuccess, showLoading, dismissToast } from '../../utils/toastUtils'
 import { uploadToCloudinary } from '../../utils/uploadToCloudinary'
+import { useAuthedFetch } from '../../hooks/useAuthedFetch' // ✅ inject fetcher from hook
 
 const TABS = { CUSTOMER: 'customer', PRODUCT: 'product' }
 
@@ -44,6 +45,10 @@ export default function EditOrder() {
   const here = location.pathname + location.search
   // State or Fallback to /orders (list)
   const originPath = getOriginPath(location.state?.originPath ?? location.state?.from ?? '/orders')
+
+  // ✅ get authenticated fetcher from hook
+  const authedFetch = useAuthedFetch()
+  const opts = { fetcher: authedFetch } // small helper to avoid repetition
 
   // Active Tab:
   const [tab, setTab] = useState(TABS.CUSTOMER)
@@ -207,7 +212,8 @@ export default function EditOrder() {
 
     ;(async () => {
       try {
-        const [order, glz] = await Promise.all([getOrderById(id), getAllGlazes({ navigate })])
+        // ✅ inject fetcher in both calls
+        const [order, glz] = await Promise.all([getOrderById(id, opts), getAllGlazes({}, opts)])
 
         if (!alive) return
 
@@ -265,7 +271,7 @@ export default function EditOrder() {
     return () => {
       alive = false
     }
-  }, [id, navigate])
+  }, [id, navigate, authedFetch]) // authedFetch is stable per hook, safe to include
 
   // Validation and product edit helpers (compact)
   const pValidate = () => {
@@ -428,31 +434,14 @@ export default function EditOrder() {
         products: finalProducts,
       }
 
-      // console.log('EDIT > shipping draft =', JSON.stringify(formData.shipping, null, 2))
-      // console.log('[EDIT] form.shipping len =', (formData?.shipping?.addresses || []).length)
-
       const payload = buildOrderPayload(draft, {
         allGlazes: glazes,
         glazesLoaded,
         quick: false,
       })
 
-      // console.log('[EDIT] payload keys =', Object.keys(payload))
-      // console.log(
-      //   '[EDIT] payload.shipping isRequired/len =',
-      //   !!payload?.shipping?.isRequired,
-      //   Array.isArray(payload?.shipping?.addresses) ? payload.shipping.addresses.length : 'NA'
-      // )
-      // console.log(
-      //   '[EDIT] root addresses present? =',
-      //   'addresses' in payload,
-      //   Array.isArray(payload.addresses) ? payload.addresses.length : payload.addresses
-      // )
-
-      // const routeState = { draft: payload, from: '/orders/new' }
-
       // 6) Save to backend
-      await updateOrderById(id, payload)
+      await updateOrderById(id, payload, opts) // ✅ inject fetcher here too
 
       if (toastId) dismissToast(toastId)
       if (shouldUpload) showSuccess('success.image.uploaded')
@@ -1155,14 +1144,6 @@ export default function EditOrder() {
 
                 {/* Add / Save + Cancel edit */}
                 <div className="grid gap-2 sm:grid-cols-2">
-                  <button
-                    type="button"
-                    onClick={addOrSaveProduct}
-                    className="rounded bg-blue-600 py-2 font-semibold text-white hover:bg-blue-800"
-                  >
-                    {isEditingProduct ? t('button.save') : `+ ${t('product.addButton')}`}
-                  </button>
-
                   {isEditingProduct && (
                     <button
                       type="button"
@@ -1172,6 +1153,13 @@ export default function EditOrder() {
                       {t('button.cancelEdit') || 'Cancel edit'}
                     </button>
                   )}
+                  <button
+                    type="button"
+                    onClick={addOrSaveProduct}
+                    className="rounded bg-blue-600 py-2 font-semibold text-white hover:bg-blue-800"
+                  >
+                    {isEditingProduct ? t('button.save') : `+ ${t('product.addButton')}`}
+                  </button>
                 </div>
               </div>
             )}

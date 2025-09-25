@@ -6,6 +6,7 @@ import App from './App.jsx'
 import './index.css'
 import ScrollManager from './components/ScrollManager'
 import { AuthProvider } from './context/AuthContext'
+import { I18nProvider } from './context/I18nContext'
 import { LayoutProvider } from './context/LayoutContext'
 
 import { BrowserRouter } from 'react-router-dom'
@@ -18,12 +19,18 @@ registerSW({ immediate: true })
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <BrowserRouter>
-      <AuthProvider>
-        <LayoutProvider>
-          <ScrollManager selector={SCROLL_CONTAINER_SELECTOR} behavior="auto" respectBackForward />
-          <App />
-        </LayoutProvider>
-      </AuthProvider>
+      <I18nProvider>
+        <AuthProvider>
+          <LayoutProvider>
+            <ScrollManager
+              selector={SCROLL_CONTAINER_SELECTOR}
+              behavior="auto"
+              respectBackForward
+            />
+            <App />
+          </LayoutProvider>
+        </AuthProvider>
+      </I18nProvider>
     </BrowserRouter>
   </StrictMode>
 )

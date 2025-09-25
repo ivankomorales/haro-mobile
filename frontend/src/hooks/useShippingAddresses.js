@@ -1,5 +1,5 @@
 // comments in English only
-//src/hooks/useHippingAddresses.js
+//src/hooks/useShippingAddresses.js
 import { useCallback } from 'react'
 
 /**
