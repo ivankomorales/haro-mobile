@@ -1,6 +1,7 @@
 ### **Haro Mobile - Restful API**
 
 ## Folder structure
+
 ```
 frontend/
 src/
@@ -23,7 +24,6 @@ src/
 │   ├── Home.jsx
 │   ├── Login.jsx
 │   ├── NewOrder.jsx
-│   ├── OrderConfirmation.jsx
 │   ├── OrderDetails.jsx
 │   └── Orders.jsx
 ├── routes/           # Route guards and wrappers

@@ -10,7 +10,8 @@ import {
   updateOrderDraft,
   deleteOrderDraft,
 } from '../../api/orderDrafts'
-import { createOrder } from '../../../hooks/useAuthedFetch'
+import { createOrder } from '../../api/orders'
+import { useAuthedFetch } from '../../hooks/useAuthedFetch'
 import AddedProductsCart from '../../components/AddedProductsCart'
 import FormActions from '../../components/FormActions'
 import FormInput from '../../components/FormInput'
@@ -381,7 +382,7 @@ export default function AddProduct() {
       // 4) Hydrate glazes before payload to avoid wiping ids when list isn't ready
       const hydratedProducts = ensureGlazeObjects(draft.products || [], glazeMap)
 
-      // 5) Build payload with same flags used in OrderConfirmation (quick: false)
+      // 5) Build payload
       showLoading(t('loading.orderCreate'))
       const payload = buildOrderPayload(
         { ...draft, products: hydratedProducts },

@@ -13,6 +13,7 @@ import { normalizeBaseOrder } from '../../utils/mappers/baseOrder'
 import { getOriginPath } from '../../utils/navigationUtils'
 import { prefillFormFromDraft, validateBaseForm, buildBaseOrder } from '../../utils/orderBuilder'
 import { showSuccess, showError } from '../../utils/toastUtils'
+import { getMessage as t } from '../../utils/getMessage'
 
 export default function NewOrder() {
   const navigate = useNavigate()

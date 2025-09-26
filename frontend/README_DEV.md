@@ -139,8 +139,6 @@ haro-mobile/backend
 │   │   │   │   ├── AddProduct.jsx        # Add a product to an order
 │   │   │   │   ├── EditOrder.jsx         # Edit an existing order
 │   │   │   │   ├── NewOrder.jsx          # Create a new order
-│   │   │   │   ├── OrderConfirmation.jsx # Confirmation screen after placing an order
-│   │   │   │   ├── OrderConfirmationOld.jsx
 │   │   │   │   ├── OrderDetails.jsx      # View order summary/details
 │   │   │   │   └── Orders.jsx            # List of all orders
 │   │   │   └── users/
@@ -418,7 +416,7 @@ Progress Summary (Last 2 Days)
 🧾 Order Creation Flow Finalized
 
 - Completed the multi-step process:
-  - NewOrder.jsx → AddProduct.jsx → OrderConfirmation.jsx
+  - NewOrder.jsx → AddProduct.jsx → OrderDetails.jsx
 
 - Products can now be added dynamically with support for:
   - Glazes (interior/exterior, pulled from DB)
@@ -560,7 +558,7 @@ Subtotal, deposit, total.
 
 Horizontal scroll gallery for images.
 
-Now used in OrderConfirmation.
+Now used in OrderDetails.
 
 ## 🧩 Main Layout Enhancements
 
@@ -789,6 +787,7 @@ Optimized stats payload with $project and $group.
 ### 2025-09-15 → 2025-09-24
 
 ## Updates & Decisions
+
 # Infrastructure & Fetch Patterns
 
 useAuthedFetch (hook)

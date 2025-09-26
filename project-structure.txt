@@ -162,8 +162,6 @@ frontend/
 │   │   │   ├── AddProduct.jsx
 │   │   │   ├── EditOrder.jsx
 │   │   │   ├── NewOrder.jsx
-│   │   │   ├── OrderConfirmation.jsx
-│   │   │   ├── OrderConfirmationOld.jsx
 │   │   │   ├── OrderDetails.jsx
 │   │   │   └── Orders.jsx
 │   │   └── users/
