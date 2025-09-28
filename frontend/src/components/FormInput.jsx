@@ -117,7 +117,7 @@ export default function FormInput({
             required={required}
             className={`peer w-full ${prefix ? 'pl-10' : 'px-3'} min-h-[44px] rounded-lg border bg-white py-1 text-sm text-gray-900 focus:ring-2 focus:ring-blue-500 focus:outline-none dark:bg-neutral-700 dark:text-white ${
               error ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
-            } ${floating ? 'pt-5' : ''} ${hasRightIcon ? 'pr-11' : ''} ${inputClassName}`}
+            } ${floating ? 'pt-3.5' : ''} ${hasRightIcon ? 'pr-11' : ''} ${inputClassName}`}
             {...props}
           />
         )}
