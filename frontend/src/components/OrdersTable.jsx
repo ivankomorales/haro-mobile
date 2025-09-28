@@ -10,14 +10,18 @@ import { getStatusLabel, getStatusClasses } from '../utils/orderStatusUtils'
 
 function IndeterminateCheckbox({ checked, indeterminate, onChange, ariaLabel }) {
   const ref = useRef(null)
+
   useEffect(() => {
-    if (ref.current) ref.current.indeterminate = indeterminate
-  }, [indeterminate])
+    if (!ref.current) return
+    // Important: re-apply whenever either flag changes.
+    ref.current.indeterminate = Boolean(indeterminate) && !checked
+  }, [indeterminate, checked])
+
   return (
     <input
       ref={ref}
       type="checkbox"
-      className="h-4 w-4 accent-black dark:accent-white"
+      className="h-4 w-4" 
       checked={checked}
       onChange={(e) => onChange?.(e.target.checked)}
       aria-label={ariaLabel}

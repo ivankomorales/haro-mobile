@@ -219,7 +219,7 @@ exports.exportOrdersToPDF = async (req, res) => {
 
     const orders = await Order.find({ _id: { $in: orderIds } })
       .populate("customer")
-      .sort({ orderDate: -1 });
+      .sort({ orderDate: 1 });
 
     if (!orders.length) {
       return res.status(404).json({ error: "No orders found" });
