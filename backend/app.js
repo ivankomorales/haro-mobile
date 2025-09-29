@@ -17,7 +17,38 @@ connectDB();
 
 // Middlewares
 app.use(express.json());
-app.use(cors({ origin: true, credentials: true })); // safer than app.use(cors())
+// app.use(cors({ origin: true, credentials: true })); // safer than app.use(cors())
+const RAW = (
+  process.env.CORS_ORIGIN ||
+  "http://localhost:5173,https://haro-mobile.vercel.app,*.vercel.app"
+)
+  .split(",")
+  .map((s) => s.trim())
+  .filter(Boolean);
+
+function isAllowed(origin) {
+  return RAW.some((p) => {
+    if (p === "*") return true;
+    if (p.startsWith("*.")) {
+      // ej: *.vercel.app
+      const suf = p.slice(1); // ".vercel.app"
+      return origin?.endsWith(suf);
+    }
+    return origin === p;
+  });
+}
+
+app.use(
+  cors({
+    origin(origin, cb) {
+      if (!origin) return cb(null, true); // Postman/cURL
+      if (isAllowed(origin)) return cb(null, true);
+      return cb(new Error("Not allowed by CORS"));
+    },
+    credentials: true,
+  })
+);
+
 app.use(helmet());
 app.use(morgan("dev"));
 
