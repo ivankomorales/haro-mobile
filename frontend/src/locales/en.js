@@ -382,10 +382,11 @@ export const en = {
     confirmMessage: 'Cancelling now will erase all your progress.',
   },
 
-  // BUTTONS / ACTIONS
+  // ───────────────────── BUTTONS ───────────────────────────
   button: {
     confirm: 'Confirm',
     save: 'Save',
+    saving: 'Saving…',
     cancel: 'Cancel',
     delete: 'Delete',
     cancelEdit: 'Cancel Edit',
@@ -397,18 +398,21 @@ export const en = {
     addGlaze: 'Add Glaze',
     back: 'Back',
 
-    login: 'Log in',
-
+    login: 'Login',
+    loggingIn: 'Logging in…',
     clear: 'Clear',
     apply: 'Apply',
 
-    edit: 'Edit', // ← NEW
-    activate: 'Activate', // ← NEW
-    deactivate: 'Deactivate', // ← NEW
-    exportPdf: 'Export PDF', // ← NEW
-    exportExcel: 'Export Excel', // ← NEW
-    changeStatus: 'Change Status', // ← NEW
-    checkout: 'Checkout', // ← NEW
+    edit: 'Edit',
+    activate: 'Activate',
+    deactivate: 'Deactivate',
+    exportPdf: 'Export PDF',
+    exportExcel: 'Export Excel',
+    changeStatus: 'Change Status',
+    checkout: 'Checkout',
+
+    submit: 'Submit',
+    submitting: 'Submitting…',
   },
 
   messages: {
