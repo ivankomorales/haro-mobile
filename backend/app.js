@@ -79,6 +79,9 @@ app.use("/api/order-drafts", orderDraftRoutes);
 const mePreferencesRoutes = require("./routes/mePreferences");
 app.use("/api/me/preferences", mePreferencesRoutes);
 
+// Healthcheck para Render
+app.get("/healthz", (req, res) => res.status(200).json({ ok: true }));
+
 // 🛑 Catch all unknown routes
 app.use((req, res, next) => {
   const error = new Error(`Not Found - ${req.originalUrl}`);
