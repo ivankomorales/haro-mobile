@@ -19,7 +19,7 @@ app.use(express.json());
 
 // ===================== CORS (multi-environment) =====================
 const RAW = (
-  process.env.CORS_ORIGINS ||
+  process.env.CORS_ORIGIN ||
   // default values if you don’t set the env var
   "http://localhost:5173,https://haro-mobile-staging.vercel.app,https://haro-mobile.vercel.app,*.vercel.app"
 )
@@ -51,7 +51,6 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions)); // ✅ apply CORS globally
-app.options("*", cors(corsOptions)); // ✅ respond to preflight OPTIONS for all routes
 // ===================================================================
 
 app.use(helmet());
