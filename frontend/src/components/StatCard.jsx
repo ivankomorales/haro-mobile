@@ -99,10 +99,9 @@ export default function StatCard({
       <div className="mt-2 mb-4 text-center opacity-70 sm:text-left">{title}</div>
 
       {loading ? (
-        <div className="mt-2 flex justify-center sm:justify-start" aria-live="polite">
+        <div className="mt-2 flex justify-center " aria-live="polite">
           <Spinner
-            size={24}
-            className="text-neutral-500 dark:text-neutral-300"
+            className="h-8 w-8 text-neutral-500 dark:text-neutral-300"
             aria-hidden="true"
           />
           <span className="sr-only">Loading</span>

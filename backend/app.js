@@ -15,12 +15,13 @@ const connectDB = require("./config/db");
 const app = express();
 connectDB();
 
-// Middlewares
 app.use(express.json());
-// app.use(cors({ origin: true, credentials: true })); // safer than app.use(cors())
+
+// ===================== CORS (multi-environment) =====================
 const RAW = (
-  process.env.CORS_ORIGIN ||
-  "http://localhost:5173,https://haro-mobile.vercel.app,*.vercel.app"
+  process.env.CORS_ORIGINS ||
+  // default values if you don’t set the env var
+  "http://localhost:5173,https://haro-mobile-staging.vercel.app,https://haro-mobile.vercel.app,*.vercel.app"
 )
   .split(",")
   .map((s) => s.trim())
@@ -28,9 +29,8 @@ const RAW = (
 
 function isAllowed(origin) {
   return RAW.some((p) => {
-    if (p === "*") return true;
+    if (p === "*") return true; // avoid using '*' if credentials=true
     if (p.startsWith("*.")) {
-      // ej: *.vercel.app
       const suf = p.slice(1); // ".vercel.app"
       return origin?.endsWith(suf);
     }
@@ -38,16 +38,21 @@ function isAllowed(origin) {
   });
 }
 
-app.use(
-  cors({
-    origin(origin, cb) {
-      if (!origin) return cb(null, true); // Postman/cURL
-      if (isAllowed(origin)) return cb(null, true);
-      return cb(new Error("Not allowed by CORS"));
-    },
-    credentials: true,
-  })
-);
+const corsOptions = {
+  origin(origin, cb) {
+    // without 'origin' (Postman/cURL/SSR) → allow
+    if (!origin) return cb(null, true);
+    if (isAllowed(origin)) return cb(null, true);
+    return cb(new Error("Not allowed by CORS"));
+  },
+  credentials: true, // ✅ needed if you later use cookies. With Bearer tokens, it doesn’t hurt.
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"], // ✅
+  allowedHeaders: ["authorization", "content-type"], // ✅ important for your preflight
+};
+
+app.use(cors(corsOptions)); // ✅ apply CORS globally
+app.options("*", cors(corsOptions)); // ✅ respond to preflight OPTIONS for all routes
+// ===================================================================
 
 app.use(helmet());
 app.use(morgan("dev"));
@@ -79,7 +84,7 @@ app.use("/api/order-drafts", orderDraftRoutes);
 const mePreferencesRoutes = require("./routes/mePreferences");
 app.use("/api/me/preferences", mePreferencesRoutes);
 
-// Healthcheck para Render
+// Healthcheck for Render
 app.get("/healthz", (req, res) => res.status(200).json({ ok: true }));
 
 // 🛑 Catch all unknown routes
