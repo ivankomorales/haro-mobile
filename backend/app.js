@@ -51,6 +51,12 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions)); // ✅ apply CORS globally
+app.use((req, res, next) => {         // <-- añade esto justo debajo
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(204);       // cors() ya añadió los Access-Control-* arriba
+  }
+  next();
+}); // respond 204 to all preflight requests
 // ===================================================================
 
 app.use(helmet());
