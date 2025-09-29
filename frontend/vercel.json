@@ -1,14 +1,5 @@
 {
-  "headers": [
-    {
-      "source": "/(.*)",
-      "has": [{ "type": "host", "value": "haro-mobile-staging.vercel.app" }],
-      "headers": [
-        { "key": "X-Robots-Tag", "value": "noindex, nofollow" }
-      ]
-    }
-  ],
   "rewrites": [
-    { "source": "/(.*)", "destination": "/" }
+    { "source": "/api/:path*", "destination": "https://haro-mobile-prod.onrender.com/api/:path*" }
   ]
 }
