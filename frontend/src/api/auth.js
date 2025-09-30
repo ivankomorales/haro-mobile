@@ -19,16 +19,20 @@ async function fetchJson(url, { method = 'GET', body } = {}) {
   return data
 }
 
-/** Login (no token, no authed fetch) */
+const API_BASE = (import.meta.env.VITE_API_BASE || '').replace(/\/+$/, '');
+
+// ✅ Login will now hit the backend (staging/prod) via VITE_API_BASE
 export const login = (credentials) =>
-  fetchJson('/api/auth/login', { method: 'POST', body: credentials })
+  fetchJson(
+    API_BASE ? `${API_BASE}/api/auth/login` : '/api/auth/login',
+    { method: 'POST', body: credentials }
+  );
 
 /** Optional server-side logout/audit; keep name distinct from AuthContext.logout() */
 export const logoutServer = async () => {
-  // If you add a real endpoint later, do it here with fetchJson or fetchWithAuth
-  return Promise.resolve()
-}
+  return Promise.resolve();
+};
 
 // TEMP aliases if you still import the old names elsewhere:
-export const apiLogin = login
-export const apiLogout = logoutServer
+export const apiLogin = login;
+export const apiLogout = logoutServer;

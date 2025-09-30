@@ -38,16 +38,26 @@ function isAllowed(origin) {
   });
 }
 
-app.use(
-  cors({
-    origin(origin, cb) {
-      if (!origin) return cb(null, true); // Postman/cURL
-      if (isAllowed(origin)) return cb(null, true);
-      return cb(new Error("Not allowed by CORS"));
-    },
-    credentials: true,
-  })
-);
+const corsOptions = {
+  origin(origin, cb) {
+    // without 'origin' (Postman/cURL/SSR) → allow
+    if (!origin) return cb(null, true);
+    if (isAllowed(origin)) return cb(null, true);
+    return cb(new Error("Not allowed by CORS"));
+  },
+  credentials: true, // ✅ needed if you later use cookies. With Bearer tokens, it doesn’t hurt.
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"], // ✅
+  allowedHeaders: ["authorization", "content-type"], // ✅ important for your preflight
+};
+
+app.use(cors(corsOptions)); // ✅ apply CORS globally
+app.use((req, res, next) => {
+  // <-- añade esto justo debajo
+  if (req.method === "OPTIONS") {
+    return res.sendStatus(204); // cors() ya añadió los Access-Control-* arriba
+  }
+  next();
+}); // respond 204 to all preflight requests
 
 app.use(helmet());
 app.use(morgan("dev"));
